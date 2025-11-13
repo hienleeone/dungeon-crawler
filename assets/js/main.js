@@ -160,8 +160,8 @@ window.addEventListener("load", function () {
             <button id="player-menu"><i class="fas fa-user"></i>${player.name}</button>
             <button id="stats">Chỉ Số Chính</button>
             <button id="volume-btn">Âm Thanh</button>
-            <button id="export-import">Lưu Trữ Dữ Liệu</button>
-            <button id="quit-run">Đặt Lại Dữ Liệu</button>
+            <button id="export-import">Mã Dữ Liệu</button>
+            <button id="quit-run">Xóa Hầm Ngục</button>
         </div>`;
 
         let close = document.querySelector('#close-menu');
@@ -235,7 +235,7 @@ window.addEventListener("load", function () {
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Bạn có muốn đặt lại tất cả?</p>
+                <p>Bạn có muốn xóa hầm ngục này?</p>
                 <div class="button-container">
                     <button id="quit-run">Đồng Ý</button>
                     <button id="cancel-quit">Hủy Bỏ</button>
@@ -340,7 +340,7 @@ window.addEventListener("load", function () {
             defaultModalElement.innerHTML = `
             <div class="content" id="ei-tab">
                 <div class="content-head">
-                    <h3>Lưu Trữ Dữ Liệu</h3>
+                    <h3>Mã Dữ Liệu</h3>
                     <p id="ei-close"><i class="fa fa-xmark"></i></p>
                 </div>
                 <h4>Xuất Dữ Liệu</h4>
