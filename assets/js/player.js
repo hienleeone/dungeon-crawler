@@ -247,7 +247,7 @@ const generateLvlStats = (rerolls, percentages) => {
             button.appendChild(h3);
 
             let p = document.createElement("p");
-            p.innerHTML = `Tăng thêm ${selectedStats[i].replace(/([A-Z])/g, ".$1").replace(/crit/g, "c").toUpperCase()} by ${percentages[selectedStats[i]]}%.`;
+            p.innerHTML = `Tăng ${percentages[selectedStats[i]]}% chỉ số ${selectedStats[i].replace(/([A-Z])/g, ".$1").replace(/crit/g, "c").toUpperCase()}.`;
             button.appendChild(p);
 
             // Increase the selected stat for player
