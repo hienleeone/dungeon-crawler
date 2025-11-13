@@ -91,8 +91,8 @@ const loadDungeonProgress = () => {
         dungeon.progress.room = 1;
         dungeon.progress.floor++;
     }
-    floorCount.innerHTML = `Floor ${dungeon.progress.floor}`;
-    roomCount.innerHTML = `Room ${dungeon.progress.room}`;
+    floorCount.innerHTML = `Tầng ${dungeon.progress.floor}`;
+    roomCount.innerHTML = `Phòng ${dungeon.progress.room}`;
 }
 
 // ========== Events in the Dungeon ==========
