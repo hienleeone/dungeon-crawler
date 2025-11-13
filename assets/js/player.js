@@ -87,14 +87,14 @@ const playerLoadStats = () => {
 
     // Player Bonus Stats
     document.querySelector("#bonus-stats").innerHTML = `
-    <h4>Bonus Stats</h4>
-    <p><i class="fas fa-heart"></i>HP+${player.bonusStats.hp.toFixed(2).replace(rx, "$1")}%</p>
-    <p><i class="ra ra-sword"></i>ATK+${player.bonusStats.atk.toFixed(2).replace(rx, "$1")}%</p>
-    <p><i class="ra ra-round-shield"></i>DEF+${player.bonusStats.def.toFixed(2).replace(rx, "$1")}%</p>
-    <p><i class="ra ra-plain-dagger"></i>ATK.SPD+${player.bonusStats.atkSpd.toFixed(2).replace(rx, "$1")}%</p>
-    <p><i class="ra ra-dripping-blade"></i>VAMP+${player.bonusStats.vamp.toFixed(2).replace(rx, "$1")}%</p>
-    <p><i class="ra ra-lightning-bolt"></i>C.RATE+${player.bonusStats.critRate.toFixed(2).replace(rx, "$1")}%</p>
-    <p><i class="ra ra-focused-lightning"></i>C.DMG+${player.bonusStats.critDmg.toFixed(2).replace(rx, "$1")}%</p>`;
+    <h4>Thông Số Thêm</h4>
+    <p><i class="fas fa-heart"></i>Máu Tối Đa: +${player.bonusStats.hp.toFixed(2).replace(rx, "$1")}%</p>
+    <p><i class="ra ra-sword"></i>Sát Thương: +${player.bonusStats.atk.toFixed(2).replace(rx, "$1")}%</p>
+    <p><i class="ra ra-round-shield"></i>Bảo Vệ: +${player.bonusStats.def.toFixed(2).replace(rx, "$1")}%</p>
+    <p><i class="ra ra-plain-dagger"></i>Tốc Đánh: +${player.bonusStats.atkSpd.toFixed(2).replace(rx, "$1")}%</p>
+    <p><i class="ra ra-dripping-blade"></i>Hút Máu: +${player.bonusStats.vamp.toFixed(2).replace(rx, "$1")}%</p>
+    <p><i class="ra ra-lightning-bolt"></i>% Bạo Kích: +${player.bonusStats.critRate.toFixed(2).replace(rx, "$1")}%</p>
+    <p><i class="ra ra-focused-lightning"></i>Bạo Kích: +${player.bonusStats.critDmg.toFixed(2).replace(rx, "$1")}%</p>`;
 }
 
 // Opens inventory
@@ -114,22 +114,22 @@ const openInventory = () => {
         let rarity = sellRarityElement.value;
 
         defaultModalElement.style.display = "flex";
-        if (rarity == "All") {
+        if (rarity == "Tất Cả") {
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Sell all of your equipment?</p>
+                <p>Bán hết vật phẩm của bạn?</p>
                 <div class="button-container">
-                    <button id="sell-confirm">Sell All</button>
-                    <button id="sell-cancel">Cancel</button>
+                    <button id="sell-confirm">Bán Tất Cả</button>
+                    <button id="sell-cancel">Hủy Bỏ</button>
                 </div>
             </div>`;
         } else {
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Sell all <span class="${rarity}">${rarity}</span> equipment?</p>
+                <p>Bán tất cả <span class="${rarity}">${rarity}</span> vật phẩm?</p>
                 <div class="button-container">
-                    <button id="sell-confirm">Sell All</button>
-                    <button id="sell-cancel">Cancel</button>
+                    <button id="sell-confirm">Bán Tất Cả</button>
+                    <button id="sell-cancel">Hủy Bỏ</button>
                 </div>
             </div>`;
         }
@@ -218,8 +218,8 @@ const generateLvlStats = (rerolls, percentages) => {
         lvlupSelect.innerHTML = `
             <h1>Level Up!</h1>
             <div class="content-head">
-                <h4>Remaining: ${player.exp.lvlGained}</h4>
-                <button id="lvlReroll">Reroll ${rerolls}/2</button>
+                <h4>Còn lại: ${player.exp.lvlGained}</h4>
+                <button id="lvlReroll">Tạo lại ${rerolls}/2</button>
             </div>
         `;
     }
