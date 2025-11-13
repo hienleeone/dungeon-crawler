@@ -28,10 +28,10 @@ window.addEventListener("load", function () {
 
         var format = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
         if (format.test(playerName)) {
-            document.querySelector("#alert").innerHTML = "Tên của bạn không được chứa ký tự đặc biệt!";
+            document.querySelector("#alert").innerHTML = "Your name cannot contain special characters!";
         } else {
             if (playerName.length < 3 || playerName.length > 15) {
-                document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
+                document.querySelector("#alert").innerHTML = "Name should be between 3-15 characters!";
             } else {
                 player = {
                     name: playerName,
@@ -117,10 +117,10 @@ window.addEventListener("load", function () {
         defaultModalElement.style.display = "flex";
         defaultModalElement.innerHTML = `
         <div class="content">
-            <p>Bỏ hết vật phẩm của bạn?</p>
+            <p>Unequip all your items?</p>
             <div class="button-container">
-                <button id="unequip-confirm">Bỏ Vật Phẩm</button>
-                <button id="unequip-cancel">Hủy Bỏ</button>
+                <button id="unequip-confirm">Unequip</button>
+                <button id="unequip-cancel">Cancel</button>
             </div>
         </div>`;
         let confirm = document.querySelector('#unequip-confirm');
@@ -158,10 +158,10 @@ window.addEventListener("load", function () {
                 <p id="close-menu"><i class="fa fa-xmark"></i></p>
             </div>
             <button id="player-menu"><i class="fas fa-user"></i>${player.name}</button>
-            <button id="stats">Chỉ Số Chính</button>
-            <button id="volume-btn">Âm Thanh</button>
-            <button id="export-import">Lưu Trữ Dữ Liệu</button>
-            <button id="quit-run">Đặt Lại Dữ Liệu</button>
+            <button id="stats">Current Run</button>
+            <button id="volume-btn">Volume Settings</button>
+            <button id="export-import">Export/Import Data</button>
+            <button id="quit-run">Abandon</button>
         </div>`;
 
         let close = document.querySelector('#close-menu');
@@ -180,13 +180,13 @@ window.addEventListener("load", function () {
             defaultModalElement.innerHTML = `
             <div class="content" id="profile-tab">
                 <div class="content-head">
-                    <h3>Thông Tin</h3>
+                    <h3>Statistics</h3>
                     <p id="profile-close"><i class="fa fa-xmark"></i></p>
                 </div>
                 <p>${player.name} Lv.${player.lvl}</p>
-                <p>Giết: ${nFormatter(player.kills)}</p>
-                <p>Chết: ${nFormatter(player.deaths)}</p>
-                <p>Chơi: ${playTime}</p>
+                <p>Kills: ${nFormatter(player.kills)}</p>
+                <p>Deaths: ${nFormatter(player.deaths)}</p>
+                <p>Playtime: ${playTime}</p>
             </div>`;
             let profileTab = document.querySelector('#profile-tab');
             profileTab.style.width = "15rem";
@@ -208,14 +208,14 @@ window.addEventListener("load", function () {
             defaultModalElement.innerHTML = `
             <div class="content" id="run-tab">
                 <div class="content-head">
-                    <h3>Chỉ Số</h3>
+                    <h3>Current Run</h3>
                     <p id="run-close"><i class="fa fa-xmark"></i></p>
                 </div>
                 <p>${player.name} Lv.${player.lvl} (${player.skills})</p>
-                <p>Phước Lành Lvl.${player.blessing}</p>
-                <p>Lời Nguyền Lvl.${Math.round((dungeon.settings.enemyScaling - 1) * 10)}</p>
-                <p>Giết Được: ${nFormatter(dungeon.statistics.kills)}</p>
-                <p>Hoạt Động: ${runTime}</p>
+                <p>Blessing Lvl.${player.blessing}</p>
+                <p>Curse Lvl.${Math.round((dungeon.settings.enemyScaling - 1) * 10)}</p>
+                <p>Kills: ${nFormatter(dungeon.statistics.kills)}</p>
+                <p>Runtime: ${runTime}</p>
             </div>`;
             let runTab = document.querySelector('#run-tab');
             runTab.style.width = "15rem";
@@ -235,10 +235,10 @@ window.addEventListener("load", function () {
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Bạn có muốn đặt lại tất cả?</p>
+                <p>Do you want to abandon this run?</p>
                 <div class="button-container">
-                    <button id="quit-run">Đồng Ý</button>
-                    <button id="cancel-quit">Hủy Bỏ</button>
+                    <button id="quit-run">Abandon</button>
+                    <button id="cancel-quit">Cancel</button>
                 </div>
             </div>`;
             let quit = document.querySelector('#quit-run');
@@ -279,16 +279,16 @@ window.addEventListener("load", function () {
             defaultModalElement.innerHTML = `
             <div class="content" id="volume-tab">
                 <div class="content-head">
-                    <h3>Âm Thanh</h3>
+                    <h3>Volume</h3>
                     <p id="volume-close"><i class="fa fa-xmark"></i></p>
                 </div>
-                <label id="master-label" for="master-volume">Tổng (${master}%)</label>
+                <label id="master-label" for="master-volume">Master (${master}%)</label>
                 <input type="range" id="master-volume" min="0" max="100" value="${master}">
-                <label id="bgm-label" for="bgm-volume">Nhạc Nền (${bgm}%)</label>
+                <label id="bgm-label" for="bgm-volume">BGM (${bgm}%)</label>
                 <input type="range" id="bgm-volume" min="0" max="100" value="${bgm}">
-                <label id="sfx-label" for="sfx-volume">Hiệu Ứng (${sfx}%)</label>
+                <label id="sfx-label" for="sfx-volume">SFX (${sfx}%)</label>
                 <input type="range" id="sfx-volume" min="0" max="100" value="${sfx}">
-                <button id="apply-volume">Đồng Ý</button>
+                <button id="apply-volume">Apply</button>
             </div>`;
             let masterVol = document.querySelector('#master-volume');
             let bgmVol = document.querySelector('#bgm-volume');
@@ -307,17 +307,17 @@ window.addEventListener("load", function () {
             // Volume Control
             masterVol.oninput = function () {
                 master = this.value;
-                document.querySelector('#master-label').innerHTML = `Tổng (${master}%)`;
+                document.querySelector('#master-label').innerHTML = `Master (${master}%)`;
             };
 
             bgmVol.oninput = function () {
                 bgm = this.value;
-                document.querySelector('#bgm-label').innerHTML = `Nhạc Nền (${bgm}%)`;
+                document.querySelector('#bgm-label').innerHTML = `BGM (${bgm}%)`;
             };
 
             sfxVol.oninput = function () {
                 sfx = this.value;
-                document.querySelector('#sfx-label').innerHTML = `Hiệu Ứng (${sfx}%)`;
+                document.querySelector('#sfx-label').innerHTML = `SFX (${sfx}%)`;
             };
 
             applyVol.onclick = function () {
@@ -340,15 +340,15 @@ window.addEventListener("load", function () {
             defaultModalElement.innerHTML = `
             <div class="content" id="ei-tab">
                 <div class="content-head">
-                    <h3>Lưu Trữ Dữ Liệu</h3>
+                    <h3>Export/Import Data</h3>
                     <p id="ei-close"><i class="fa fa-xmark"></i></p>
                 </div>
-                <h4>Xuất Dữ Liệu</h4>
+                <h4>Export Data</h4>
                 <input type="text" id="export-input" autocomplete="off" value="${exportedData}" readonly>
-                <button id="copy-export">Sao Chép</button>
-                <h4>Nhập Dữ Liệu</h4>
+                <button id="copy-export">Copy</button>
+                <h4>Import Data</h4>
                 <input type="text" id="import-input" autocomplete="off">
-                <button id="data-import">Đồng Ý</button>
+                <button id="data-import">Import</button>
             </div>`;
             let eiTab = document.querySelector('#ei-tab');
             eiTab.style.width = "15rem";
@@ -513,10 +513,10 @@ const importData = (importedData) => {
             confirmationModalElement.style.display = "flex";
             confirmationModalElement.innerHTML = `
             <div class="content">
-                <p>Bạn có chắc chắn muốn nhập dữ liệu này không? Thao tác này sẽ xóa dữ liệu hiện tại và đặt lại tiến trình hầm ngục của bạn.</p>
+                <p>Are you sure you want to import this data? This will erase the current data and reset your dungeon progress.</p>
                 <div class="button-container">
-                    <button id="import-btn">Đồng Ý</button>
-                    <button id="cancel-btn">Hủy Bỏ</button>
+                    <button id="import-btn">Import</button>
+                    <button id="cancel-btn">Cancel</button>
                 </div>
             </div>`;
             let confirm = document.querySelector("#import-btn");
@@ -576,11 +576,11 @@ const allocationPopup = () => {
         defaultModalElement.innerHTML = `
         <div class="content" id="allocate-stats">
             <div class="content-head">
-                <h3>Thống Kê</h3>
+                <h3>Allocate Stats</h3>
                 <p id="allocate-close"><i class="fa fa-xmark"></i></p>
             </div>
             <div class="row">
-                <p><i class="fas fa-heart"></i><span id="hpDisplay">Máu Tối Đa: ${stats.hp}</span></p>
+                <p><i class="fas fa-heart"></i><span id="hpDisplay">HP: ${stats.hp}</span></p>
                 <div class="row">
                     <button id="hpMin">-</button>
                     <span id="hpAllo">${allocation.hp}</span>
@@ -588,7 +588,7 @@ const allocationPopup = () => {
                 </div>
             </div>
             <div class="row">
-                <p><i class="ra ra-sword"></i><span id="atkDisplay">Sát Thương: ${stats.atk}</span></p>
+                <p><i class="ra ra-sword"></i><span id="atkDisplay">ATK: ${stats.atk}</span></p>
                 <div class="row">
                     <button id="atkMin">-</button>
                     <span id="atkAllo">${allocation.atk}</span>
@@ -596,7 +596,7 @@ const allocationPopup = () => {
                 </div>
             </div>
             <div class="row">
-                <p><i class="ra ra-round-shield"></i><span id="defDisplay">Bảo Vệ: ${stats.def}</span></p>
+                <p><i class="ra ra-round-shield"></i><span id="defDisplay">DEF: ${stats.def}</span></p>
                 <div class="row">
                     <button id="defMin">-</button>
                     <span id="defAllo">${allocation.def}</span>
@@ -604,7 +604,7 @@ const allocationPopup = () => {
                 </div>
             </div>
             <div class="row">
-                <p><i class="ra ra-plain-dagger"></i><span id="atkSpdDisplay">Tốc Đánh: ${stats.atkSpd}</span></p>
+                <p><i class="ra ra-plain-dagger"></i><span id="atkSpdDisplay">ATK.SPD: ${stats.atkSpd}</span></p>
                 <div class="row">
                     <button id="atkSpdMin">-</button>
                     <span id="atkSpdAllo">${allocation.atkSpd}</span>
@@ -613,7 +613,7 @@ const allocationPopup = () => {
             </div>
             <div class="row">
                 <p id="alloPts">Stat Points: ${points}</p>
-                <button id="allocate-reset">Đặt Lại</button>
+                <button id="allocate-reset">Reset</button>
             </div>
             <div class="row">
                 <p>Passive</p>
@@ -627,9 +627,9 @@ const allocationPopup = () => {
                 </select>
             </div>
             <div class="row primary-panel pad">
-                <p id="skill-desc">Các đòn tấn công gây thêm 8% lượng máu hiện tại của kẻ địch khi đánh trúng.</p>
+                <p id="skill-desc">Attacks deal extra 8% of enemies' current health on hit.</p>
             </div>
-            <button id="allocate-confirm">Tiến Hành</button>
+            <button id="allocate-confirm">Confirm</button>
         </div>`;
     }
     defaultModalElement.style.display = "flex";
@@ -700,25 +700,25 @@ const allocationPopup = () => {
     }
     selectSkill.onchange = function () {
         if (selectSkill.value == "Remnant Razor") {
-            skillDesc.innerHTML = "Các đòn tấn công gây thêm 8% lượng máu hiện tại của kẻ địch khi đánh trúng.";
+            skillDesc.innerHTML = "Attacks deal extra 8% of enemies' current health on hit.";
         }
         if (selectSkill.value == "Titan's Will") {
-            skillDesc.innerHTML = "Các đòn tấn công gây thêm 5% lượng máu tối đa của bạn khi đánh trúng.";
+            skillDesc.innerHTML = "Attacks deal extra 5% of your maximum health on hit.";
         }
         if (selectSkill.value == "Devastator") {
-            skillDesc.innerHTML = "Gây thêm 30% sát thương nhưng bạn mất 30% tốc độ đánh cơ bản.";
+            skillDesc.innerHTML = "Deal 30% more damage but you lose 30% base attack speed.";
         }
         if (selectSkill.value == "Rampager") {
-            skillDesc.innerHTML = "Tăng 5 điểm tấn công sau mỗi đòn đánh. Điểm cộng dồn sẽ được đặt lại sau trận chiến.";
+            skillDesc.innerHTML = "Increase attack by 5 after each hit. Stack resets after battle.";
         }
         if (selectSkill.value == "Blade Dance") {
-            skillDesc.innerHTML = "Tăng tốc độ tấn công sau mỗi đòn đánh. Cộng dồn sẽ được đặt lại sau trận chiến.";
+            skillDesc.innerHTML = "Gain increased attack speed after each hit. Stack resets after battle.";
         }
         if (selectSkill.value == "Paladin's Heart") {
-            skillDesc.innerHTML = "Bạn sẽ nhận ít hơn 25% sát thương vĩnh viễn.";
+            skillDesc.innerHTML = "You receive 25% less damage permanently.";
         }
         if (selectSkill.value == "Aegis Thorns") {
-            skillDesc.innerHTML = "Kẻ địch phải chịu 15% sát thương mà chúng gây ra.";
+            skillDesc.innerHTML = "Enemies receive 15% of the damage they dealt.";
         }
     }
 
@@ -785,10 +785,10 @@ const allocationPopup = () => {
         updateStats();
 
         // Display Reset
-        document.querySelector(`#hpDisplay`).innerHTML = `Máu Tối Đa: ${stats.hp}`;
-        document.querySelector(`#atkDisplay`).innerHTML = `Sát Thương: ${stats.atk}`;
-        document.querySelector(`#defDisplay`).innerHTML = `Bảo Vệ: ${stats.def}`;
-        document.querySelector(`#atkSpdDisplay`).innerHTML = `Tốc Đánh: ${stats.atkSpd}`;
+        document.querySelector(`#hpDisplay`).innerHTML = `HP: ${stats.hp}`;
+        document.querySelector(`#atkDisplay`).innerHTML = `ATK: ${stats.atk}`;
+        document.querySelector(`#defDisplay`).innerHTML = `DEF: ${stats.def}`;
+        document.querySelector(`#atkSpdDisplay`).innerHTML = `ATK.SPD: ${stats.atkSpd}`;
         document.querySelector(`#hpAllo`).innerHTML = allocation.hp;
         document.querySelector(`#atkAllo`).innerHTML = allocation.atk;
         document.querySelector(`#defAllo`).innerHTML = allocation.def;
