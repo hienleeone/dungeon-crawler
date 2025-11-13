@@ -1,31 +1,36 @@
-# Dungeon Crawler On Demand!
+# SoulMC Network - Dungeon Crawler!
 
-Quickly and easily access a thrilling dungeon-crawling experience at any time. With a simple click of a button, players can enter a fully-realized, randomly generated dungeon filled with monsters and diablo inspired equipment looting system!
-<br><br><a href='https://ko-fi.com/W7W4I2XU6' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi3.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
-[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=8F4LBS6QB4PVC)
+Trải nghiệm hành trình khám phá hầm ngục kịch tính bất cứ lúc nào chỉ với một cú nhấp chuột!  
+Người chơi sẽ bước vào **một hầm ngục ngẫu nhiên** được tạo tự động, tràn ngập quái vật và hệ thống **nhặt trang bị và rất nhiều cấp bậc** cực hấp dẫn!
 
-## Gameplay Mechanics
+---
 
-- Roguelite gameplay where the progress is reset when the player dies, but equipment is carried over.
-- Players navigate through the dungeon by climbing the floors that features randomized events.
-- Players can upgrade their stats upon level up, choosing 3 possible upgrades and 2 reroll chances per level.
-- Players has 6 slots of equipment that they can equip.
-- There are 6 equipment rarities which are Common, Uncommon, Rare, Epic, Legendary, and Heirloom.
+## 🕹️ Cơ Chế Trò Chơi
 
-## In-game Stats
+- Lối chơi **roguelite**: Tiến trình sẽ đặt lại khi người chơi chết, nhưng **trang bị vẫn được giữ lại**.  
+- Người chơi **thám hiểm hầm ngục bằng cách leo qua các tầng**, nơi chứa các **sự kiện ngẫu nhiên** khác nhau.  
+- Khi **lên cấp**, người chơi có thể **nâng chỉ số** bằng cách chọn 1 trong 3 lựa chọn nâng cấp, với **2 lần đổi ngẫu nhiên (reroll)** mỗi cấp.  
+- Mỗi nhân vật có **6 ô trang bị** để sử dụng.  
+- Có **6 cấp độ hiếm của trang bị**: Thông Thường, Không Thường, Hiếm, Sử Thi, Huyền Thoại và Cổ Vật.
 
-- HP (Hit Points) - The amount of damage a unit can take before dying.
-- ATK (Attack) - The amount of damage dealt when a unit attacks.
-- DEF (Defense) - The amount of damage reduction against attacks.
-- ATK.SPD (Attack Speed) - How quickly a unit can perform attacks per second.
-- VAMP (Vampirism) - Heals for a percentage of the damage dealt.
-- C.RATE (Crit Rate) - Chance to land a critical hit.
-- C.DMG (Crit Damage) - Amount of bonus damage dealt upon landing a critical hit.
+---
 
-## Credits
+## ⚔️ Chỉ Số Trong Trò Chơi
 
-- [Aekashics](https://aekashics.itch.io/) - Monster Sprites
-- [Leohpaz](https://leohpaz.itch.io/) - RPG SFX
-- [phoenix1291](https://phoenix1291.itch.io/sound-effects-pack-2) - Level up SFX
-- [Leviathan_Music](https://soundcloud.com/leviathan254) - Battle Music
-- [Sara Garrard](https://sonatina.itch.io/letsadventure) - Dungeon Music
+- **HP (Hit Points)** – Lượng sát thương nhân vật có thể chịu trước khi gục ngã.  
+- **ATK (Attack)** – Lượng sát thương gây ra khi tấn công.  
+- **DEF (Defense)** – Mức giảm sát thương nhận vào khi bị tấn công.  
+- **ATK.SPD (Attack Speed)** – Tốc độ ra đòn tấn công mỗi giây.  
+- **VAMP (Vampirism)** – Hồi phục một phần máu dựa trên lượng sát thương gây ra.  
+- **C.RATE (Crit Rate)** – Tỷ lệ tung ra đòn chí mạng.  
+- **C.DMG (Crit Damage)** – Lượng sát thương cộng thêm khi đánh chí mạng.
+
+---
+
+## 🎵 Góp Công & Tín Dụng
+
+- [Aekashics](https://aekashics.itch.io/) – Hình ảnh quái vật  
+- [Leohpaz](https://leohpaz.itch.io/) – Hiệu ứng âm thanh RPG  
+- [phoenix1291](https://phoenix1291.itch.io/sound-effects-pack-2) – Âm thanh khi lên cấp  
+- [Leviathan_Music](https://soundcloud.com/leviathan254) – Nhạc chiến đấu  
+- [Sara Garrard](https://sonatina.itch.io/letsadventure) – Nhạc nền hầm ngục
