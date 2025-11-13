@@ -51,8 +51,8 @@ const initialDungeonLoad = () => {
     }
     loadDungeonProgress();
     dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
-    dungeonAction.innerHTML = "Resting...";
-    dungeonActivity.innerHTML = "Explore";
+    dungeonAction.innerHTML = "Tạm Dừng...";
+    dungeonActivity.innerHTML = "Khám Phá";
     dungeonTime.innerHTML = "00:00:00";
     dungeonTimer = setInterval(dungeonEvent, 1000);
     playTimer = setInterval(dungeonCounter, 1000);
@@ -63,15 +63,15 @@ const dungeonStartPause = () => {
     if (!dungeon.status.paused) {
         sfxPause.play();
 
-        dungeonAction.innerHTML = "Resting...";
-        dungeonActivity.innerHTML = "Explore";
+        dungeonAction.innerHTML = "Tạm Dừng...";
+        dungeonActivity.innerHTML = "Khám Phá";
         dungeon.status.exploring = false;
         dungeon.status.paused = true;
     } else {
         sfxUnpause.play();
 
-        dungeonAction.innerHTML = "Exploring...";
-        dungeonActivity.innerHTML = "Pause";
+        dungeonAction.innerHTML = "Khám Phá...";
+        dungeonActivity.innerHTML = "Tạm dừng";
         dungeon.status.exploring = true;
         dungeon.status.paused = false;
     }
@@ -114,13 +114,13 @@ const dungeonEvent = () => {
                 dungeon.status.event = true;
                 choices = `
                     <div class="decision-panel">
-                        <button id="choice1">Enter</button>
-                        <button id="choice2">Ignore</button>
+                        <button id="choice1">Đi Vào</button>
+                        <button id="choice2">Bỏ Qua</button>
                     </div>`;
                 if (dungeon.progress.room == dungeon.progress.roomLimit) {
-                    addDungeonLog(`<span class="Heirloom">You found the door to the boss room.</span>`, choices);
+                    addDungeonLog(`<span class="Heirloom">Bạn đã tìm thấy cửa vào phòng Boss.</span>`, choices);
                 } else {
-                    addDungeonLog("You found a door.", choices);
+                    addDungeonLog("Bạn đã tìm thấy một cánh cửa.", choices);
                 }
                 document.querySelector("#choice1").onclick = function () {
                     sfxConfirm.play();
@@ -131,15 +131,15 @@ const dungeonEvent = () => {
                         if (eventRoll == 1) {
                             incrementRoom();
                             mimicBattle("door");
-                            addDungeonLog("You moved to the next floor.");
+                            addDungeonLog("Bạn đã chuyển lên tầng tiếp theo.");
                         } else if (eventRoll == 2) {
                             incrementRoom();
                             choices = `
                                 <div class="decision-panel">
-                                    <button id="choice1">Open the chest</button>
-                                    <button id="choice2">Ignore</button>
+                                    <button id="choice1">Mở Rương</button>
+                                    <button id="choice2">Bỏ Qua</button>
                                 </div>`;
-                            addDungeonLog(`You moved to the next room and found a treasure chamber. There is a <i class="fa fa-toolbox"></i>Chest inside.`, choices);
+                            addDungeonLog(`Bạn di chuyển đến phòng tiếp theo và tìm thấy một kho báu. Bên trong có một chiếc Rương <i class="fa fa-toolbox"></i>`, choices);
                             document.querySelector("#choice1").onclick = function () {
                                 chestEvent();
                             }
@@ -150,7 +150,7 @@ const dungeonEvent = () => {
                         } else {
                             dungeon.status.event = false;
                             incrementRoom();
-                            addDungeonLog("You moved to the next room.");
+                            addDungeonLog("Bạn đã chuyển sang phòng tiếp theo.");
                         }
                     }
                 };
@@ -163,10 +163,10 @@ const dungeonEvent = () => {
                 dungeon.status.event = true;
                 choices = `
                     <div class="decision-panel">
-                        <button id="choice1">Open the chest</button>
-                        <button id="choice2">Ignore</button>
+                        <button id="choice1">Mở Rương</button>
+                        <button id="choice2">Bỏ Qua</button>
                     </div>`;
-                addDungeonLog(`You found a treasure chamber. There is a <i class="fa fa-toolbox"></i>Chest inside.`, choices);
+                addDungeonLog(`Bạn đã tìm thấy một kho báu. Có một <i class="fa fa-toolbox"></i>Rương bên trong.`, choices);
                 document.querySelector("#choice1").onclick = function () {
                     chestEvent();
                 }
@@ -181,11 +181,11 @@ const dungeonEvent = () => {
                 dungeon.status.event = true;
                 choices = `
                     <div class="decision-panel">
-                        <button id="choice1">Engage</button>
-                        <button id="choice2">Flee</button>
+                        <button id="choice1">Giao Tranh</button>
+                        <button id="choice2">Khóa Khỏi</button>
                     </div>`;
                 generateRandomEnemy();
-                addDungeonLog(`You encountered ${enemy.name}.`, choices);
+                addDungeonLog(`Bạn đã gặp phải ${enemy.name}.`, choices);
                 player.inCombat = true;
                 document.querySelector("#choice1").onclick = function () {
                     engageBattle();
@@ -202,14 +202,14 @@ const dungeonEvent = () => {
                     let cost = player.blessing * (500 * (player.blessing * 0.5)) + 750;
                     choices = `
                         <div class="decision-panel">
-                            <button id="choice1">Offer</button>
-                            <button id="choice2">Ignore</button>
+                            <button id="choice1">Đề Nghị</button>
+                            <button id="choice2">Bỏ Qua</button>
                         </div>`;
-                    addDungeonLog(`<span class="Legendary">You found a Statue of Blessing. Do you want to offer <i class="fas fa-coins" style="color: #FFD700;"></i><span class="Common">${nFormatter(cost)}</span> to gain blessings? (Blessing Lv.${player.blessing})</span>`, choices);
+                    addDungeonLog(`<span class="Legendary">Bạn phát hiện ra Tượng Ban Phước. Bạn có muốn dâng <i class="fas fa-coins" style="color: #FFD700;"></i><span class="Common">${nFormatter(cost)}</span> để nhận phước lành không? (Phước Lv.${player.blessing})</span>`, choices);
                     document.querySelector("#choice1").onclick = function () {
                         if (player.gold < cost) {
                             sfxDeny.play();
-                            addDungeonLog("You don't have enough gold.");
+                            addDungeonLog("Bạn không có đủ vàng.");
                         } else {
                             player.gold -= cost;
                             sfxConfirm.play();
@@ -232,14 +232,14 @@ const dungeonEvent = () => {
                     let cost = curseLvl * (10000 * (curseLvl * 0.5)) + 5000;
                     choices = `
                             <div class="decision-panel">
-                                <button id="choice1">Offer</button>
-                                <button id="choice2">Ignore</button>
+                                <button id="choice1">Đề Nghị</button>
+                                <button id="choice2">Bỏ Qua</button>
                             </div>`;
-                    addDungeonLog(`<span class="Heirloom">You found a Cursed Totem. Do you want to offer <i class="fas fa-coins" style="color: #FFD700;"></i><span class="Common">${nFormatter(cost)}</span>? This will strengthen the monsters but will also improve the loot quality. (Curse Lv.${curseLvl})</span>`, choices);
+                    addDungeonLog(`<span class="Heirloom">Bạn phát hiện ra Tượng Nguyền Rủa. Bạn có muốn dâng <i class="fas fa-coins" style="color: #FFD700;"></i><span class="Common">${nFormatter(cost)}</span> không? Việc này sẽ khiến quái vật trở nên mạnh hơn nhưng cũng giúp chất lượng vật phẩm rơi ra tốt hơn. (Nguyền Lv.${curseLvl})</span>`, choices);
                     document.querySelector("#choice1").onclick = function () {
                         if (player.gold < cost) {
                             sfxDeny.play();
-                            addDungeonLog("You don't have enough gold.");
+                            addDungeonLog("Bạn không có đủ vàng.");
                         } else {
                             player.gold -= cost;
                             sfxConfirm.play();
@@ -263,7 +263,7 @@ const dungeonEvent = () => {
                                 <button id="choice1">Enter</button>
                                 <button id="choice2">Ignore</button>
                             </div>`;
-                    addDungeonLog(`<span class="Heirloom">You found a mysterious chamber. It seems like there is something sleeping inside.</span>`, choices);
+                    addDungeonLog(`<span class="Heirloom">Bạn tìm thấy một căn phòng bí ẩn. Có vẻ như có thứ gì đó đang ngủ bên trong.</span>`, choices);
                     document.querySelector("#choice1").onclick = function () {
                         specialBossBattle();
                     }
@@ -282,7 +282,7 @@ const dungeonEvent = () => {
 const engageBattle = () => {
     showCombatInfo();
     startCombat(bgmBattleMain);
-    addCombatLog(`You encountered ${enemy.name}.`);
+    addCombatLog(`Bạn đã gặp phải ${enemy.name}.`);
     updateDungeonLog();
 }
 
@@ -291,8 +291,8 @@ const mimicBattle = (type) => {
     generateRandomEnemy(type);
     showCombatInfo();
     startCombat(bgmBattleMain);
-    addCombatLog(`You encountered ${enemy.name}.`);
-    addDungeonLog(`You encountered ${enemy.name}.`);
+    addCombatLog(`Bạn đã gặp phải ${enemy.name}.`);
+    addDungeonLog(`Bạn đã gặp phải ${enemy.name}.`);
 }
 
 // Guardian boss fight
@@ -301,8 +301,8 @@ const guardianBattle = () => {
     generateRandomEnemy("guardian");
     showCombatInfo();
     startCombat(bgmBattleGuardian);
-    addCombatLog(`Floor Guardian ${enemy.name} is blocking your way.`);
-    addDungeonLog("You moved to the next floor.");
+    addCombatLog(`Người bảo vệ hầm ${enemy.name} đang chặn đường bạn.`);
+    addDungeonLog("Bạn đã chuyển lên tầng tiếp theo.");
 }
 
 // Guardian boss fight
@@ -310,8 +310,8 @@ const specialBossBattle = () => {
     generateRandomEnemy("sboss");
     showCombatInfo();
     startCombat(bgmBattleBoss);
-    addCombatLog(`Dungeon Monarch ${enemy.name} has awoken.`);
-    addDungeonLog(`Dungeon Monarch ${enemy.name} has awoken.`);
+    addCombatLog(`Dungeon Monarch ${enemy.name} đã thức tỉnh.`);
+    addDungeonLog(`Dungeon Monarch ${enemy.name} đã thức tỉnh.`);
 }
 
 // Flee from the monster
@@ -319,15 +319,15 @@ const fleeBattle = () => {
     let eventRoll = randomizeNum(1, 2);
     if (eventRoll == 1) {
         sfxConfirm.play();
-        addDungeonLog(`You managed to flee.`);
+        addDungeonLog(`Bạn đã trốn thoát được.`);
         player.inCombat = false;
         dungeon.status.event = false;
     } else {
-        addDungeonLog(`You failed to escape!`);
+        addDungeonLog(`Bạn không trốn thoát được!`);
         showCombatInfo();
         startCombat(bgmBattleMain);
-        addCombatLog(`You encountered ${enemy.name}.`);
-        addCombatLog(`You failed to escape!`);
+        addCombatLog(`Bạn đã gặp phải ${enemy.name}.`);
+        addCombatLog(`Bạn không trốn thoát được!`);
     }
 }
 
@@ -348,7 +348,7 @@ const chestEvent = () => {
         goldDrop();
         dungeon.status.event = false;
     } else {
-        addDungeonLog("The chest is empty.");
+        addDungeonLog("Chiếc rương trống rỗng.");
         dungeon.status.event = false;
     }
 }
@@ -357,7 +357,7 @@ const chestEvent = () => {
 const goldDrop = () => {
     sfxSell.play();
     let goldValue = randomizeNum(50, 500) * dungeon.progress.floor;
-    addDungeonLog(`You found <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(goldValue)}.`);
+    addDungeonLog(`Bạn đã tìm thấy <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(goldValue)}.`);
     player.gold += goldValue;
     playerLoadStats();
 }
@@ -366,15 +366,15 @@ const goldDrop = () => {
 const nothingEvent = () => {
     let eventRoll = randomizeNum(1, 5);
     if (eventRoll == 1) {
-        addDungeonLog("You explored and found nothing.");
+        addDungeonLog("Bạn đã khám phá nhưng không tìm thấy gì.");
     } else if (eventRoll == 2) {
-        addDungeonLog("You found an empty chest.");
+        addDungeonLog("Bạn tìm thấy một chiếc rương trống.");
     } else if (eventRoll == 3) {
-        addDungeonLog("You found a monster corpse.");
+        addDungeonLog("Bạn tìm thấy xác một con quái vật.");
     } else if (eventRoll == 4) {
-        addDungeonLog("You found a corpse.");
+        addDungeonLog("Bạn tìm thấy một xác chết.");
     } else if (eventRoll == 5) {
-        addDungeonLog("There is nothing in this area.");
+        addDungeonLog("Không có gì ở khu vực này.");
     }
 }
 
@@ -414,7 +414,7 @@ const statBlessing = () => {
             player.bonusStats.critDmg += value;
             break;
     }
-    addDungeonLog(`You gained ${value}% bonus ${buff.replace(/([A-Z])/g, ".$1").replace(/crit/g, "c").toUpperCase()} from the blessing. (Blessing Lv.${player.blessing} > Blessing Lv.${player.blessing + 1})`);
+    addDungeonLog(`Bạn nhận được ${value}% sức mạnh cộng thêm cho ${buff.replace(/([A-Z])/g, ".$1").replace(/crit/g, "c").toUpperCase()} nhờ phước lành. (Phước Lv.${player.blessing} > Phước Lv.${player.blessing + 1})`);
     blessingUp();
     playerLoadStats();
     saveData();
@@ -424,7 +424,7 @@ const statBlessing = () => {
 const cursedTotem = (curseLvl) => {
     sfxBuff.play();
     dungeon.settings.enemyScaling += 0.1;
-    addDungeonLog(`The monsters in the dungeon became stronger and the loot quality improved. (Curse Lv.${curseLvl} > Curse Lv.${curseLvl + 1})`);
+    addDungeonLog(`Lũ quái vật trong hầm ngục trở nên mạnh hơn và chất lượng vật phẩm rơi ra cũng được cải thiện. (Nguyền Lv.${curseLvl} > Nguyền Lv.${curseLvl + 1})`);
     saveData();
 }
 
@@ -432,7 +432,7 @@ const cursedTotem = (curseLvl) => {
 const ignoreEvent = () => {
     sfxConfirm.play();
     dungeon.status.event = false;
-    addDungeonLog("You ignored it and decided to move on.");
+    addDungeonLog("Bạn bỏ qua nó và quyết định bước tiếp.");
 }
 
 // Increase room or floor accordingly
