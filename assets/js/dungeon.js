@@ -182,7 +182,7 @@ const dungeonEvent = () => {
                 choices = `
                     <div class="decision-panel">
                         <button id="choice1">Giao Tranh</button>
-                        <button id="choice2">Khóa Khỏi</button>
+                        <button id="choice2">Thoát Khỏi</button>
                     </div>`;
                 generateRandomEnemy();
                 addDungeonLog(`Bạn đã gặp phải ${enemy.name}.`, choices);
