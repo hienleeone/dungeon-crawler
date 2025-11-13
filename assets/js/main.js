@@ -580,7 +580,7 @@ const allocationPopup = () => {
                 <p id="allocate-close"><i class="fa fa-xmark"></i></p>
             </div>
             <div class="row">
-                <p><i class="fas fa-heart"></i><span id="hpDisplay">Máu Tối Đa: ${stats.hp}</span></p>
+                <p><i class="fas fa-heart"></i><span id="hpDisplay">HP: ${stats.hp}</span></p>
                 <div class="row">
                     <button id="hpMin">-</button>
                     <span id="hpAllo">${allocation.hp}</span>
@@ -588,7 +588,7 @@ const allocationPopup = () => {
                 </div>
             </div>
             <div class="row">
-                <p><i class="ra ra-sword"></i><span id="atkDisplay">Sát Thương: ${stats.atk}</span></p>
+                <p><i class="ra ra-sword"></i><span id="atkDisplay">ATK: ${stats.atk}</span></p>
                 <div class="row">
                     <button id="atkMin">-</button>
                     <span id="atkAllo">${allocation.atk}</span>
@@ -596,7 +596,7 @@ const allocationPopup = () => {
                 </div>
             </div>
             <div class="row">
-                <p><i class="ra ra-round-shield"></i><span id="defDisplay">Bảo Vệ: ${stats.def}</span></p>
+                <p><i class="ra ra-round-shield"></i><span id="defDisplay">DEF: ${stats.def}</span></p>
                 <div class="row">
                     <button id="defMin">-</button>
                     <span id="defAllo">${allocation.def}</span>
@@ -604,7 +604,7 @@ const allocationPopup = () => {
                 </div>
             </div>
             <div class="row">
-                <p><i class="ra ra-plain-dagger"></i><span id="atkSpdDisplay">Tốc Đánh: ${stats.atkSpd}</span></p>
+                <p><i class="ra ra-plain-dagger"></i><span id="atkSpdDisplay">ATK.SPD: ${stats.atkSpd}</span></p>
                 <div class="row">
                     <button id="atkSpdMin">-</button>
                     <span id="atkSpdAllo">${allocation.atkSpd}</span>
@@ -785,10 +785,10 @@ const allocationPopup = () => {
         updateStats();
 
         // Display Reset
-        document.querySelector(`#hpDisplay`).innerHTML = `Máu Tối Đa: ${stats.hp}`;
-        document.querySelector(`#atkDisplay`).innerHTML = `Sát Thương: ${stats.atk}`;
-        document.querySelector(`#defDisplay`).innerHTML = `Bảo Vệ: ${stats.def}`;
-        document.querySelector(`#atkSpdDisplay`).innerHTML = `Tốc Đánh: ${stats.atkSpd}`;
+        document.querySelector(`#hpDisplay`).innerHTML = `HP: ${stats.hp}`;
+        document.querySelector(`#atkDisplay`).innerHTML = `ATK: ${stats.atk}`;
+        document.querySelector(`#defDisplay`).innerHTML = `DEF: ${stats.def}`;
+        document.querySelector(`#atkSpdDisplay`).innerHTML = `ATK.SPD: ${stats.atkSpd}`;
         document.querySelector(`#hpAllo`).innerHTML = allocation.hp;
         document.querySelector(`#atkAllo`).innerHTML = allocation.atk;
         document.querySelector(`#defAllo`).innerHTML = allocation.def;
