@@ -182,7 +182,7 @@ const continueExploring = () => {
 // Shows the level up popup
 const lvlupPopup = () => {
     sfxLvlUp.play();
-    addCombatLog(`You leveled up! (Lv.${player.lvl - player.exp.lvlGained} > Lv.${player.lvl})`);
+    addCombatLog(`Bạn đã lên cấp! (Lv.${player.lvl - player.exp.lvlGained} > Lv.${player.lvl})`);
 
     // Recover 20% extra hp on level up
     player.stats.hp += Math.round((player.stats.hpMax * 20) / 100);
@@ -247,7 +247,7 @@ const generateLvlStats = (rerolls, percentages) => {
             button.appendChild(h3);
 
             let p = document.createElement("p");
-            p.innerHTML = `Increase bonus ${selectedStats[i].replace(/([A-Z])/g, ".$1").replace(/crit/g, "c").toUpperCase()} by ${percentages[selectedStats[i]]}%.`;
+            p.innerHTML = `Tăng thêm ${selectedStats[i].replace(/([A-Z])/g, ".$1").replace(/crit/g, "c").toUpperCase()} by ${percentages[selectedStats[i]]}%.`;
             button.appendChild(p);
 
             // Increase the selected stat for player

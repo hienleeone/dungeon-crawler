@@ -32,7 +32,7 @@ const hpValidation = () => {
         enemyDead = true;
         player.kills++;
         dungeon.statistics.kills++;
-        addCombatLog(`${enemy.name} died! (${new Date(combatSeconds * 1000).toISOString().substring(14, 19)})`);
+        addCombatLog(`${enemy.name} chết! (${new Date(combatSeconds * 1000).toISOString().substring(14, 19)})`);
         addCombatLog(`Bạn đã kiếm được ${nFormatter(enemy.rewards.exp)} exp.`)
         playerExpGain();
         addCombatLog(`${enemy.name} rơi <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(enemy.rewards.gold)} vàng.`)
@@ -200,7 +200,7 @@ const enemyAttack = () => {
         enemy.stats.hp -= Math.round((15 * damage) / 100);
     }
     enemy.stats.hp += lifesteal;
-    addCombatLog(`${enemy.name} dealt ` + nFormatter(damage) + ` ${dmgtype} to ${player.name}.`);
+    addCombatLog(`${enemy.name} gây ${nFormatter(damage)} ${dmgtype} lên ${player.name}.`);
     hpValidation();
     playerLoadStats();
     enemyLoadStats();
