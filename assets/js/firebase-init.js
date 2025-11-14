@@ -1,4 +1,4 @@
-// Firebase initialization for saving/loading player data.
+// Firebase init + auth helpers (copy nguyên file này)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import {
   getAuth,
@@ -6,7 +6,8 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  signOut as fbSignOut
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import {
   getFirestore,
@@ -33,7 +34,7 @@ window.firebaseDoc = fbDoc;
 window.firebaseSetDoc = fbSetDoc;
 window.firebaseGetDoc = fbGetDoc;
 
-// ====================== LOGIN ======================
+// --- Login function (call from UI) ---
 window.logInWithEmail = async function(email, password) {
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
@@ -43,16 +44,19 @@ window.logInWithEmail = async function(email, password) {
   }
 };
 
-// ====================== REGISTER ======================
+// --- Register function (call from UI) ---
+// displayName: tên hiển thị trong game
 window.registerWithEmail = async function(email, password, displayName, username) {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const user = cred.user;
 
-    await updateProfile(user, { displayName });
+    // set displayName on auth user
+    try { await updateProfile(user, { displayName: displayName }); } catch(e){ console.warn('updateProfile', e); }
 
     const uid = user.uid;
 
+    // create player doc (empty)
     await fbSetDoc(fbDoc(db, "players", uid), {
       player: null,
       dungeon: null,
@@ -61,10 +65,11 @@ window.registerWithEmail = async function(email, password, displayName, username
       updatedAt: Date.now()
     });
 
+    // create users doc (store display name + username if needed)
     await fbSetDoc(fbDoc(db, "users", uid), {
-      name: displayName,
-      email: email,
-      username: username,
+      name: displayName || null,
+      email: email || null,
+      username: username || null,
       createdAt: Date.now()
     });
 
@@ -74,31 +79,50 @@ window.registerWithEmail = async function(email, password, displayName, username
   }
 };
 
-// =================== ANONYMOUS SIGN IN ===================
+// --- Sign out helper (used by logout) ---
+window.signOutFirebase = async function() {
+  try {
+    await fbSignOut(auth);
+    window.currentUid = null;
+    localStorage.removeItem("playerData");
+    localStorage.removeItem("dungeonData");
+    localStorage.removeItem("enemyData");
+    localStorage.removeItem("volumeData");
+    return true;
+  } catch (e) {
+    throw e;
+  }
+};
+
+// --- Mirror Firestore -> localStorage when auth state changes (keeps app compatible) ---
+async function mirrorFirestoreToLocal(uid) {
+  try {
+    const snap = await fbGetDoc(fbDoc(db, "players", uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.player) localStorage.setItem("playerData", JSON.stringify(data.player));
+      if (data.dungeon) localStorage.setItem("dungeonData", JSON.stringify(data.dungeon));
+      if (data.enemy) localStorage.setItem("enemyData", JSON.stringify(data.enemy));
+      if (data.volume) localStorage.setItem("volumeData", JSON.stringify(data.volume));
+    }
+  } catch (e) {
+    console.warn("mirrorFirestoreToLocal error:", e);
+  }
+}
+
 signInAnonymously(auth)
   .then(() => {
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         window.currentUid = user.uid;
-
-        try {
-          const snap = await fbGetDoc(fbDoc(db, "players", user.uid));
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.player) localStorage.setItem("playerData", JSON.stringify(data.player));
-            if (data.dungeon) localStorage.setItem("dungeonData", JSON.stringify(data.dungeon));
-            if (data.enemy) localStorage.setItem("enemyData", JSON.stringify(data.enemy));
-            if (data.volume) localStorage.setItem("volumeData", JSON.stringify(data.volume));
-
-            if (!localStorage.getItem("__cloud_loaded")) {
-              localStorage.setItem("__cloud_loaded", "1");
-              window.location.reload();
-            }
-          }
-        } catch (e) {
-          console.warn("Error loading player:", e);
-        }
+        await mirrorFirestoreToLocal(user.uid);
+        if (window.onAuthStateChange) try{ window.onAuthStateChange(user); }catch(e){}
+      } else {
+        window.currentUid = null;
+        if (window.onAuthStateChange) try{ window.onAuthStateChange(null); }catch(e){}
       }
     });
   })
-  .catch(err => console.warn("Anonymous sign-in failed:", err));
+  .catch((err) => {
+    console.warn("Anonymous sign-in failed:", err);
+  });

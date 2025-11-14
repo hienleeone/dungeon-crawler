@@ -76,7 +76,6 @@
       <div id="registerForm" style="display:none">
         <div class="authTitle">Đăng Ký</div>
         <div class="inputGroup"><label>Tên của bạn?</label><input id="reg_name" placeholder="Tên hiển thị..." /></div>
-        <div class="inputGroup"><label>Gmail của bạn?</label><input id="reg_username" placeholder="tên sử dụng..." /></div>
         <div class="inputGroup"><label>Địa chỉ gmail</label><input id="reg_email" type="email" placeholder="you@example.com" /></div>
         <div class="inputGroup"><label>Đặt mật khẩu</label><input id="reg_password" type="password" placeholder="Mật khẩu" /></div>
         <div class="inputGroup"><label>Xác nhận mật khẩu</label><input id="reg_confirm" type="password" placeholder="Nhập lại mật khẩu" /></div>
@@ -112,43 +111,39 @@
   toLogin.addEventListener('click', showLogin);
 
   // handle register
-  regSubmit.addEventListener('click', async ()=>{
+  regSubmit.addEventListener('click', async () => {
     const name = document.getElementById('reg_name').value.trim();
-    const username = document.getElementById('reg_username').value.trim();
     const email = document.getElementById('reg_email').value.trim();
     const pass = document.getElementById('reg_password').value;
     const conf = document.getElementById('reg_confirm').value;
-    regNote.textContent='';
+    const regNote = document.getElementById('regNote');
+    regNote.textContent = '';
 
-    if(!name||!username||!email||!pass||!conf){ regNote.textContent='Vui lòng điền đủ thông tin.'; return; }
-    if(pass !== conf){ regNote.textContent='Mật khẩu không khớp.'; return; }
+    if (!name || !email || !pass || !conf) { regNote.textContent = 'Vui lòng điền đủ thông tin.'; return; }
+    if (pass !== conf) { regNote.textContent = 'Mật khẩu không khớp.'; return; }
 
-    try{
-      // call firebase registration helper exposed on window
-      await window.registerWithEmail(email, pass, name, username);
-      // after register, set displayName etc in users collection (optional)
-      // show success then switch to login
+    try {
+      await window.registerWithEmail(email, pass, name, null);
       regNote.innerHTML = '<div class="successToast">Bạn đã đăng ký tài khoản thành công!</div>';
-      setTimeout(()=>{ showLogin(); }, 1300);
-    }catch(e){
+      setTimeout(()=>{ /* chuyển về login */ showLogin(); }, 1200);
+    } catch (e) {
       regNote.innerHTML = '<div class="errorToast">Lỗi: '+(e.message||e)+'</div>';
     }
   });
 
   // handle login
-  loginSubmit.addEventListener('click', async ()=>{
-    const name = loginName.value.trim();
-    const pass = loginPass.value;
-    loginNote.textContent='';
-    if(!name||!pass){ loginNote.textContent='Vui lòng nhập email và mật khẩu.'; return; }
+  loginSubmit.addEventListener('click', async ()=> {
+    const email = document.getElementById('login_name').value.trim();
+    const pass = document.getElementById('login_password').value;
+    const loginNote = document.getElementById('loginNote');
+    loginNote.textContent = '';
 
-    try{
-      // assume user enters email in Tên đăng nhập field (you can update UX to clarify)
-      await window.logInWithEmail(name, pass);
+    if(!email || !pass) { loginNote.textContent = 'Vui lòng nhập email và mật khẩu.'; return; }
+    try {
+      await window.logInWithEmail(email, pass);
       loginNote.innerHTML = '<div class="successToast">Bạn đã đăng nhập thành công!</div>';
-      // hide overlay after short delay
       setTimeout(()=>{ overlay.style.display='none'; }, 900);
-    }catch(e){
+    } catch (e) {
       loginNote.innerHTML = '<div class="errorToast">Lỗi: '+(e.message||e)+'</div>';
     }
   });
