@@ -113,8 +113,28 @@
                         <div id="playerEquipment"></div>
                     </div>
                 </div>
+                <button id="gacha-open-btn" class="modal-btn" style="background:#d4af37; color:#000; font-weight:700; margin-bottom:8px;">✨ Gacha</button>
                 <button id="menu-btn">Menu</button>
             </div>
+        </div>
+        <div class="modal-container" id="gachaModal" style="display:none;">
+          <div class="content">
+            <div class="content-head">
+              <h3>Gacha</h3>
+              <p onclick="closeGacha()"><i class="fa fa-xmark"></i></p>
+            </div>
+
+            <div style="padding:10px 12px;">
+              <p>Giá: <b id="gacha-cost-text">100</b> vàng / lần</p>
+
+              <button id="gacha-roll-btn" class="gachabtn">Quay 1 lần</button>
+              <button id="gacha-roll10-btn" class="gachabtn" style="margin-top:8px;">Quay 10 lần</button>
+
+              <div id="gacha-result" style="margin-top:12px; font-size:14px; min-height:36px;"></div>
+            </div>
+
+            <button class="closebtn" onclick="closeGacha()">Đóng</button>
+          </div>
         </div>
         <div class="modal-container" id="equipmentInfo"></div>
         <div class="modal-container" id="combatPanel"></div>
@@ -135,6 +155,7 @@
     <script src="./assets/js/dungeon.js"></script>
     <script src="./assets/js/enemy.js"></script>
     <script src="./assets/js/main.js"></script>
+    <script src="./assets/js/gacha.js"></script>
 </body>
 
 </html>

@@ -824,3 +824,19 @@ header button i {
         -o-transform: scale(1.5);
     }
 }
+
+/* Gacha modal styles */
+#gachaModal .content { width: 300px; max-width: 90%; padding: 12px; background: rgba(0,0,0,0.92); border: 2px solid #fff; border-radius: 6px; }
+.gachabtn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  background: #d4af37;
+  border: none;
+  color: #000;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.gachabtn:active { transform: scale(0.995); }
+.modal-btn { width:100%; padding:8px 10px; border-radius:6px; border:none; cursor:pointer; }
