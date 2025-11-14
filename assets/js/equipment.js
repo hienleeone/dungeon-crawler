@@ -466,46 +466,44 @@ const unequipAll = () => {
 }
 
 const sellAll = (rarity) => {
-    if (rarity == "Tất Cả") {
-        if (player.inventory.equipment.length !== 0) {
-            sfxSell.play();
-            for (let i = 0; i < player.inventory.equipment.length; i++) {
-                const equipment = JSON.parse(player.inventory.equipment[i]);
-                player.gold += equipment.value;
-                player.inventory.equipment.splice(i, 1);
-                i--;
-            }
-            playerLoadStats();
-            saveData();
-        } else {
-            sfxDeny.play();
-        }
+    let items = player.inventory.equipment;
+    let goldEarned = 0;
+
+    const getValue = (eq) => {
+        const val = parseInt(eq.value);
+        return isNaN(val) ? 1 : Math.max(1, val);
+    };
+
+    if (rarity === "Tất Cả") {
+
+        items.forEach(item => {
+            const eq = JSON.parse(item);
+            goldEarned += getValue(eq);
+        });
+
+        player.inventory.equipment = [];
+
     } else {
-        let rarityCheck = false;
-        for (let i = 0; i < player.inventory.equipment.length; i++) {
-            const equipment = JSON.parse(player.inventory.equipment[i]);
-            if (equipment.rarity === rarity) {
-                rarityCheck = true;
-                break;
+
+        let newItems = [];
+        items.forEach(item => {
+            const eq = JSON.parse(item);
+
+            if (eq.rarity === rarity) {
+                goldEarned += getValue(eq);
+            } else {
+                newItems.push(item);
             }
-        }
-        if (rarityCheck) {
-            sfxSell.play();
-            for (let i = 0; i < player.inventory.equipment.length; i++) {
-                const equipment = JSON.parse(player.inventory.equipment[i]);
-                if (equipment.rarity === rarity) {
-                    player.gold += equipment.value;
-                    player.inventory.equipment.splice(i, 1);
-                    i--;
-                }
-            }
-            playerLoadStats();
-            saveData();
-        } else {
-            sfxDeny.play();
-        }
+        });
+
+        player.inventory.equipment = newItems;
     }
-}
+
+    player.gold += goldEarned;
+
+    playerLoadStats();
+    saveData();
+};
 
 const createEquipmentPrint = (condition) => {
     let rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
