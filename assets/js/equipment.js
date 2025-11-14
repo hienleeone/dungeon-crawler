@@ -466,36 +466,46 @@ const unequipAll = () => {
 }
 
 const sellAll = (rarity) => {
-    let items = player.inventory.equipment;
-    let goldEarned = 0;
-
-    if (rarity === "Tất Cả") {
-        items.forEach(item => {
-            const eq = JSON.parse(item);
-            goldEarned += Math.max(1, eq.value);
-        });
-
-        player.inventory.equipment = [];  // clear all
-    } else {
-        let newItems = [];
-        items.forEach(item => {
-            const eq = JSON.parse(item);
-
-            if (eq.rarity === rarity) {
-                goldEarned += Math.max(1, eq.value);
-            } else {
-                newItems.push(item);
+    if (rarity == "Tất Cả") {
+        if (player.inventory.equipment.length !== 0) {
+            sfxSell.play();
+            for (let i = 0; i < player.inventory.equipment.length; i++) {
+                const equipment = JSON.parse(player.inventory.equipment[i]);
+                player.gold += equipment.value;
+                player.inventory.equipment.splice(i, 1);
+                i--;
             }
-        });
-
-        player.inventory.equipment = newItems;
+            playerLoadStats();
+            saveData();
+        } else {
+            sfxDeny.play();
+        }
+    } else {
+        let rarityCheck = false;
+        for (let i = 0; i < player.inventory.equipment.length; i++) {
+            const equipment = JSON.parse(player.inventory.equipment[i]);
+            if (equipment.rarity === rarity) {
+                rarityCheck = true;
+                break;
+            }
+        }
+        if (rarityCheck) {
+            sfxSell.play();
+            for (let i = 0; i < player.inventory.equipment.length; i++) {
+                const equipment = JSON.parse(player.inventory.equipment[i]);
+                if (equipment.rarity === rarity) {
+                    player.gold += equipment.value;
+                    player.inventory.equipment.splice(i, 1);
+                    i--;
+                }
+            }
+            playerLoadStats();
+            saveData();
+        } else {
+            sfxDeny.play();
+        }
     }
-
-    player.gold += goldEarned;
-
-    playerLoadStats();
-    saveData();
-};
+}
 
 const createEquipmentPrint = (condition) => {
     let rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
