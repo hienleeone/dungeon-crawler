@@ -126,7 +126,7 @@ const openInventory = () => {
         } else {
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Xóa <span class="${rarity}">${rarity}</span> vật phẩm?</p>
+                <p>Xóa <span class="${rarity}">${rarity}</span> vật phẩm và toàn bộ vàng của bạn?</p>
                 <div class="button-container">
                     <button id="sell-confirm">Đồng Ý</button>
                     <button id="sell-cancel">Hủy Bỏ</button>
