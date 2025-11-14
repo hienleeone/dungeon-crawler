@@ -493,6 +493,7 @@ button:focus {
 
 /* Title Screen */
 #title-screen {
+    display: none;
     justify-content: space-around;
     align-items: center;
     text-align: center;
