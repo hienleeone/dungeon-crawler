@@ -116,24 +116,34 @@
                 <button id="menu-btn">Menu</button>
             </div>
         </div>
+        <button class="gachabtn" id="openGacha" style="
+            position: absolute;
+            right: 15px;
+            bottom: 15px;
+            z-index: 2000;
+        ">🎰 Gacha</button>
+
+        <!-- ===== GACHA MODAL ===== -->
         <div class="modal-container" id="gachaModal" style="display:none;">
-          <div class="content">
-            <div class="content-head">
-              <h3>Gacha</h3>
-              <p onclick="closeGacha()"><i class="fa fa-xmark"></i></p>
+            <div class="content gacha-content">
+                <div class="content-head">
+                    <h3>Gacha</h3>
+                    <p class="gacha-close"><i class="fa fa-xmark"></i></p>
+                </div>
+
+                <div class="gacha-body">
+                    <p>Giá: <b id="gacha-cost-text">100</b> vàng / lần</p>
+
+                    <button id="gacha-roll-btn" class="gachabtn">Quay 1 lần</button>
+                    <button id="gacha-roll10-btn" class="gachabtn" style="margin-top:8px;">
+                        Quay 10 lần
+                    </button>
+
+                    <div id="gacha-result" class="gacha-result-area"></div>
+                </div>
+
+                <button class="closebtn gacha-close-btn">Đóng</button>
             </div>
-
-            <div style="padding:10px 12px;">
-              <p>Giá: <b id="gacha-cost-text">100</b> vàng / lần</p>
-
-              <button id="gacha-roll-btn" class="gachabtn">Quay 1 lần</button>
-              <button id="gacha-roll10-btn" class="gachabtn" style="margin-top:8px;">Quay 10 lần</button>
-
-              <div id="gacha-result" style="margin-top:12px; font-size:14px; min-height:36px;"></div>
-            </div>
-
-            <button class="closebtn" onclick="closeGacha()">Đóng</button>
-          </div>
         </div>
         <div class="modal-container" id="equipmentInfo"></div>
         <div class="modal-container" id="combatPanel"></div>

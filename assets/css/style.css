@@ -883,3 +883,42 @@ header button i {
     border-radius: 8px;
     margin: 4px;
 }
+
+/* Gacha Button */
+#gachaModal .content {
+    animation: gachaPop 0.3s ease-out;
+}
+
+.gachabtn {
+    background: #ffcc00;
+    border: none;
+    padding: 10px 14px;
+    font-size: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.gacha-body {
+    padding: 10px 12px;
+}
+
+.gacha-result-area {
+    margin-top: 12px;
+    font-size: 14px;
+    min-height: 36px;
+}
+
+/* hiệu ứng rung */
+@keyframes gachaShake {
+    0% { transform: rotate(-1deg) }
+    25% { transform: rotate(1deg) }
+    50% { transform: rotate(-1deg) }
+    75% { transform: rotate(1deg) }
+    100% { transform: rotate(0deg) }
+}
+
+/* hiệu ứng pop */
+@keyframes gachaPop {
+    0% { transform: scale(0.85); opacity: 0 }
+    100% { transform: scale(1); opacity: 1 }
+}
