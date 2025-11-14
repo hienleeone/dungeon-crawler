@@ -288,7 +288,7 @@ window.addEventListener("load", function () {
                 <input type="range" id="bgm-volume" min="0" max="100" value="${bgm}">
                 <label id="sfx-label" for="sfx-volume">Hiệu Ứng (${sfx}%)</label>
                 <input type="range" id="sfx-volume" min="0" max="100" value="${sfx}">
-                <button id="apply-volume">Đồng Ý</button>
+                <button id="apply-volume">Áp Dụng</button>
             </div>`;
             let masterVol = document.querySelector('#master-volume');
             let bgmVol = document.querySelector('#bgm-volume');
