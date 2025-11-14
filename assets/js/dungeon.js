@@ -202,10 +202,10 @@ const dungeonEvent = () => {
                     let cost = player.blessing * (500 * (player.blessing * 0.5)) + 750;
                     choices = `
                         <div class="decision-panel">
-                            <button id="choice1">Đề Nghị</button>
+                            <button id="choice1">Đồng Ý</button>
                             <button id="choice2">Bỏ Qua</button>
                         </div>`;
-                    addDungeonLog(`<span class="Legendary">Bạn phát hiện ra Tượng Ban Phước. Bạn có muốn dâng <i class="fas fa-coins" style="color: #FFD700;"></i><span class="Common">${nFormatter(cost)}</span> để nhận phước lành không? (Phước Lv.${player.blessing})</span>`, choices);
+                    addDungeonLog(`<span class="Legendary">Bạn phát hiện ra Tượng Ban Phước. Bạn có muốn dâng <i class="fas fa-coins" style="color: #FFD700;"></i><span class="Common">${nFormatter(cost)}</span> để nhận phước lành không? (Phước Lành Lv.${player.blessing})</span>`, choices);
                     document.querySelector("#choice1").onclick = function () {
                         if (player.gold < cost) {
                             sfxDeny.play();
@@ -232,7 +232,7 @@ const dungeonEvent = () => {
                     let cost = curseLvl * (10000 * (curseLvl * 0.5)) + 5000;
                     choices = `
                             <div class="decision-panel">
-                                <button id="choice1">Đề Nghị</button>
+                                <button id="choice1">Đồng Ý</button>
                                 <button id="choice2">Bỏ Qua</button>
                             </div>`;
                     addDungeonLog(`<span class="Heirloom">Bạn phát hiện ra Tượng Nguyền Rủa. Bạn có muốn dâng <i class="fas fa-coins" style="color: #FFD700;"></i><span class="Common">${nFormatter(cost)}</span> không? Việc này sẽ khiến quái vật trở nên mạnh hơn nhưng cũng giúp chất lượng vật phẩm rơi ra tốt hơn. (Nguyền Lv.${curseLvl})</span>`, choices);
@@ -414,7 +414,7 @@ const statBlessing = () => {
             player.bonusStats.critDmg += value;
             break;
     }
-    addDungeonLog(`Bạn nhận được ${value}% sức mạnh cộng thêm cho ${buff.replace(/([A-Z])/g, ".$1").replace(/crit/g, "c").toUpperCase()} nhờ phước lành. (Phước Lv.${player.blessing} > Phước Lv.${player.blessing + 1})`);
+    addDungeonLog(`Bạn nhận được ${value}% sức mạnh cộng thêm cho ${buff.replace(/([A-Z])/g, ".$1").replace(/crit/g, "c").toUpperCase()} nhờ phước lành. (Phước Lành Lv.${player.blessing} > Phước Lành Lv.${player.blessing + 1})`);
     blessingUp();
     playerLoadStats();
     saveData();
