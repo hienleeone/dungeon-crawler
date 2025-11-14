@@ -277,14 +277,14 @@ const showItemInfo = (item, icon, type, i) => {
                 <div class="button-container">
                     <button id="un-equip">${type}</button>
                     <button id="sell-equip"><i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(item.value)}</button>
-                    <button id="close-item-info">Close</button>
+                    <button id="close-item-info">Đóng</button>
                 </div>
             </div>`;
 
     // Equip/Unequip button for the item
     let unEquip = document.querySelector("#un-equip");
     unEquip.onclick = function () {
-        if (type == "Equip") {
+        if (type == "Sử Dụng") {
             // Remove the item from the inventory and add it to the equipment
             if (player.equipped.length >= 6) {
                 sfxDeny.play();
@@ -301,7 +301,7 @@ const showItemInfo = (item, icon, type, i) => {
                 saveData();
                 continueExploring();
             }
-        } else if (type == "Unequip") {
+        } else if (type == "Tháo Ra") {
             sfxUnequip.play();
 
             // Remove the item from the equipment and add it to the inventory
@@ -324,10 +324,10 @@ const showItemInfo = (item, icon, type, i) => {
         defaultModalElement.style.display = "flex";
         defaultModalElement.innerHTML = `
         <div class="content">
-            <p>Sell <span class="${item.rarity}">${icon}${item.rarity} ${item.category}</span>?</p>
+            <p>Xóa <span class="${item.rarity}">${icon}${item.rarity} ${item.category}</span>?</p>
             <div class="button-container">
-                <button id="sell-confirm">Sell</button>
-                <button id="sell-cancel">Cancel</button>
+                <button id="sell-confirm">Xóa Vật Phẩm</button>
+                <button id="sell-cancel">Hủy Bỏ</button>
             </div>
         </div>`;
 
@@ -337,10 +337,10 @@ const showItemInfo = (item, icon, type, i) => {
             sfxSell.play();
 
             // Sell the equipment
-            if (type == "Equip") {
+            if (type == "Sử Dụng") {
                 player.gold += item.value;
                 player.inventory.equipment.splice(i, 1);
-            } else if (type == "Unequip") {
+            } else if (type == "Tháo Ra") {
                 player.gold += item.value;
                 player.equipped.splice(i, 1);
             }
@@ -391,7 +391,7 @@ const showInventory = () => {
         itemDiv.className = "items";
         itemDiv.innerHTML = `<p class="${item.rarity}">${icon}${item.rarity} ${item.category}</p>`;
         itemDiv.addEventListener('click', function () {
-            let type = "Equip";
+            let type = "Sử Dụng";
             showItemInfo(item, icon, type, i);
         });
 
@@ -408,7 +408,7 @@ const showEquipment = () => {
 
     // Show a message if a player has no equipment
     if (player.equipped.length == 0) {
-        playerEquipmentList.innerHTML = "Nothing equipped.";
+        playerEquipmentList.innerHTML = "Không có gì được sử dụng.";
     }
 
     for (let i = 0; i < player.equipped.length; i++) {
@@ -420,7 +420,7 @@ const showEquipment = () => {
         equipDiv.className = "items";
         equipDiv.innerHTML = `<button class="${item.rarity}">${icon}</button>`;
         equipDiv.addEventListener('click', function () {
-            let type = "Unequip";
+            let type = "Tháo Ra";
             showItemInfo(item, icon, type, i);
         });
 
@@ -466,7 +466,7 @@ const unequipAll = () => {
 }
 
 const sellAll = (rarity) => {
-    if (rarity == "All") {
+    if (rarity == "Tất Cả") {
         if (player.inventory.equipment.length !== 0) {
             sfxSell.play();
             for (let i = 0; i < player.inventory.equipment.length; i++) {
@@ -513,7 +513,7 @@ const createEquipmentPrint = (condition) => {
     let panel = `
         <div class="primary-panel" style="padding: 0.5rem; margin-top: 0.5rem;">
                 <h4 class="${item.rarity}"><b>${item.icon}${item.rarity} ${item.category}</b></h4>
-                <h5 class="${item.rarity}"><b>Lv.${item.lvl} Tier ${item.tier}</b></h5>
+                <h5 class="${item.rarity}"><b>Lv.${item.lvl} loại ${item.tier}</b></h5>
                 <ul>
                 ${item.stats.map(stat => {
         if (Object.keys(stat)[0] === "critRate" || Object.keys(stat)[0] === "critDmg" || Object.keys(stat)[0] === "atkSpd" || Object.keys(stat)[0] === "vamp") {
@@ -527,9 +527,9 @@ const createEquipmentPrint = (condition) => {
         </div>`;
     if (condition == "combat") {
         addCombatLog(`
-        ${enemy.name} dropped <span class="${item.rarity}">${item.rarity} ${item.category}</span>.<br>${panel}`);
+        ${enemy.name} rơi <span class="${item.rarity}">${item.rarity} ${item.category}</span>.<br>${panel}`);
     } else if (condition == "dungeon") {
         addDungeonLog(`
-        You got <span class="${item.rarity}">${item.rarity} ${item.category}</span>.<br>${panel}`);
+        Bạn có <span class="${item.rarity}">${item.rarity} ${item.category}</span>.<br>${panel}`);
     }
 }
