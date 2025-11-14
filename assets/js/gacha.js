@@ -1,170 +1,186 @@
-// ============================
-// GACHA SYSTEM - FIXED VERSION
-// ============================
+(function(){
+  const GACHA_COST = 100;
 
-// Tỷ lệ rớt 6 cấp độ hiếm (theo file equipment.js)
-const rarityTable = [
-    { type: "common",      rate: 55 },
-    { type: "uncommon",    rate: 25 },
-    { type: "rare",        rate: 12 },
-    { type: "epic",        rate: 5 },
-    { type: "legendary",   rate: 2 },
-    { type: "mythic",      rate: 1 }
-];
+  const GACHA_RARITIES = [
+    { key: "Common", chance: 60 },
+    { key: "Uncommon", chance: 20 },
+    { key: "Rare", chance: 12 },
+    { key: "Epic", chance: 6 },
+    { key: "Legendary", chance: 1.8 },
+    { key: "Heirloom", chance: 0.2 }
+  ];
 
-const rarityColors = {
-    common:      "#9e9e9e",
-    uncommon:    "#4CAF50",
-    rare:        "#2196F3",
-    epic:        "#9C27B0",
-    legendary:   "#FF9800",
-    mythic:      "#E91E63"
-};
-
-// Lấy item theo rarity (từ equipment.js)
-function getRandomItemByRarity(rarity) {
-    const pool = allEquipments.filter(e => e.rarity === rarity);
-    return pool[Math.floor(Math.random() * pool.length)];
-}
-
-// Chọn 1 rarity theo tỷ lệ
-function rollRarity() {
-    const r = Math.random() * 100;
-    let sum = 0;
-    for (const entry of rarityTable) {
-        sum += entry.rate;
-        if (r <= sum) return entry.type;
+  function pickRarity() {
+    const total = GACHA_RARITIES.reduce((s,r)=>s+r.chance,0);
+    let r = Math.random() * total;
+    for (const p of GACHA_RARITIES) {
+      if (r < p.chance) return p.key;
+      r -= p.chance;
     }
-    return "common";
-}
+    return GACHA_RARITIES[0].key;
+  }
 
-// ============================
-// ANIMATION EFFECT
-// ============================
+  function createEquipmentForRarity(rarity) {
+    if (typeof createEquipment === 'function') {
+      for (let i=0;i<60;i++){
+        const it = createEquipment();
+        if (it && it.rarity && String(it.rarity).toLowerCase() === String(rarity).toLowerCase()) {
+          it.rarity = rarity;
+          return it;
+        }
+      }
+      const it = createEquipment();
+      it.rarity = rarity;
+      if (!it.name) it.name = `${rarity} ${it.type||it.category||'Item'}`;
+      return it;
+    }
+    return { name: `${rarity} Item`, rarity: rarity, tier: 1, value: 10 };
+  }
 
-// Reset animation class
-function resetAnimation(el) {
-    el.classList.remove("gacha-shake", "gacha-pop", "gacha-flash");
-    void el.offsetWidth; // force reflow
-}
+  function doGachaRoll(playerObj, cost = GACHA_COST) {
+    const p = playerObj || (typeof player !== 'undefined' ? player : null);
+    if (!p) return { ok:false, error:'Player object not found' };
+    if (typeof p.gold !== 'number') p.gold = 0;
+    if (p.gold < cost) return { ok:false, error:'Không đủ vàng' };
 
-function playGachaAnimation(resultBox, color) {
-    resetAnimation(resultBox);
-
-    // Rung nhẹ
-    resultBox.classList.add("gacha-shake");
-
-    setTimeout(() => {
-        // Flash sáng + bung vật phẩm
-        resultBox.classList.add("gacha-flash");
-
-        setTimeout(() => {
-            resultBox.classList.add("gacha-pop");
-            resultBox.style.borderColor = color;
-        }, 250);
-
-    }, 400);
-}
-
-// ============================
-// GACHA 1 LẦN
-// ============================
-window.doGacha = function () {
-    if (playerGold < 100) {
-        alert("Không đủ vàng!");
-        return;
+    p.gold -= cost;
+    const rarity = pickRarity();
+    let reward = null;
+    const giveEquip = ['Epic','Legendary','Heirloom'].includes(rarity) || Math.random() < 0.35;
+    if (giveEquip) {
+      const equip = createEquipmentForRarity(rarity);
+      if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
+      if (!Array.isArray(p.inventory.equipment)) p.inventory.equipment = [];
+      try { p.inventory.equipment.push(JSON.stringify(equip)); } catch(e){ p.inventory.equipment.push(equip); }
+      reward = { type:'equipment', rarity, data: equip };
+    } else {
+      if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
+      if (!Array.isArray(p.inventory.consumables)) p.inventory.consumables = [];
+      const consId = 'potion_small';
+      p.inventory.consumables.push(consId);
+      reward = { type:'consumable', rarity, data: { id: consId } };
     }
 
-    playerGold -= 100;
-    updateGoldUI();
+    try { if (typeof saveData === 'function') saveData(); } catch(e){}
+    try { if (typeof playerLoadStats === 'function') playerLoadStats(); } catch(e){}
 
-    const rarity = rollRarity();
-    const item = getRandomItemByRarity(rarity);
+    return { ok:true, reward };
+  }
 
-    const resultBox = document.getElementById("gacha-result-box");
-    const resultName = document.getElementById("gacha-result-name");
+  function doGachaBulk(count = 10, costPer = GACHA_COST, playerObj) {
+    const p = playerObj || (typeof player !== 'undefined' ? player : null);
+    if (!p) return { ok:false, error:'Player object not found' };
+    const total = count * costPer;
+    if (p.gold < total) return { ok:false, error:'Không đủ vàng' };
+    const results = [];
+    for (let i=0;i<count;i++){
+      const r = doGachaRoll(p, costPer);
+      results.push(r);
+      if (!r.ok) break;
+    }
+    return { ok:true, results };
+  }
 
-    resultBox.innerHTML = "";  
-    resultName.textContent = item.name;
+  window.doGacha = function(arg1,arg2){
+    if (typeof arg1 === 'number') return doGachaRoll(typeof player !== 'undefined' ? player : null, arg1);
+    if (arg1 && typeof arg1 === 'object') return doGachaRoll(arg1, arg2);
+    return doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
+  };
+  window.doGachaBulk = doGachaBulk;
 
-    const color = rarityColors[rarity] || "#fff";
-    resultName.style.color = color;
-
-    // Create loot icon
-    const lootImg = document.createElement("img");
-    lootImg.src = item.icon;
-    lootImg.className = "gacha-item-img";
-    lootImg.style.borderColor = color;
-    resultBox.appendChild(lootImg);
-
-    // Animation
-    playGachaAnimation(resultBox, color);
-
-    return item;
-};
-
-// ============================
-// GACHA 10 LẦN
-// ============================
-window.doGachaBulk = function () {
-    if (playerGold < 1000) {
-        alert("Không đủ vàng!");
-        return;
+  function initUI(){
+    const openBtn = document.getElementById('open-gacha') || null;
+    let modal = document.getElementById('gachaModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'gachaModal';
+      modal.className = 'modal-container';
+      modal.style.display = 'none';
+      modal.innerHTML = `
+        <div class="content">
+          <div class="content-head">
+            <h3>Gacha</h3>
+            <p id="gacha-modal-x"><i class="fa fa-xmark"></i></p>
+          </div>
+          <div style="padding:10px;">
+            <p>Giá: <b id="gacha-cost-text">${GACHA_COST}</b> vàng / lần</p>
+            <button id="gacha-roll-btn" class="gachabtn">Quay 1 lần</button>
+            <button id="gacha-roll10-btn" class="gachabtn" style="margin-top:8px;">Quay 10 lần</button>
+            <div id="gacha-result" class="gacha-result-area"></div>
+          </div>
+          <button id="gacha-close" class="closebtn">Đóng</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
     }
 
-    playerGold -= 1000;
-    updateGoldUI();
+    const btnOpen = openBtn || document.getElementById('open-gacha') || null;
+    const closeX = modal.querySelector('#gacha-modal-x');
+    const closeBtn = modal.querySelector('#gacha-close');
+    const rollBtn = modal.querySelector('#gacha-roll-btn');
+    const roll10Btn = modal.querySelector('#gacha-roll10-btn');
+    const resultEl = modal.querySelector('#gacha-result');
 
-    const list = [];
-    const resultBox = document.getElementById("gacha-result-box");
-    resultBox.innerHTML = "";
-
-    for (let i = 0; i < 10; i++) {
-        const rarity = rollRarity();
-        const item = getRandomItemByRarity(rarity);
-        list.push(item);
-
-        const img = document.createElement("img");
-        img.src = item.icon;
-        img.className = "gacha-item-img-small";
-        img.style.borderColor = rarityColors[item.rarity];
-        resultBox.appendChild(img);
+    if (btnOpen) {
+      btnOpen.addEventListener('click', ()=> {
+        modal.style.display = 'flex';
+        if (resultEl) resultEl.innerHTML = '';
+        const content = modal.querySelector('.content');
+        if (content) { content.classList.add('gacha-shake'); setTimeout(()=> content.classList.remove('gacha-shake'),420); }
+      });
     }
 
-    // Animation
-    playGachaAnimation(resultBox, "#fff");
+    if (closeX) closeX.addEventListener('click', ()=> { modal.style.display='none'; if (resultEl) resultEl.innerHTML=''; });
+    if (closeBtn) closeBtn.addEventListener('click', ()=> { modal.style.display='none'; if (resultEl) resultEl.innerHTML=''; });
 
-    document.getElementById("gacha-result-name").textContent = "10 vật phẩm";
+    modal.addEventListener('click', (e)=> {
+      if (e.target === modal) { modal.style.display = 'none'; if (resultEl) resultEl.innerHTML=''; }
+    });
 
-    return list;
-};
+    if (rollBtn) rollBtn.addEventListener('click', ()=> {
+      const res = doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
+      if (!res.ok) { if (resultEl) resultEl.innerHTML = `<span style="color:red">${res.error}</span>`; return; }
+      const r = res.reward;
+      const name = r.data && (r.data.name || r.data.type || r.data.category || r.data.id) || 'Vật phẩm';
+      const contentEl = modal.querySelector('.content');
+      if (contentEl) {
+        contentEl.classList.add('gacha-shake');
+        setTimeout(()=> {
+          contentEl.classList.remove('gacha-shake');
+          contentEl.classList.add('gacha-flash');
+          setTimeout(()=> contentEl.classList.remove('gacha-flash'), 260);
+        }, 420);
+      }
+      if (resultEl) {
+        const row = document.createElement('div');
+        row.className = 'gacha-item-row r-' + r.rarity;
+        row.innerHTML = `<div style="font-weight:700">${r.rarity}</div><div>${name}</div>`;
+        resultEl.innerHTML = '';
+        resultEl.appendChild(row);
+        setTimeout(()=> row.classList.add('gacha-pop'), 260);
+      }
+    });
 
-// ============================
-// MODAL CONTROL (FIXED)
-// ============================
+    if (roll10Btn) roll10Btn.addEventListener('click', ()=> {
+      const bulk = doGachaBulk(10, GACHA_COST, typeof player !== 'undefined' ? player : null);
+      if (!bulk.ok) { if (resultEl) resultEl.innerHTML = `<span style="color:red">${bulk.error}</span>`; return; }
+      if (resultEl) {
+        resultEl.innerHTML = '';
+        bulk.results.forEach((it, idx) => {
+          const r = it.reward;
+          if (!r) return;
+          const name = r.data && (r.data.name || r.data.type || r.data.category || r.data.id) || 'Vật phẩm';
+          const row = document.createElement('div');
+          row.className = 'gacha-item-row r-' + r.rarity;
+          row.innerHTML = `<div style="font-weight:700">${idx+1}. ${r.rarity}</div><div>${name}</div>`;
+          resultEl.appendChild(row);
+          setTimeout(()=> row.classList.add('gacha-pop'), 180 + idx*60);
+        });
+      }
+    });
 
-document.addEventListener("DOMContentLoaded", () => {
-    const modal = document.getElementById("gacha-modal");
-    const btnClose = document.getElementById("gacha-btn-close");
-    const btnX = document.getElementById("gacha-btn-x");
-    const btnOpen = document.getElementById("btn-open-gacha");
+  }
 
-    // Mở modal
-    btnOpen.onclick = () => {
-        modal.style.display = "flex";
-    };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initUI); else initUI();
 
-    // Đóng modal
-    btnClose.onclick = () => {
-        modal.style.display = "none";
-    };
-
-    btnX.onclick = () => {
-        modal.style.display = "none";
-    };
-
-    // Click ra ngoài để đóng
-    modal.onclick = e => {
-        if (e.target === modal) modal.style.display = "none";
-    };
-});
+})();
