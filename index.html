@@ -144,7 +144,7 @@
 
     try{
       // assume user enters email in Tên đăng nhập field (you can update UX to clarify)
-      await window.signInWithEmail(name, pass);
+      await window.logInWithEmail(name, pass);
       loginNote.innerHTML = '<div class="successToast">Bạn đã đăng nhập thành công!</div>';
       // hide overlay after short delay
       setTimeout(()=>{ overlay.style.display='none'; }, 900);
