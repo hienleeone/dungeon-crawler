@@ -1,12 +1,83 @@
-window.addEventListener("load", function () {
-    if (player === null) {
-        runLoad("character-creation", "flex");
-    } else {
-        let target = document.querySelector("#title-screen");
-        target.style.display = "flex";
+window.addEventListener("load", async function () {
+
+    // 1) Chưa đăng nhập Firebase → bật modal login (file auth.js của bạn)
+    if (!window.currentUid || !auth.currentUser) {
+        document.querySelector("#character-creation").style.display = "none";
+        document.querySelector("#title-screen").style.display = "none";
+        if (window.showAuthModal) window.showAuthModal();
+        return;
     }
 
-    // Title Screen Validation
+    // 2) Đã đăng nhập Firebase → check localStorage
+    let localPlayer = localStorage.getItem("playerData");
+
+    if (localPlayer) {
+        // Người chơi đã có nhân vật → vào title screen luôn
+        document.querySelector("#character-creation").style.display = "none";
+        document.querySelector("#title-screen").style.display = "flex";
+    } else {
+        // 3) Lần đầu login → tự tạo player từ Firebase displayName
+        const name = auth.currentUser.displayName || "Người chơi";
+
+        player = {
+            name: name,
+            lvl: 1,
+            stats: {
+                hp: 100,
+                hpMax: 100,
+                atk: 5,
+                def: 3,
+                pen: 0,
+                atkSpd: 1,
+                vamp: 0,
+                critRate: 0,
+                critDmg: 50,
+            },
+            baseStats: {
+                hp: 500,
+                atk: 100,
+                def: 50,
+                pen: 0,
+                atkSpd: 0.6,
+                vamp: 0,
+                critRate: 0,
+                critDmg: 50
+            },
+            equippedStats: {
+                hp: 0, atk: 0, def: 0, pen: 0,
+                atkSpd: 0, vamp: 0, critRate: 0, critDmg: 0,
+                hpPct: 0, atkPct: 0, defPct: 0, penPct: 0
+            },
+            bonusStats: {
+                hp: 0, atk: 0, def: 0, atkSpd: 0,
+                vamp: 0, critRate: 0, critDmg: 0
+            },
+            exp: {
+                expCurr: 0,
+                expMax: 100,
+                expCurrLvl: 0,
+                expMaxLvl: 100,
+                lvlGained: 0
+            },
+            inventory: { consumables: [], equipment: [] },
+            equipped: [],
+            gold: 0,
+            playtime: 0,
+            kills: 0,
+            deaths: 0,
+            inCombat: false
+        };
+
+        calculateStats();
+        player.stats.hp = player.stats.hpMax;
+
+        await saveData();
+
+        document.querySelector("#character-creation").style.display = "none";
+        document.querySelector("#title-screen").style.display = "flex";
+    }
+
+    // 4) Khi bấm vào màn hình title → vào dungeon / hoặc allocate stats nếu chưa allocate
     document.querySelector("#title-screen").addEventListener("click", function () {
         const player = JSON.parse(localStorage.getItem("playerData"));
         if (player.allocated) {
@@ -16,96 +87,13 @@ window.addEventListener("load", function () {
         }
     });
 
-    // Prevent double-click zooming on mobile devices
+    // 5) Tắt double tap zoom mobile
     document.ondblclick = function (e) {
         e.preventDefault();
-    }
+    };
 
-    // Submit Name
-    document.querySelector("#name-submit").addEventListener("submit", function (e) {
-        e.preventDefault();
-        let playerName = document.querySelector("#name-input").value;
+});
 
-        var format = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
-        if (format.test(playerName)) {
-            document.querySelector("#alert").innerHTML = "Tên của bạn không được chứa ký tự đặc biệt!";
-        } else {
-            if (playerName.length < 3 || playerName.length > 15) {
-                document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
-            } else {
-                player = {
-                    name: playerName,
-                    lvl: 1,
-                    stats: {
-                        hp: null,
-                        hpMax: null,
-                        atk: null,
-                        def: null,
-                        pen: null,
-                        atkSpd: null,
-                        vamp: null,
-                        critRate: null,
-                        critDmg: null
-                    },
-                    baseStats: {
-                        hp: 500,
-                        atk: 100,
-                        def: 50,
-                        pen: 0,
-                        atkSpd: 0.6,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 50
-                    },
-                    equippedStats: {
-                        hp: 0,
-                        atk: 0,
-                        def: 0,
-                        pen: 0,
-                        atkSpd: 0,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 0,
-                        hpPct: 0,
-                        atkPct: 0,
-                        defPct: 0,
-                        penPct: 0,
-                    },
-                    bonusStats: {
-                        hp: 0,
-                        atk: 0,
-                        def: 0,
-                        atkSpd: 0,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 0
-                    },
-                    exp: {
-                        expCurr: 0,
-                        expMax: 100,
-                        expCurrLvl: 0,
-                        expMaxLvl: 100,
-                        lvlGained: 0
-                    },
-                    inventory: {
-                        consumables: [],
-                        equipment: []
-                    },
-                    equipped: [],
-                    gold: 0,
-                    playtime: 0,
-                    kills: 0,
-                    deaths: 0,
-                    inCombat: false
-                };
-                calculateStats();
-                player.stats.hp = player.stats.hpMax;
-                saveData();
-                document.querySelector("#character-creation").style.display = "none";
-                runLoad("title-screen", "flex");
-            }
-        }
-    });
 
     // Unequip all items
     document.querySelector("#unequip-all").addEventListener("click", function () {
