@@ -379,7 +379,7 @@ const showInventory = () => {
     playerInventoryList.innerHTML = "";
 
     if (player.inventory.equipment.length == 0) {
-        playerInventoryList.innerHTML = "There are no items available.";
+        playerInventoryList.innerHTML = "Không có vật phẩm nào.";
     }
 
     for (let i = 0; i < player.inventory.equipment.length; i++) {
