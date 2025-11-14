@@ -8,9 +8,9 @@
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-
         gtag('config', 'G-8HZ96T7NQD');
     </script>
+
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,8 +25,8 @@
 
 <body>
     <main>
-        <!-- ===== Rooms ===== -->
-        <!-- Title Screen -->
+
+        <!-- ===== Title Screen ===== -->
         <section id="title-screen" class="game-container">
             <div>
                 <i class="fa-solid fa-dungeon fa-5x"></i>
@@ -36,7 +36,7 @@
             <p>Nhấn để khám phá nhầm ngục!</p>
         </section>
 
-        <!-- Character Creation -->
+        <!-- ===== Character Creation ===== -->
         <section id="character-creation" class="game-container">
             <form id="name-submit">
                 <h1>Bạn tên gì?</h1>
@@ -46,14 +46,18 @@
             </form>
         </section>
 
-        <!-- Hub -->
+        <!-- ===== Hub / Dungeon Main ===== -->
         <section id="dungeon-main" class="game-container scrollable">
+
             <header>
                 <p id="player-name"></p>
                 <p id="player-exp"></p>
                 <p id="player-gold"></p>
-                <button onclick="openInventory()"><i class="fas fa-bars" style="font-size: 1.3rem;"></i></button>
+                <button onclick="openInventory()">
+                    <i class="fas fa-bars" style="font-size: 1.3rem;"></i>
+                </button>
             </header>
+
             <div class="stat-panel">
                 <div class="box">
                     <h4>Stats</h4>
@@ -67,30 +71,42 @@
                 </div>
                 <div class="box" id="bonus-stats"></div>
             </div>
+
             <div class="dungeon-head">
                 <p id="dungeonTime"></p>
                 <p id="floorCount"></p>
                 <p id="roomCount"></p>
                 <button id="dungeonActivity"></button>
             </div>
+
             <div class="logBox primary-panel">
                 <p id="dungeonAction"></p>
                 <div id="dungeonLog"></div>
             </div>
+
+            <!-- ===================== GACHA BUTTON (ĐÚNG VỊ TRÍ) ====================== -->
+            <button class="gachabtn" id="openGacha" style="
+                position: absolute;
+                right: 15px;
+                bottom: 15px;
+                z-index: 2000;
+            ">🎰 Gacha</button>
+
         </section>
 
-        <!-- ===== Utility ===== -->
+        <!-- ===== Loading ===== -->
         <div id="loading" class="game-container">
             <div class="loader"></div>
         </div>
 
-        <!-- ===== Modals ===== -->
+        <!-- ===== Inventory Modal ===== -->
         <div class="modal-container" id="inventory">
             <div class="content">
                 <div class="content-head">
                     <h3>Inventory</h3>
                     <p onclick="closeInventory()"><i class="fa fa-xmark"></i></p>
                 </div>
+
                 <div class="content-head">
                     <button id="sell-all">Sell</button>
                     <select id="sell-rarity">
@@ -103,7 +119,9 @@
                         <option class="Common" value="All">Tất Cả</option>
                     </select>
                 </div>
+
                 <div class="inventorySlots" id="playerInventory"></div>
+
                 <div class="stat-panel">
                     <div class="box">
                         <div class="box-head">
@@ -113,19 +131,25 @@
                         <div id="playerEquipment"></div>
                     </div>
                 </div>
+
                 <button id="menu-btn">Menu</button>
             </div>
         </div>
-        <button class="gachabtn" id="openGacha" style="
-            position: absolute;
-            right: 15px;
-            bottom: 15px;
-            z-index: 2000;
-        ">🎰 Gacha</button>
 
-        <!-- ===== GACHA MODAL ===== -->
+        <!-- ===== Other Modals ===== -->
+        <div class="modal-container" id="equipmentInfo"></div>
+        <div class="modal-container" id="combatPanel"></div>
+        <div class="modal-container" id="lvlupPanel">
+            <div class="content" id="lvlupSelect"></div>
+        </div>
+        <div class="modal-container" id="defaultModal"></div>
+        <div class="modal-container" id="menuModal"></div>
+        <div class="modal-container" id="confirmationModal"></div>
+
+        <!-- ======================= GACHA MODAL (ĐÚNG VỊ TRÍ) ======================= -->
         <div class="modal-container" id="gachaModal" style="display:none;">
             <div class="content gacha-content">
+
                 <div class="content-head">
                     <h3>Gacha</h3>
                     <p class="gacha-close"><i class="fa fa-xmark"></i></p>
@@ -145,16 +169,10 @@
                 <button class="closebtn gacha-close-btn">Đóng</button>
             </div>
         </div>
-        <div class="modal-container" id="equipmentInfo"></div>
-        <div class="modal-container" id="combatPanel"></div>
-        <div class="modal-container" id="lvlupPanel">
-            <div class="content" id="lvlupSelect"></div>
-        </div>
-        <div class="modal-container" id="defaultModal"></div>
-        <div class="modal-container" id="menuModal"></div>
-        <div class="modal-container" id="confirmationModal"></div>
+
     </main>
 
+    <!-- ===== Scripts ===== -->
     <script src="./assets/js/utility.js"></script>
     <script src="./assets/js/elements.js"></script>
     <script src="./assets/js/music.js"></script>
@@ -165,6 +183,7 @@
     <script src="./assets/js/enemy.js"></script>
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
+
 </body>
 
 </html>
