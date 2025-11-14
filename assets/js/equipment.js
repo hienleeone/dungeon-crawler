@@ -197,7 +197,7 @@ const createEquipment = () => {
             equipment.stats.push({ [statType]: statValue });
         }
     }
-    equipment.value = Math.round((equipmentValue * 3) / 2);
+    equipment.value = Math.round(equipmentValue * 3);
     player.inventory.equipment.push(JSON.stringify(equipment));
 
     saveData();
@@ -466,63 +466,46 @@ const unequipAll = () => {
 }
 
 const sellAll = (rarity) => {
-    player.gold = Number(player.gold) || 0;
-
-    const getValueFrom = (raw) => {
-        try {
-            const equipment = typeof raw === "string" ? JSON.parse(raw) : raw;
-            return Number(equipment && equipment.value) || 0;
-        } catch (e) {
-            return 0;
-        }
-    };
-
-    if (rarity === "Tất Cả") {
+    if (rarity == "Tất Cả") {
         if (player.inventory.equipment.length !== 0) {
             sfxSell.play();
-            for (let i = player.inventory.equipment.length - 1; i >= 0; i--) {
-                const val = getValueFrom(player.inventory.equipment[i]);
-                player.gold += val;
+            for (let i = 0; i < player.inventory.equipment.length; i++) {
+                const equipment = JSON.parse(player.inventory.equipment[i]);
+                player.gold += equipment.value;
                 player.inventory.equipment.splice(i, 1);
+                i--;
             }
             playerLoadStats();
             saveData();
         } else {
             sfxDeny.play();
         }
-        return;
-    }
-
-    let hasRarity = false;
-    for (let i = 0; i < player.inventory.equipment.length; i++) {
-        const equipment = JSON.parse(player.inventory.equipment[i]);
-        if (equipment.rarity === rarity) {
-            hasRarity = true;
-            break;
+    } else {
+        let rarityCheck = false;
+        for (let i = 0; i < player.inventory.equipment.length; i++) {
+            const equipment = JSON.parse(player.inventory.equipment[i]);
+            if (equipment.rarity === rarity) {
+                rarityCheck = true;
+                break;
+            }
+        }
+        if (rarityCheck) {
+            sfxSell.play();
+            for (let i = 0; i < player.inventory.equipment.length; i++) {
+                const equipment = JSON.parse(player.inventory.equipment[i]);
+                if (equipment.rarity === rarity) {
+                    player.gold += equipment.value;
+                    player.inventory.equipment.splice(i, 1);
+                    i--;
+                }
+            }
+            playerLoadStats();
+            saveData();
+        } else {
+            sfxDeny.play();
         }
     }
-    if (!hasRarity) {
-        sfxDeny.play();
-        return;
-    }
-
-    sfxSell.play();
-    for (let i = player.inventory.equipment.length - 1; i >= 0; i--) {
-        let equipment;
-        try {
-            equipment = JSON.parse(player.inventory.equipment[i]);
-        } catch (e) {
-            equipment = null;
-        }
-        if (equipment && equipment.rarity === rarity) {
-            const val = Number(equipment.value) || 0;
-            player.gold += val;
-            player.inventory.equipment.splice(i, 1);
-        }
-    }
-    playerLoadStats();
-    saveData();
-};
+}
 
 const createEquipmentPrint = (condition) => {
     let rx = /\.0+$|(\.[0-9]*[1-9])0+$/;

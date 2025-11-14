@@ -1,5 +1,4 @@
 let player = JSON.parse(localStorage.getItem("playerData"));
-if (player) { player.gold = Number(player.gold) || 0; }
 let inventoryOpen = false;
 let leveled = false;
 const lvlupSelect = document.querySelector("#lvlupSelect");
@@ -118,7 +117,7 @@ const openInventory = () => {
         if (rarity == "Tất Cả") {
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Bán tất cả vật phẩm?</p>
+                <p>Xóa bỏ tất cả vật phẩm và toàn bộ vàng của bạn?</p>
                 <div class="button-container">
                     <button id="sell-confirm">Đồng Ý</button>
                     <button id="sell-cancel">Hủy Bỏ</button>
@@ -127,7 +126,7 @@ const openInventory = () => {
         } else {
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Bán vật phẩm loại <span class="${rarity}">${rarity}</span></p>
+                <p>Xóa <span class="${rarity}">${rarity}</span> vật phẩm và toàn bộ vàng của bạn?</p>
                 <div class="button-container">
                     <button id="sell-confirm">Đồng Ý</button>
                     <button id="sell-cancel">Hủy Bỏ</button>
