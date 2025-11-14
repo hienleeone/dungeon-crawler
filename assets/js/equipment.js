@@ -475,8 +475,13 @@ const sellAll = (rarity) => {
                 player.inventory.equipment.splice(i, 1);
                 i--;
             }
+
             playerLoadStats();
             saveData();
+
+            // 🔥 THÊM DÒNG NÀY ĐỂ LOAD LẠI
+            location.reload();
+
         } else {
             sfxDeny.play();
         }
@@ -499,8 +504,13 @@ const sellAll = (rarity) => {
                     i--;
                 }
             }
+
             playerLoadStats();
             saveData();
+
+            // 🔥 THÊM DÒNG NÀY NỮA
+            location.reload();
+
         } else {
             sfxDeny.play();
         }
