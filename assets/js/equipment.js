@@ -324,9 +324,9 @@ const showItemInfo = (item, icon, type, i) => {
         defaultModalElement.style.display = "flex";
         defaultModalElement.innerHTML = `
         <div class="content">
-            <p>Xóa <span class="${item.rarity}">${icon}${item.rarity} ${item.category}</span>?</p>
+            <p>Bán <span class="${item.rarity}">${icon}${item.rarity} ${item.category}</span>?</p>
             <div class="button-container">
-                <button id="sell-confirm">Xóa Vật Phẩm</button>
+                <button id="sell-confirm">Đồng Ý</button>
                 <button id="sell-cancel">Hủy Bỏ</button>
             </div>
         </div>`;

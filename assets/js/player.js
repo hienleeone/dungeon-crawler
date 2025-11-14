@@ -117,7 +117,7 @@ const openInventory = () => {
         if (rarity == "Tất Cả") {
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Xóa bỏ tất cả?</p>
+                <p>Xóa bỏ tất cả vật phẩm và toàn bộ vàng của bạn?</p>
                 <div class="button-container">
                     <button id="sell-confirm">Đồng Ý</button>
                     <button id="sell-cancel">Hủy Bỏ</button>
