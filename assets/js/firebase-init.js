@@ -1,4 +1,5 @@
-// Firebase init + auth helpers (copy nguyên file này)
+// assets/js/firebase-init.js
+// Replace whole file with this. Make sure index.html loads this BEFORE main.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import {
   getAuth,
@@ -29,12 +30,52 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// expose to global scope so other scripts can use them
 window.db = db;
 window.firebaseDoc = fbDoc;
 window.firebaseSetDoc = fbSetDoc;
 window.firebaseGetDoc = fbGetDoc;
+window.auth = auth;
+window.currentUid = window.currentUid || null;
+window.currentUser = window.currentUser || null;
 
-// --- Login function (call from UI) ---
+// helper: sign in anonymously to have a UID for guests (optional)
+signInAnonymously(auth)
+  .catch((err) => {
+    // anonymous sign-in is optional; if fails, we still allow email login flows
+    console.warn("Anonymous sign-in failed (ok if you don't use it):", err);
+  });
+
+// Register with email + displayName + optional username
+window.registerWithEmail = async function(email, password, displayName, username) {
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const user = cred.user;
+    try { await updateProfile(user, { displayName: displayName }); } catch(e){ console.warn('updateProfile', e); }
+
+    const uid = user.uid;
+    // create empty player doc
+    await fbSetDoc(fbDoc(db, "players", uid), {
+      player: null,
+      dungeon: null,
+      enemy: null,
+      volume: null,
+      updatedAt: Date.now()
+    });
+    // create users doc
+    await fbSetDoc(fbDoc(db, "users", uid), {
+      name: displayName || null,
+      email: email || null,
+      username: username || null,
+      createdAt: Date.now()
+    });
+    return cred;
+  } catch (e) {
+    throw e;
+  }
+};
+
+// Login with email
 window.logInWithEmail = async function(email, password) {
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
@@ -44,57 +85,25 @@ window.logInWithEmail = async function(email, password) {
   }
 };
 
-// --- Register function (call from UI) ---
-// displayName: tên hiển thị trong game
-window.registerWithEmail = async function(email, password, displayName, username) {
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const user = cred.user;
-
-    // set displayName on auth user
-    try { await updateProfile(user, { displayName: displayName }); } catch(e){ console.warn('updateProfile', e); }
-
-    const uid = user.uid;
-
-    // create player doc (empty)
-    await fbSetDoc(fbDoc(db, "players", uid), {
-      player: null,
-      dungeon: null,
-      enemy: null,
-      volume: null,
-      updatedAt: Date.now()
-    });
-
-    // create users doc (store display name + username if needed)
-    await fbSetDoc(fbDoc(db, "users", uid), {
-      name: displayName || null,
-      email: email || null,
-      username: username || null,
-      createdAt: Date.now()
-    });
-
-    return cred;
-  } catch (e) {
-    throw e;
-  }
-};
-
-// --- Sign out helper (used by logout) ---
+// Sign out
 window.signOutFirebase = async function() {
   try {
     await fbSignOut(auth);
     window.currentUid = null;
-    localStorage.removeItem("playerData");
-    localStorage.removeItem("dungeonData");
-    localStorage.removeItem("enemyData");
-    localStorage.removeItem("volumeData");
+    window.currentUser = null;
+    // Optionally clear localStorage if you want
+    // localStorage.removeItem("playerData");
+    // localStorage.removeItem("dungeonData");
+    // localStorage.removeItem("enemyData");
+    // localStorage.removeItem("volumeData");
+    if (window.onAuthStateChange) window.onAuthStateChange(null);
     return true;
   } catch (e) {
     throw e;
   }
 };
 
-// --- Mirror Firestore -> localStorage when auth state changes (keeps app compatible) ---
+// Mirror Firestore -> localStorage helper
 async function mirrorFirestoreToLocal(uid) {
   try {
     const snap = await fbGetDoc(fbDoc(db, "players", uid));
@@ -110,19 +119,27 @@ async function mirrorFirestoreToLocal(uid) {
   }
 }
 
-signInAnonymously(auth)
-  .then(() => {
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        window.currentUid = user.uid;
-        await mirrorFirestoreToLocal(user.uid);
-        if (window.onAuthStateChange) try{ window.onAuthStateChange(user); }catch(e){}
-      } else {
-        window.currentUid = null;
-        if (window.onAuthStateChange) try{ window.onAuthStateChange(null); }catch(e){}
-      }
-    });
-  })
-  .catch((err) => {
-    console.warn("Anonymous sign-in failed:", err);
-  });
+// onAuth state change: keep global vars and call any subscriber
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    window.currentUid = user.uid;
+    window.currentUser = user;
+    try { await mirrorFirestoreToLocal(user.uid); } catch(e){/*ignore*/}
+
+    // expose a legacy hook if other code expects it
+    if (typeof window.onAuthStateChange === "function") {
+      try { window.onAuthStateChange(user); } catch(e){console.warn(e);}
+    }
+
+    // call startGameAfterLogin if defined (ensures we start after auth)
+    if (typeof window.startGameAfterLogin === "function") {
+      try { window.startGameAfterLogin(); } catch(e){ console.warn("startGameAfterLogin error", e); }
+    }
+  } else {
+    window.currentUid = null;
+    window.currentUser = null;
+    if (typeof window.onAuthStateChange === "function") {
+      try { window.onAuthStateChange(null); } catch(e){console.warn(e);}
+    }
+  }
+});

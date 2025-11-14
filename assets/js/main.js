@@ -1,98 +1,76 @@
-window.addEventListener("load", async function () {
-
-    // 1) Chưa đăng nhập Firebase → bật modal login (file auth.js của bạn)
-    if (!window.currentUid || !auth.currentUser) {
-        document.querySelector("#character-creation").style.display = "none";
-        document.querySelector("#title-screen").style.display = "none";
-        if (window.showAuthModal) window.showAuthModal();
-        return;
-    }
-
-    // 2) Đã đăng nhập Firebase → check localStorage
-    let localPlayer = localStorage.getItem("playerData");
-
-    if (localPlayer) {
-        // Người chơi đã có nhân vật → vào title screen luôn
-        document.querySelector("#character-creation").style.display = "none";
-        document.querySelector("#title-screen").style.display = "flex";
-    } else {
-        // 3) Lần đầu login → tự tạo player từ Firebase displayName
-        const name = auth.currentUser.displayName || "Người chơi";
-
-        player = {
-            name: name,
-            lvl: 1,
-            stats: {
-                hp: 100,
-                hpMax: 100,
-                atk: 5,
-                def: 3,
-                pen: 0,
-                atkSpd: 1,
-                vamp: 0,
-                critRate: 0,
-                critDmg: 50,
-            },
-            baseStats: {
-                hp: 500,
-                atk: 100,
-                def: 50,
-                pen: 0,
-                atkSpd: 0.6,
-                vamp: 0,
-                critRate: 0,
-                critDmg: 50
-            },
-            equippedStats: {
-                hp: 0, atk: 0, def: 0, pen: 0,
-                atkSpd: 0, vamp: 0, critRate: 0, critDmg: 0,
-                hpPct: 0, atkPct: 0, defPct: 0, penPct: 0
-            },
-            bonusStats: {
-                hp: 0, atk: 0, def: 0, atkSpd: 0,
-                vamp: 0, critRate: 0, critDmg: 0
-            },
-            exp: {
-                expCurr: 0,
-                expMax: 100,
-                expCurrLvl: 0,
-                expMaxLvl: 100,
-                lvlGained: 0
-            },
-            inventory: { consumables: [], equipment: [] },
-            equipped: [],
-            gold: 0,
-            playtime: 0,
-            kills: 0,
-            deaths: 0,
-            inCombat: false
-        };
-
-        calculateStats();
-        player.stats.hp = player.stats.hpMax;
-
-        await saveData();
-
-        document.querySelector("#character-creation").style.display = "none";
-        document.querySelector("#title-screen").style.display = "flex";
-    }
-
-    // 4) Khi bấm vào màn hình title → vào dungeon / hoặc allocate stats nếu chưa allocate
-    document.querySelector("#title-screen").addEventListener("click", function () {
-        const player = JSON.parse(localStorage.getItem("playerData"));
-        if (player.allocated) {
-            enterDungeon();
-        } else {
-            allocationPopup();
+// --- Replace previous window.addEventListener("load", ...) block with this ---
+window.startGameAfterLogin = async function () {
+    try {
+        // if not logged in, show auth modal (firebase-init will have set currentUid when logged)
+        if (!window.currentUid || !window.auth || !window.auth.currentUser) {
+            // hide character creation + title for now, show login
+            const charEl = document.querySelector("#character-creation");
+            const titleEl = document.querySelector("#title-screen");
+            if (charEl) charEl.style.display = "none";
+            if (titleEl) titleEl.style.display = "none";
+            if (window.showAuthModal) window.showAuthModal();
+            return;
         }
-    });
 
-    // 5) Tắt double tap zoom mobile
-    document.ondblclick = function (e) {
-        e.preventDefault();
-    };
+        // Ensure UI elements exist
+        const charEl = document.querySelector("#character-creation");
+        const titleEl = document.querySelector("#title-screen");
+        if (charEl) charEl.style.display = "none";
 
-});
+        // Load local player if present
+        let localPlayer = localStorage.getItem("playerData");
+
+        if (localPlayer) {
+            // already have player data -> show title
+            if (titleEl) titleEl.style.display = "flex";
+        } else {
+            // first login: create default player using displayName
+            const name = (window.auth.currentUser && window.auth.currentUser.displayName) ? window.auth.currentUser.displayName : "Người chơi";
+            player = {
+                name: name,
+                lvl: 1,
+                stats: { hp: 100, hpMax: 100, atk: 5, def: 3, pen: 0, atkSpd: 1, vamp: 0, critRate: 0, critDmg: 50 },
+                baseStats: { hp: 500, atk: 100, def: 50, pen: 0, atkSpd: 0.6, vamp: 0, critRate: 0, critDmg: 50 },
+                equippedStats: { hp: 0, atk: 0, def: 0, pen: 0, atkSpd: 0, vamp: 0, critRate: 0, critDmg: 0, hpPct: 0, atkPct: 0, defPct: 0, penPct: 0 },
+                bonusStats: { hp: 0, atk: 0, def: 0, atkSpd: 0, vamp: 0, critRate: 0, critDmg: 0 },
+                exp: { expCurr: 0, expMax: 100, expCurrLvl: 0, expMaxLvl: 100, lvlGained: 0 },
+                inventory: { consumables: [], equipment: [] },
+                equipped: [], gold: 0, playtime: 0, kills: 0, deaths: 0, inCombat: false
+            };
+
+            // calculate stats and save (saveData will write Firestore if available)
+            try { calculateStats(); player.stats.hp = player.stats.hpMax; await saveData(); }
+            catch (err) { console.warn("Auto-create player save failed", err); }
+
+            if (titleEl) titleEl.style.display = "flex";
+        }
+
+        // Title-screen click behavior (go to dungeon or allocate)
+        const titleElNow = document.querySelector("#title-screen");
+        if (titleElNow) {
+            // remove previous listener if any to avoid duplicates
+            titleElNow.replaceWith(titleElNow.cloneNode(true));
+            // re-select
+            const newTitle = document.querySelector("#title-screen");
+            newTitle.addEventListener("click", function () {
+                const p = JSON.parse(localStorage.getItem("playerData") || "{}");
+                if (p.allocated) enterDungeon();
+                else allocationPopup();
+            });
+        }
+
+        // prevent double-click zoom on mobile
+        document.ondblclick = function (e) { e.preventDefault(); };
+
+    } catch (err) {
+        console.error("startGameAfterLogin error:", err);
+    }
+};
+
+// If firebase already set currentUid before scripts reached here, call it once
+if (window.currentUid && typeof window.startGameAfterLogin === "function") {
+    try { window.startGameAfterLogin(); } catch(e){ console.warn(e); }
+}
 
 
     // Unequip all items
