@@ -1,5 +1,5 @@
 (function(){
-  const GACHA_COST = 100;
+  const GACHA_COST = 1000;
 
   const GACHA_RARITIES = [
     { key: "Common", chance: 60 },
@@ -115,8 +115,8 @@
     }
 
     const btnOpen = openBtn || document.getElementById('open-gacha') || null;
-    const closeX = modal.querySelector('#gacha-modal-x');
-    const closeBtn = modal.querySelector('#gacha-close');
+    const closeX = modal.querySelector('#gacha-modal-x') || modal.querySelector('.gacha-close') || null;
+    const closeBtn = modal.querySelector('#gacha-close') || modal.querySelector('.gacha-close-btn') || null;
     const rollBtn = modal.querySelector('#gacha-roll-btn');
     const roll10Btn = modal.querySelector('#gacha-roll10-btn');
     const resultEl = modal.querySelector('#gacha-result');
