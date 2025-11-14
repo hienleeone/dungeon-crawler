@@ -49,14 +49,12 @@ window.startGameAfterLogin = async function () {
         const titleElNow = document.querySelector("#title-screen");
         if (titleElNow) {
             // remove previous listener if any to avoid duplicates
-            titleElNow.replaceWith(titleElNow.cloneNode(true));
-            // re-select
             const newTitle = document.querySelector("#title-screen");
-            newTitle.addEventListener("click", function () {
+            newTitle.onclick = function () {
                 const p = JSON.parse(localStorage.getItem("playerData") || "{}");
                 if (p.allocated) enterDungeon();
                 else allocationPopup();
-            });
+            };
         }
 
         // prevent double-click zoom on mobile

@@ -2,18 +2,6 @@
 <html lang="en">
 
 <head>
-    <!-- Clear legacy localStorage keys so new cloud-first save is used -->
-    <script>
-        try {
-            localStorage.removeItem('playerData');
-            localStorage.removeItem('dungeonData');
-            localStorage.removeItem('enemyData');
-            localStorage.removeItem('volumeData');
-            // marker to prevent reload loop
-            // localStorage.removeItem('__cloud_loaded');
-        } catch(e) {console.warn('LS clear failed', e)}
-    </script>
-
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8HZ96T7NQD"></script>
     <script>
@@ -176,7 +164,7 @@
                 <h1>soulmc.vn</h1>
                 <h1>Dungeon Crawler</h1>
             </div>
-            <p>Nhấn để khám phá nhầm ngục!</p>
+            <p>Nhấn để khám phá hầm ngục!</p>
         </section>
 
         <!-- ===== Hub / Dungeon Main ===== -->
