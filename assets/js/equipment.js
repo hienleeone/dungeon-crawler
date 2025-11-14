@@ -471,17 +471,12 @@ const sellAll = (rarity) => {
             sfxSell.play();
             for (let i = 0; i < player.inventory.equipment.length; i++) {
                 const equipment = JSON.parse(player.inventory.equipment[i]);
-                player.gold += equipment.value;
+                player.gold += Math.max(1, equipment.value);
                 player.inventory.equipment.splice(i, 1);
                 i--;
             }
-
             playerLoadStats();
             saveData();
-
-            // 🔥 THÊM DÒNG NÀY ĐỂ LOAD LẠI
-            location.reload();
-
         } else {
             sfxDeny.play();
         }
@@ -499,18 +494,13 @@ const sellAll = (rarity) => {
             for (let i = 0; i < player.inventory.equipment.length; i++) {
                 const equipment = JSON.parse(player.inventory.equipment[i]);
                 if (equipment.rarity === rarity) {
-                    player.gold += equipment.value;
+                    player.gold += Math.max(1, equipment.value);
                     player.inventory.equipment.splice(i, 1);
                     i--;
                 }
             }
-
             playerLoadStats();
             saveData();
-
-            // 🔥 THÊM DÒNG NÀY NỮA
-            location.reload();
-
         } else {
             sfxDeny.play();
         }
