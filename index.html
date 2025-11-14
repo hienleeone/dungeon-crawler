@@ -3,6 +3,17 @@
 
 <head>
     <!-- Clear legacy localStorage keys so new cloud-first save is used -->
+    <script>
+        try {
+            localStorage.removeItem('playerData');
+            localStorage.removeItem('dungeonData');
+            localStorage.removeItem('enemyData');
+            localStorage.removeItem('volumeData');
+            // marker to prevent reload loop
+            // localStorage.removeItem('__cloud_loaded');
+        } catch(e) {console.warn('LS clear failed', e)}
+    </script>
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8HZ96T7NQD"></script>
     <script>
@@ -26,13 +37,141 @@
 </head>
 
 <body>
-<button id='logoutBtn' style='position:fixed;top:20px;right:20px;padding:10px 14px;background:#ef4444;color:#fff;border:none;border-radius:8px;cursor:pointer;z-index:9999;'>Logout</button>
-<div id='logoutPopup' style='display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:10000;'>
-<div style='background:#1a1a1a;padding:20px;border-radius:10px;width:300px;text-align:center;'>
-<p>Bạn có chắc muốn đăng xuất?</p>
-<button id='confirmLogout' style='padding:10px 14px;background:#ef4444;border:none;border-radius:6px;color:#fff;margin-right:10px;'>Đăng xuất</button>
-<button id='cancelLogout' style='padding:10px 14px;background:#4b5563;border:none;border-radius:6px;color:#fff;'>Hủy</button>
-</div></div>
+<!-- LOGIN / REGISTER MODAL -->
+<style>
+/* Neon modal styles */
+#authOverlay{position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.7));display:flex;align-items:center;justify-content:center;z-index:9999}
+.authCard{width:420px;padding:28px;border-radius:12px;background:linear-gradient(180deg, rgba(10,6,23,0.9), rgba(20,10,40,0.85));box-shadow:0 10px 40px rgba(0,0,0,0.7);border:1px solid rgba(120,80,255,0.14);backdrop-filter: blur(6px);}
+.authTitle{font-family: 'ArcadeClassic', sans-serif; text-align:center;color:#bfe7ff; font-size:24px; text-shadow:0 0 12px rgba(120,140,255,0.6); margin-bottom:10px}
+.inputGroup{margin:10px 0}
+.inputGroup label{display:block;color:#cbd5e1;margin-bottom:6px;font-size:14px}
+.inputGroup input{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:#fff;font-size:15px;outline:none;box-shadow:inset 0 0 12px rgba(120,80,255,0.04)}
+.row{display:flex;gap:10px}
+.btnPrimary{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(90deg,#8b5cf6,#7c3aed);color:#fff;font-weight:600;cursor:pointer;margin-top:10px;box-shadow:0 6px 18px rgba(124,58,237,0.28)}
+.btnSecondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#ddd;padding:10px;border-radius:8px;cursor:pointer}
+.switchLink{display:inline-block;margin-top:8px;color:#c4b5fd;cursor:pointer;text-decoration:underline;font-size:14px}
+.noteMsg{margin-top:10px;color:#cbd5e1;text-align:center;font-size:14px}
+.successToast{background:#052e16;color:#bbf7d0;padding:10px;border-radius:8px;margin-top:10px;text-align:center}
+.errorToast{background:#331111;color:#ffb4b4;padding:10px;border-radius:8px;margin-top:10px;text-align:center}
+</style>
+
+<div id="authOverlay" style="display:none">
+  <div class="authCard" role="dialog" aria-modal="true">
+    <div id="authBox">
+      <!-- login form -->
+      <div id="loginForm">
+        <div class="authTitle">Đăng Nhập</div>
+        <div class="inputGroup"><label>Gmail</label><input id="login_name" type="email" placeholder="you@example.com" /></div>
+        <div class="inputGroup"><label>Mật khẩu</label><input id="login_password" type="password" placeholder="Nhập mật khẩu..." /></div>
+        <div style="display:flex;gap:10px">
+          <button id="loginSubmit" class="btnPrimary">Đăng Nhập</button>
+          <button id="miniReg" class="btnSecondary" style="width:120px">Đăng ký</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div class="noteMsg" id="loginNote"></div>
+        </div>
+      </div>
+
+      <!-- register form -->
+      <div id="registerForm" style="display:none">
+        <div class="authTitle">Đăng Ký</div>
+        <div class="inputGroup"><label>Tên của bạn?</label><input id="reg_name" placeholder="Tên hiển thị..." /></div>
+        <div class="inputGroup"><label>Gmail của bạn?</label><input id="reg_username" placeholder="tên sử dụng..." /></div>
+        <div class="inputGroup"><label>Địa chỉ gmail</label><input id="reg_email" type="email" placeholder="you@example.com" /></div>
+        <div class="inputGroup"><label>Đặt mật khẩu</label><input id="reg_password" type="password" placeholder="Mật khẩu" /></div>
+        <div class="inputGroup"><label>Xác nhận mật khẩu</label><input id="reg_confirm" type="password" placeholder="Nhập lại mật khẩu" /></div>
+        <button id="regSubmit" class="btnPrimary">Đăng Ký</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div class="switchLink" id="toLogin">Quay lại đăng nhập</div>
+          <div class="noteMsg" id="regNote"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// auth UI controller
+(function(){
+  const overlay = document.getElementById('authOverlay');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const loginNote = document.getElementById('loginNote');
+  const regNote = document.getElementById('regNote');
+  const toLogin = document.getElementById('toLogin');
+  const loginSubmit = document.getElementById('loginSubmit');
+  const regSubmit = document.getElementById('regSubmit');
+  const miniReg = document.getElementById('miniReg');
+  const loginName = document.getElementById('login_name');
+  const loginPass = document.getElementById('login_password');
+
+  function showLogin(){ registerForm.style.display='none'; loginForm.style.display='block'; loginNote.textContent=''; regNote.textContent=''; }
+  function showRegister(){ loginForm.style.display='none'; registerForm.style.display='block'; loginNote.textContent=''; regNote.textContent=''; }
+
+  miniReg.addEventListener('click', showRegister);
+  toLogin.addEventListener('click', showLogin);
+
+  // handle register
+  regSubmit.addEventListener('click', async ()=>{
+    const name = document.getElementById('reg_name').value.trim();
+    const username = document.getElementById('reg_username').value.trim();
+    const email = document.getElementById('reg_email').value.trim();
+    const pass = document.getElementById('reg_password').value;
+    const conf = document.getElementById('reg_confirm').value;
+    regNote.textContent='';
+
+    if(!name||!username||!email||!pass||!conf){ regNote.textContent='Vui lòng điền đủ thông tin.'; return; }
+    if(pass !== conf){ regNote.textContent='Mật khẩu không khớp.'; return; }
+
+    try{
+      // call firebase registration helper exposed on window
+      await window.registerWithEmail(email, pass, name, username);
+      // after register, set displayName etc in users collection (optional)
+      // show success then switch to login
+      regNote.innerHTML = '<div class="successToast">Bạn đã đăng ký tài khoản thành công!</div>';
+      setTimeout(()=>{ showLogin(); }, 1300);
+    }catch(e){
+      regNote.innerHTML = '<div class="errorToast">Lỗi: '+(e.message||e)+'</div>';
+    }
+  });
+
+  // handle login
+  loginSubmit.addEventListener('click', async ()=>{
+    const name = loginName.value.trim();
+    const pass = loginPass.value;
+    loginNote.textContent='';
+    if(!name||!pass){ loginNote.textContent='Vui lòng nhập email và mật khẩu.'; return; }
+
+    try{
+      // assume user enters email in Tên đăng nhập field (you can update UX to clarify)
+      await window.signInWithEmail(name, pass);
+      loginNote.innerHTML = '<div class="successToast">Bạn đã đăng nhập thành công!</div>';
+      // hide overlay after short delay
+      setTimeout(()=>{ overlay.style.display='none'; }, 900);
+    }catch(e){
+      loginNote.innerHTML = '<div class="errorToast">Lỗi: '+(e.message||e)+'</div>';
+    }
+  });
+
+  // expose controls
+  window.showAuthModal = ()=>{ overlay.style.display='flex'; showLogin(); overlay.scrollTop=0; };
+  window.hideAuthModal = ()=>{ overlay.style.display='none'; };
+
+  // initially show modal if no currentUid set (firebase-init will set window.currentUid)
+  setTimeout(()=>{
+    if(!window.currentUid){ overlay.style.display='flex'; }
+  }, 400);
+
+  // react to auth state changes (firebase-init will call window.onAuthStateChange if set)
+  if(!window.onAuthStateChange){
+    window.onAuthStateChange = function(user){
+      if(user) { overlay.style.display='none'; } else { overlay.style.display='flex'; showLogin(); }
+    }
+  }
+})();
+</script>
+<div id='gameRoot'>
+
     <main>
 
         <!-- ===== Title Screen ===== -->
@@ -186,12 +325,48 @@
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
 
+
+</div>
+
 <script>
-const lb=document.getElementById('logoutBtn');
-const pop=document.getElementById('logoutPopup');
-lb.onclick=()=>pop.style.display='flex';
-confirmLogout.onclick=async()=>{await window.signOutFirebase();location.href='login.html';};
-cancelLogout.onclick=()=>pop.style.display='none';
-</script></body>
+(function(){
+  function updateVisibility(user){
+    const gameRoot = document.getElementById('gameRoot');
+    const overlay = document.getElementById('authOverlay');
+    if(!gameRoot) return;
+    if(user){ gameRoot.style.filter='none'; overlay.style.display='none'; } else { gameRoot.style.filter='blur(2px)'; overlay.style.display='flex'; }
+  }
+  if(window.onAuthStateChange){
+    const old = window.onAuthStateChange;
+    window.onAuthStateChange = function(user){ try{ updateVisibility(user);}catch(e){}; try{ old(user);}catch(e){} }
+  } else {
+    window.onAuthStateChange = updateVisibility;
+  }
+  setTimeout(()=>{ if(window.currentUid) updateVisibility(window.currentUid); else updateVisibility(null); }, 500);
+})();
+</script>
+
+<!-- DISPLAYNAME APPLIER -->
+<script>
+(function(){
+  function applyDisplayName(user){
+    if(!user) return;
+    const name = user.displayName || user.email || '';
+    const el = document.getElementById('playerName');
+    if(el) el.textContent = name;
+    const els = document.querySelectorAll('.player-name');
+    els.forEach(e=>e.textContent = name);
+  }
+  const old = window.onAuthStateChange;
+  window.onAuthStateChange = function(user){
+    try{ applyDisplayName(user);}catch(e){};
+    if(old) try{ old(user);}catch(e){}
+  };
+  setTimeout(()=>{ if(window.currentUid) { try{ if(window.firebaseGetDoc) {} }catch(e){} } }, 600);
+})();
+</script>
+
+</body>
+
 
 </html>
