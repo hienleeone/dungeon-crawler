@@ -1,4 +1,5 @@
 let player = JSON.parse(localStorage.getItem("playerData"));
+if (player) { player.gold = Number(player.gold) || 0; }
 let inventoryOpen = false;
 let leveled = false;
 const lvlupSelect = document.querySelector("#lvlupSelect");
