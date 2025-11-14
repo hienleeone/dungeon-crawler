@@ -415,17 +415,51 @@ const enterDungeon = () => {
     playerLoadStats();
 }
 
-// Save all the data into local storage
-const saveData = () => {
+
+// Save all the data into Firebase (Firestore) if available; otherwise localStorage
+const saveData = async () => {
     const playerData = JSON.stringify(player);
     const dungeonData = JSON.stringify(dungeon);
     const enemyData = JSON.stringify(enemy);
     const volumeData = JSON.stringify(volume);
+
+    // If Firestore is initialized and we have a uid, write to Firestore
+    try {
+        if (window.db && window.currentUid) {
+            // write to collection "players", document = uid
+            const docData = {
+                player: player,
+                dungeon: dungeon,
+                enemy: enemy,
+                volume: volume,
+                updatedAt: Date.now()
+            };
+            // use dynamic import of firestore functions if not present
+            if (typeof window.firebaseSetDoc !== 'undefined') {
+                await window.firebaseSetDoc(window.firebaseDoc(window.db, "players", window.currentUid), docData);
+            } else {
+                // fallback to direct set using modular SDK (if available on window)
+                await window.firebaseSetDoc(window.firebaseDoc(window.db, "players", window.currentUid), docData);
+            }
+            // Optionally mirror to localStorage (kept in case of offline)
+            localStorage.setItem("playerData", playerData);
+            localStorage.setItem("dungeonData", dungeonData);
+            localStorage.setItem("enemyData", enemyData);
+            localStorage.setItem("volumeData", volumeData);
+            console.log("Saved to Firestore for uid:", window.currentUid);
+            return;
+        }
+    } catch (e) {
+        console.warn("Firestore save failed, falling back to localStorage:", e);
+    }
+
+    // Default fallback: localStorage
     localStorage.setItem("playerData", playerData);
     localStorage.setItem("dungeonData", dungeonData);
     localStorage.setItem("enemyData", enemyData);
     localStorage.setItem("volumeData", volumeData);
 }
+
 
 // Calculate every player stat
 const calculateStats = () => {

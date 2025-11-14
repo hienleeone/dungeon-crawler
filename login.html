@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Đăng nhập / Đăng ký</title>
+<script type="module" src="assets/js/firebase-init.js"></script>
+<style>
+body{background:#0a0a0a;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.card{width:400px;background:#1a1a1a;padding:30px;border-radius:12px;box-shadow:0 0 20px rgba(0,0,0,0.6)}
+h1{text-align:center;margin-bottom:20px;font-size:28px}
+.logo{width:80px;display:block;margin:0 auto 10px auto}
+input{width:100%;padding:12px;margin:10px 0;border-radius:8px;border:none;background:#111;color:#fff;font-size:15px}
+button{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-size:16px;cursor:pointer}
+button.alt{background:#10b981}
+.note{text-align:center;font-size:14px;margin-top:10px;color:#bbb}
+</style>
+</head>
+<body>
+<div class="card">
+<img src="assets/logo.png" class="logo"/>
+<h1>DUNGEON LOGIN</h1>
+<input id="email" type="email" placeholder="Email"/>
+<input id="password" type="password" placeholder="Mật khẩu"/>
+<button id="loginBtn">Đăng nhập</button>
+<button class="alt" id="regBtn">Đăng ký</button>
+<div class="note" id="note"></div>
+</div>
+<script>
+const note=document.getElementById('note');
+document.getElementById('loginBtn').onclick=async()=>{
+ let e=email.value.trim(),p=password.value;
+ if(!e||!p){note.textContent='Hãy nhập email và mật khẩu';return;}
+ try{await window.signInWithEmail(e,p);note.textContent='Đăng nhập thành công...';}
+ catch(err){note.textContent='Lỗi: '+err.message;}
+};
+document.getElementById('regBtn').onclick=async()=>{
+ let e=email.value.trim(),p=password.value;
+ if(!e||!p){note.textContent='Hãy nhập email và mật khẩu';return;}
+ try{await window.registerWithEmail(e,p);note.textContent='Đăng ký thành công! Hãy đăng nhập.';}
+ catch(err){note.textContent='Lỗi: '+err.message;}
+};
+</script>
+</body>
+</html>

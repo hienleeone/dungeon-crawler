@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <!-- Clear legacy localStorage keys so new cloud-first save is used -->
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8HZ96T7NQD"></script>
     <script>
@@ -19,11 +20,19 @@
     <link rel="stylesheet" href="./assets/css/rpg-awesome.min.css">
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="icon" type="image/png" href="./assets/icon/favicon.ico">
-    <script src="./assets/js/howler.min.js"></script>
+    <script type="module" src="assets/js/firebase-init.js"></script>
+<script src="./assets/js/howler.min.js"></script>
     <title>SoulMC Network - Dungeon Crawler</title>
 </head>
 
 <body>
+<button id='logoutBtn' style='position:fixed;top:20px;right:20px;padding:10px 14px;background:#ef4444;color:#fff;border:none;border-radius:8px;cursor:pointer;z-index:9999;'>Logout</button>
+<div id='logoutPopup' style='display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:10000;'>
+<div style='background:#1a1a1a;padding:20px;border-radius:10px;width:300px;text-align:center;'>
+<p>Bạn có chắc muốn đăng xuất?</p>
+<button id='confirmLogout' style='padding:10px 14px;background:#ef4444;border:none;border-radius:6px;color:#fff;margin-right:10px;'>Đăng xuất</button>
+<button id='cancelLogout' style='padding:10px 14px;background:#4b5563;border:none;border-radius:6px;color:#fff;'>Hủy</button>
+</div></div>
     <main>
 
         <!-- ===== Title Screen ===== -->
@@ -177,6 +186,12 @@
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
 
-</body>
+<script>
+const lb=document.getElementById('logoutBtn');
+const pop=document.getElementById('logoutPopup');
+lb.onclick=()=>pop.style.display='flex';
+confirmLogout.onclick=async()=>{await window.signOutFirebase();location.href='login.html';};
+cancelLogout.onclick=()=>pop.style.display='none';
+</script></body>
 
 </html>
