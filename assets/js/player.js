@@ -396,3 +396,18 @@ const generateLvlStats = (rerolls, percentages) => {
         }
     } catch (err) { }
 }
+
+async function savePlayer() {
+    try {
+        if (currentUser) {
+            // Firebase mode
+            await savePlayerToFirebase();
+        } else {
+            // Local fallback
+            savePlayerLocal();
+        }
+    } catch (e) {
+        console.error("Lỗi khi savePlayer(): ", e);
+        savePlayerLocal(); // fallback
+    }
+}
