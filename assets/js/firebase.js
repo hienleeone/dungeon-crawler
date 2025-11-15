@@ -14,6 +14,7 @@ import {
   doc, 
   getDoc, 
   setDoc,
+  updateDoc,
   collection,
   getDocs
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
@@ -97,10 +98,10 @@ window.firebaseRegister = async (email, password) => {
   return res.user;
 };
 
-// SAVE TO FIRESTORE
+// SAVE TO FIRESTORE — FIXED
 window.firebaseSetPlayer = async (uid, obj) => {
   const ref = doc(window.firebaseDb, "players", uid);
-  await setDoc(ref, { playerData: obj });
+  await updateDoc(ref, { playerData: obj });   // <-- FIX
 };
 
 // CHECK NAME TRÙNG
