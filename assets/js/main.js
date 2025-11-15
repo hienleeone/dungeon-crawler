@@ -1,34 +1,26 @@
-window.addEventListener("load", function () {
-    window.currentPlayerData = JSON.parse(localStorage.getItem("playerData")) ?? null;
-    player = window.currentPlayerData;
-    window.player = player;
+window.startGameInit = function () {
 
-    if (player === null) {
-        // Chưa có dữ liệu → tạo nhân vật
+    const player = window.currentPlayerData;
+    const user = window.firebaseAuth.currentUser;
+
+    if (!user) return;
+
+    // Nếu vừa đăng ký → luôn hỏi tên
+    if (window.justRegistered) {
+        window.justRegistered = false;
         runLoad("character-creation", "flex");
-    } else {
-        // Có dữ liệu → vào màn hình title
-        document.querySelector("#title-screen").style.display = "flex";
+        return;
     }
 
-    // Title Screen Validation
-    document.querySelector("#title-screen").addEventListener("click", function () {
-        player = window.currentPlayerData ?? null;
-        window.currentEnemyData = JSON.parse(localStorage.getItem("enemyData")) || null;
-        window.player = player;
+    // Nếu chưa có dữ liệu player (tài khoản mới)
+    if (player === null) {
+        runLoad("character-creation", "flex");
+        return;
+    }
 
-        // ❗ Không cho click title nếu chưa tạo nhân vật
-        if (!player) return;
-
-        // ❗ Firebase chưa có playerData → phải tạo nhân vật trước
-        if (!player.allocated) {
-            allocationPopup();
-            return;
-        }
-
-        // ❗ Có đầy đủ dữ liệu → vào dungeon
-        enterDungeon();
-    });
+    // Nếu đã có player → vào game
+    runLoad("title-screen", "flex");
+};
 
     // Prevent double-click zooming on mobile devices
     document.ondblclick = function (e) {
@@ -38,9 +30,13 @@ window.addEventListener("load", function () {
     // Submit Name
     document.querySelector("#name-submit").addEventListener("submit", function (e) {
         e.preventDefault();
-        if (window.firebaseAuth?.currentUser && window.currentPlayerData !== null) {
-            // Firebase đã có profile → không được tạo player mới
-            player = window.currentPlayerData;
+        // Nếu Firebase chưa có playerData → được tạo nhân vật
+        if (window.currentPlayerData === null) {
+            // tạo player ở đây
+        }
+
+        // Nếu Firebase ĐÃ có playerData → cấm tạo nhân vật (đăng nhập lại)
+        else {
             runLoad("title-screen", "flex");
             return;
         }
@@ -383,11 +379,6 @@ window.addEventListener("load", function () {
                     localStorage.clear();
                     location.reload();
                 }
-            };
-            window.firebaseLogout = async () => {
-                await signOut(window.firebaseAuth);
-                localStorage.clear(); // 🔥 Xoá sạch dữ liệu cũ
-                location.reload();
             };
 
             document.querySelector("#logout-cancel").onclick = () => {

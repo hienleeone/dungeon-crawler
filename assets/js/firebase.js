@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
 import { 
   getFirestore, 
   doc, 
@@ -13,9 +14,9 @@ import {
   setDoc 
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
-window.firebaseEnabled = false;
 window.firebaseAuth = null;
 window.firebaseDb = null;
+window.currentPlayerData = null;
 
 const firebaseConfig = {
   apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
@@ -27,137 +28,85 @@ const firebaseConfig = {
   measurementId: "G-NW033BL7PW"
 };
 
-function tryInit() {
-  try {
-    const app = initializeApp(firebaseConfig);
-    window.firebaseAuth = getAuth(app);
-    window.firebaseDb = getFirestore(app);
-    window.firebaseEnabled = true;
-    console.log("Firebase initialized");
-    attachAuthListener();
-  } catch (e) {
-    console.warn("Firebase init failed:", e);
-    window.firebaseEnabled = false;
-  }
-}
+(function() {
+  const app = initializeApp(firebaseConfig);
+  window.firebaseAuth = getAuth(app);
+  window.firebaseDb = getFirestore(app);
 
-// LOGIN (IMPORT LOCAL → FIREBASE NẾU LẦN ĐẦU)
-window.firebaseLogin = async (email, password) => {
-
-  const result = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
-  const user = result.user;
-
-  const ref = doc(window.firebaseDb, "players", user.uid);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) {
-    const local = JSON.parse(localStorage.getItem("playerData"));
-
-    if (local) {
-      console.log("🔥 Importing local data to Firebase");
-      await setDoc(ref, { playerData: local });
-      localStorage.removeItem("playerData");
-    } else {
-      console.log("🔥 Creating new Firebase profile");
-      await setDoc(ref, { playerData: null });
-    }
-  }
-
-  return user;
-};
-
-onAuthStateChanged(auth, async (user) => {
-    if (!user) return;
-
-    const data = await firebaseGetPlayer(user.uid);
-
-    if (data) {
-        localStorage.setItem("playerData", JSON.stringify(data));
-        window.currentPlayerData = data;
-    } else {
-        // Tài khoản mới chưa có player → sẽ hỏi tên
-        window.currentPlayerData = null;
-    }
-});
-
-onAuthStateChanged(window.firebaseAuth, async (user) => {
-    if (!user) return;
-
-    const data = await firebaseGetPlayer(user.uid);
-
-    if (data) {
-        localStorage.setItem("playerData", JSON.stringify(data));
-        window.currentPlayerData = data;
-    } else {
-        window.currentPlayerData = null;
-        localStorage.removeItem("playerData");
-    }
-
-    // ⭐ LÚC NÀY MỚI ĐƯỢC PHÉP KHỞI CHẠY GAME ⭐
-    if (window.startGameInit) window.startGameInit();
-});
+  attachAuthListener();
+})();
 
 function attachAuthListener() {
   onAuthStateChanged(window.firebaseAuth, async (user) => {
-    if (user) {
-      console.log("Auth signed in:", user.uid);
 
-      const player = await window.firebaseGetPlayer(user.uid);
-
-      if (player) {
-          window.currentPlayerData = player;   // ★ lưu global
-          localStorage.setItem("playerData", JSON.stringify(player));
-      } else {
-          window.currentPlayerData = null;
-      }
-
-      if (!sessionStorage.getItem("firebase_reloaded")) {
-        sessionStorage.setItem("firebase_reloaded", "1");
-        location.reload();
-      }
-
-    } else {
-      console.log("Auth signed out");
-      sessionStorage.removeItem("firebase_reloaded");
+    if (!user) {
+      window.currentPlayerData = null;
+      localStorage.removeItem("playerData");
+      if (window.startGameInit) window.startGameInit();
+      return;
     }
+
+    const ref = doc(window.firebaseDb, "players", user.uid);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      await setDoc(ref, { playerData: null });
+      window.currentPlayerData = null;
+    } 
+    else {
+      window.currentPlayerData = snap.data().playerData ?? null;
+    }
+
+    if (window.currentPlayerData)
+      localStorage.setItem("playerData", JSON.stringify(window.currentPlayerData));
+    else
+      localStorage.removeItem("playerData");
+
+    if (window.startGameInit) window.startGameInit();
   });
 }
 
 // REGISTER
 window.firebaseRegister = async (email, password) => {
-  return createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+  const ref = doc(window.firebaseDb, "players", res.user.uid);
+  await setDoc(ref, { playerData: null });
+  return res.user;
+};
+
+// LOGIN
+window.firebaseLogin = async (email, password) => {
+  const res = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+
+  const user = res.user;
+  const ref = doc(window.firebaseDb, "players", user.uid);
+  const snap = await getDoc(ref);
+
+  // Nếu chưa có profile → tạo MỚI hoàn toàn, KHÔNG lấy localStorage
+  if (!snap.exists())
+    await setDoc(ref, { playerData: null });
+
+  return user;
+};
+
+// SAVE
+window.firebaseSetPlayer = async (uid, obj) => {
+  const ref = doc(window.firebaseDb, "players", uid);
+  await setDoc(ref, { playerData: obj });
 };
 
 // LOGOUT
 window.firebaseLogout = async () => {
   await signOut(window.firebaseAuth);
-  location.reload();
 };
 
-// LOAD
-window.firebaseGetPlayer = async (uid) => {
-  try {
-    const ref = doc(window.firebaseDb, "players", uid);
-    const snap = await getDoc(ref);
+window.firebaseRegister = async (email, password) => {
+  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
 
-    if (snap.exists()) return snap.data().playerData;
-    return null;
-  } catch (e) {
-    console.error("firebaseGetPlayer error", e);
-    return null;
-  }
+  const ref = doc(window.firebaseDb, "players", res.user.uid);
+  await setDoc(ref, { playerData: null });
+
+  window.justRegistered = true; // <— thêm dòng này
+
+  return res.user;
 };
-
-// SAVE
-window.firebaseSetPlayer = async (uid, playerObj) => {
-  try {
-    const ref = doc(window.firebaseDb, "players", uid);
-    await setDoc(ref, { playerData: playerObj });
-    return true;
-  } catch (e) {
-    console.error("firebaseSetPlayer error", e);
-    return false;
-  }
-};
-
-tryInit();
