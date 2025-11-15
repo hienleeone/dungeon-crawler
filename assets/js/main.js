@@ -1,24 +1,27 @@
 window.startGameInit = function () {
 
-    // lấy dữ liệu player đã nạp từ firebaseAuth listener
-    player = window.currentPlayerData;
+    // Chờ Firebase nếu chưa load
+    if (window.currentPlayerData === undefined) {
+        console.warn("Chờ firebase...");
+        setTimeout(window.startGameInit, 100);
+        return;
+    }
 
-    // Trường hợp đăng ký user mới → currentPlayerData === null
+    // User mới → hỏi tên
     if (window.currentPlayerData === null) {
         document.querySelector("#title-screen").style.display = "none";
         runLoad("character-creation", "flex");
         return;
     }
 
-    // Trường hợp đăng nhập user cũ → currentPlayerData là object
+    // User cũ → vào màn hình chính
     if (typeof window.currentPlayerData === "object") {
+        player = window.currentPlayerData;
         runLoad("title-screen", "flex");
         return;
     }
 
-    // Trường hợp listener CHƯA kịp load → chờ
-    console.warn("Firebase chưa trả dữ liệu — chờ 100ms...");
-    setTimeout(window.startGameInit, 100);
+    console.error("Lỗi: currentPlayerData không hợp lệ", window.currentPlayerData);
 };
 
     // Prevent double-click zooming on mobile devices

@@ -58,22 +58,20 @@ function attachAuthListener() {
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
-      // user đăng nhập lần đầu tiên
+      // user mới → để null → hỏi tên
       await setDoc(ref, { playerData: null });
-      window.currentPlayerData = null; // → hỏi tên
-    } 
+      window.currentPlayerData = null;
+    }
     else {
       const data = snap.data().playerData;
 
-      // Trường hợp user cũ nhưng playerData = null (KHÔNG phải user mới)
       if (data === null) {
-        // tạo player mặc định
-        const def = defaultPlayerProfile();
-        await setDoc(ref, { playerData: def });
-        window.currentPlayerData = def;
+          // Đăng nhập user cũ nhưng playerData trống → tạo mặc định
+          const def = defaultPlayerProfile();
+          await setDoc(ref, { playerData: def });
+          window.currentPlayerData = def;
       } else {
-        // user có save thật
-        window.currentPlayerData = data;
+          window.currentPlayerData = data;
       }
     }
 
