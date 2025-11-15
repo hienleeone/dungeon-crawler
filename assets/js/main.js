@@ -141,6 +141,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       window.currentPlayerData = window.player;
+      if (charCreation) charCreation.style.display = "none";
+
+      // ⭐ HIỆN MÀN HÌNH THỐNG KÊ NGAY SAU KHI TẠO NHÂN VẬT
+      setTimeout(() => {
+        allocationPopup();
+      }, 100);
+
+      runLoad("title-screen", "flex");
 
       // 🔥 GỌI THỐNG KÊ TẠI ĐÂY
       allocationPopup();
