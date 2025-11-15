@@ -386,7 +386,6 @@ window.addEventListener("load", function () {
             dimDungeon.style.filter = "brightness(100%)";
         };
     });
-});
 
 // Loading Screen
 const runLoad = (id, display) => {

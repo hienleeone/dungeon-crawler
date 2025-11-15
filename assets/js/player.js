@@ -14,7 +14,7 @@ function debounce(func, wait) {
 
 async function savePlayerLocal() {
   try {
-    savePlayer(, JSON.stringify(player));
+    localStorage.setItem("playerData", JSON.stringify(player));
   } catch (e) { console.warn(e); }
 }
 const savePlayerRemoteDebounced = debounce(async () => {
