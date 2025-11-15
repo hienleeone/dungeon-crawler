@@ -24,7 +24,21 @@
 </head>
 
 <body>
-    <main>
+    <div id="auth-modal" style="position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:9999;">
+  <div style="background:#222;padding:20px;border-radius:12px;width:300px;color:white;font-family:sans-serif;">
+    <h2>Đăng nhập</h2>
+    <input id="auth-email" placeholder="Email" style="width:100%;margin:4px 0;padding:6px;">
+    <input id="auth-pass" type="password" placeholder="Mật khẩu" style="width:100%;margin:4px 0;padding:6px;">
+    <input id="auth-pass2" type="password" placeholder="Nhập lại mật khẩu" style="width:100%;margin:4px 0;padding:6px;display:none;">
+    <p id="auth-error" style="color:#f88;height:16px;"></p>
+    <button id="auth-login-btn" style="width:100%;padding:8px;margin-top:6px;">Đăng nhập</button>
+    <button id="auth-register-btn" style="width:100%;padding:8px;margin-top:6px; display:none;">Đăng ký</button>
+    <button id="auth-switch" style="width:100%;padding:6px;margin-top:6px;background:none;color:#ccc;">Chuyển sang Đăng ký</button>
+  </div>
+</div>
+<script src="assets/js/auth-ui.js"></script>
+
+<main>
 
         <!-- ===== Title Screen ===== -->
         <section id="title-screen" class="game-container">
@@ -177,6 +191,8 @@
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
 
+
+<script type="module" src="assets/js/firebase.js"></script>
 </body>
 
 </html>
