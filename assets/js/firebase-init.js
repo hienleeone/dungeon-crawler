@@ -1,7 +1,6 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
@@ -12,9 +11,10 @@ const firebaseConfig = {
   appId: "1:508725790521:web:a58b2f0608b028baaccae8",
   measurementId: "G-NW033BL7PW"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// expose to non-module scripts
-window._fb = { auth, db, onAuthStateChanged };
+window._fb = {app,auth,db,doc,getDoc,setDoc,updateDoc,onSnapshot,
+  createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged};

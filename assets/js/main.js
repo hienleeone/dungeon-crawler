@@ -422,7 +422,7 @@ const saveData = () => {
     const dungeonData = JSON.stringify(dungeon);
     const enemyData = JSON.stringify(enemy);
     const volumeData = JSON.stringify(volume);
-    savePlayer(, playerData);
+    savePlayer();
     localStorage.setItem("dungeonData", dungeonData);
     localStorage.setItem("enemyData", enemyData);
     localStorage.setItem("volumeData", volumeData);

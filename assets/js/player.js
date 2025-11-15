@@ -46,7 +46,7 @@ async function initPlayerForUser(user) {
   const { db, doc, getDoc, setDoc, onSnapshot } = window._fb;
   const ref = doc(db, "players", user.uid);
   // If local exists and remote doesn't, migrate
-  const localRaw = window.player;
+  const localRaw = localStorage.getItem('playerData');
   try {
     const snap = await getDoc(ref);
     if (!snap.exists()) {
@@ -101,7 +101,7 @@ window.addEventListener('firebaseUserReady', (e) => { initPlayerForUser(e.detail
 window.addEventListener('firebaseUserSignedOut', () => {
   currentUser = null;
   if (remoteUnsubscribe) { remoteUnsubscribe(); remoteUnsubscribe = null; }
-  player = JSON.parse(window.player) || null;
+  player = JSON.parse(localStorage.getItem("playerData")||"null") || null;
   if (typeof refreshPlayerUI === 'function') refreshPlayerUI();
 });
 
