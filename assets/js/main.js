@@ -15,11 +15,18 @@ window.addEventListener("load", function () {
         player = window.currentPlayerData ?? null;
         window.currentEnemyData = JSON.parse(localStorage.getItem("enemyData")) || null;
         window.player = player;
-        if (player.allocated) {
-            enterDungeon();
-        } else {
+
+        // ❗ Không cho click title nếu chưa tạo nhân vật
+        if (!player) return;
+
+        // ❗ Firebase chưa có playerData → phải tạo nhân vật trước
+        if (!player.allocated) {
             allocationPopup();
+            return;
         }
+
+        // ❗ Có đầy đủ dữ liệu → vào dungeon
+        enterDungeon();
     });
 
     // Prevent double-click zooming on mobile devices
