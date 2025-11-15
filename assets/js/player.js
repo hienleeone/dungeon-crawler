@@ -93,6 +93,8 @@ async function initPlayerForUser(user) {
 
   // notify game that player is ready
   if (typeof onPlayerReady === 'function') onPlayerReady();
+  // Dispatch DOM event so UI can react when player data is loaded
+  window.dispatchEvent(new CustomEvent('playerLoaded', { detail: player }));
 }
 
 window.addEventListener('firebaseUserReady', (e) => { initPlayerForUser(e.detail).catch(console.error); });
