@@ -160,7 +160,7 @@ window.addEventListener("load", function () {
             <button id="player-menu"><i class="fas fa-user"></i>${player.name}</button>
             <button id="stats">Chỉ Số Chính</button>
             <button id="volume-btn">Âm Thanh</button>
-            <button id="export-import">Mã Dữ Liệu</button>
+
             <button id="quit-run">Xóa Hầm Ngục</button>
         </div>`;
 
@@ -168,7 +168,7 @@ window.addEventListener("load", function () {
         let playerMenu = document.querySelector('#player-menu');
         let runMenu = document.querySelector('#stats');
         let quitRun = document.querySelector('#quit-run');
-        let exportImport = document.querySelector('#export-import');
+
         let volumeSettings = document.querySelector('#volume-btn');
 
         // Player profile click function
@@ -332,40 +332,40 @@ window.addEventListener("load", function () {
         };
 
         // Export/Import Save Data
-        exportImport.onclick = function () {
+
             sfxOpen.play();
-            let exportedData = exportData();
+
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
             <div class="content" id="ei-tab">
                 <div class="content-head">
-                    <h3>Mã Dữ Liệu</h3>
+                    <h3>Đăng Xuất</h3>
                     <p id="ei-close"><i class="fa fa-xmark"></i></p>
                 </div>
                 <h4>Xuất Dữ Liệu</h4>
-                <input type="text" id="export-input" autocomplete="off" value="${exportedData}" readonly>
-                <button id="copy-export">Sao Chép</button>
+
+
                 <h4>Nhập Dữ Liệu</h4>
-                <input type="text" id="import-input" autocomplete="off">
-                <button id="data-import">Đồng Ý</button>
+
+
             </div>`;
             let eiTab = document.querySelector('#ei-tab');
             eiTab.style.width = "15rem";
             let eiClose = document.querySelector('#ei-close');
-            let copyExport = document.querySelector('#copy-export')
-            let dataImport = document.querySelector('#data-import');
-            let importInput = document.querySelector('#import-input');
+
+
+
             copyExport.onclick = function () {
                 sfxConfirm.play();
-                let copyText = document.querySelector('#export-input');
+
                 copyText.select();
                 copyText.setSelectionRange(0, 99999);
                 navigator.clipboard.writeText(copyText.value);
                 copyExport.innerHTML = "Copied!";
             }
             dataImport.onclick = function () {
-                importData(importInput.value);
+
             };
             eiClose.onclick = function () {
                 sfxDecline.play();
@@ -514,14 +514,14 @@ const progressReset = () => {
 }
 
 // Export and Import Save Data
-const exportData = () => {
-    const exportedData = btoa(JSON.stringify(player));
-    return exportedData;
+
+
+
 }
 
-const importData = (importedData) => {
+
     try {
-        let playerImport = JSON.parse(atob(importedData));
+
         if (playerImport.inventory !== undefined) {
             sfxOpen.play();
             defaultModalElement.style.display = "none";
@@ -530,11 +530,11 @@ const importData = (importedData) => {
             <div class="content">
                 <p>Bạn có chắc chắn muốn nhập dữ liệu này không? Thao tác này sẽ xóa dữ liệu hiện tại và đặt lại tiến trình hầm ngục của bạn.</p>
                 <div class="button-container">
-                    <button id="import-btn">Đồng Ý</button>
+
                     <button id="cancel-btn">Hủy Bỏ</button>
                 </div>
             </div>`;
-            let confirm = document.querySelector("#import-btn");
+
             let cancel = document.querySelector("#cancel-btn");
             confirm.onclick = function () {
                 sfxConfirm.play();
@@ -829,3 +829,6 @@ const objectValidation = () => {
     }
     saveData();
 }
+
+
+window.gameLogout = function(){ if(window.firebaseAuth){ window.firebaseAuth.signOut(); } location.reload(); };

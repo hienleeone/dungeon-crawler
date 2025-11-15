@@ -1,4 +1,14 @@
 
+
+function mapFirebaseError(msg){
+  if(msg.includes("user-not-found")) return "Tài khoản chưa tạo!";
+  if(msg.includes("wrong-password")) return "Sai mật khẩu!";
+  if(msg.includes("invalid-credential")) return "Sai tài khoản hoặc mật khẩu!";
+  if(msg.includes("email-already-in-use")) return "Gmail đã được sử dụng!";
+  return "Lỗi: " + msg;
+}
+
+
 document.addEventListener("DOMContentLoaded",()=>{
   const m=document.getElementById("auth-modal");
   const email=document.getElementById("auth-email");
@@ -35,7 +45,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       await window.firebaseLogin(email.value,pass.value);
       m.style.display="none";
     }catch(e){
-      showErr(e.message);
+      showErr(mapFirebaseError(e.message));
     }
   };
 
@@ -49,7 +59,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       await window.firebaseRegister(email.value,pass.value);
       m.style.display="none";
     }catch(e){
-      showErr(e.message);
+      showErr(mapFirebaseError(e.message));
     }
   };
 

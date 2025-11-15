@@ -22,6 +22,7 @@ window.firebaseAuth = null;
 window.firebaseDb = null;
 
 const firebaseConfig = {
+  // <-- REPLACE THESE WITH YOUR FIREBASE PROJECT CONFIG VALUES
   apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
   authDomain: "soulmc-account.firebaseapp.com",
   projectId: "soulmc-account",
