@@ -84,12 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
     nameForm.addEventListener("submit", function (e) {
       e.preventDefault();
 
-      // If currentPlayerData exists in cloud -> disallow creating a new character
-      if (window.currentPlayerData !== null) {
-        runLoad("title-screen", "flex");
-        return;
-      }
-
       const playerName = nameInput.value?.trim() ?? "";
       const format = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
       if (format.test(playerName)) {
@@ -544,6 +538,11 @@ const progressReset = () => {
    allocationPopup (unchanged logic but safe guards)
    ============================ */
 const allocationPopup = () => {
+
+  if (!window.player) {
+    console.error("PLAYER CHƯA TẠO — KHÔNG THỂ PHÂN BỔ!");
+    return;
+  }
   if (!window.player) return;
   let allocation = { hp: 5, atk: 5, def: 5, atkSpd: 5 };
   let stats;
