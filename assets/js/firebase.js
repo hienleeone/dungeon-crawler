@@ -14,22 +14,6 @@ import {
   setDoc 
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
-async function syncPlayerFromServer(uid) {
-    const ref = doc(window.firebaseDb, "players", uid);
-    const snap = await getDoc(ref);
-
-    if (snap.exists()) {
-        const serverData = snap.data().playerData;
-
-        if (window.player && window.player.gold !== serverData.gold) {
-            console.warn("⚠ Phát hiện bug vàng — reset!");
-            window.player.gold = serverData.gold;
-        }
-
-        return serverData;
-    }
-}
-
 window.firebaseAuth = null;
 window.firebaseDb = null;
 window.currentPlayerData = null;
@@ -55,38 +39,35 @@ const firebaseConfig = {
 function attachAuthListener() {
   onAuthStateChanged(window.firebaseAuth, async (user) => {
 
+    // 1. Chưa đăng nhập → reset và gọi startGameInit
     if (!user) {
       window.currentPlayerData = null;
-      window.player = null;
-      try { localStorage.removeItem('playerData'); } catch(e){}
+      localStorage.removeItem("playerData");
+
       if (window.startGameInit) window.startGameInit();
       return;
     }
 
-    try {
-      const ref = doc(window.firebaseDb, 'players', user.uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
+    // 2. Đã đăng nhập → chờ firebase tải dữ liệu player xong rồi mới xử lý
+    const ref = doc(window.firebaseDb, "players", user.uid);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+        // mới lần đầu đăng ký → chưa có profile → hỏi tên
         window.currentPlayerData = null;
-        window.player = null;
-        try { localStorage.removeItem('playerData'); } catch(e){}
-      } else {
+    } else {
         window.currentPlayerData = snap.data().playerData ?? null;
-        try { window.player = window.currentPlayerData ? JSON.parse(JSON.stringify(window.currentPlayerData)) : null; } catch(e) { window.player = window.currentPlayerData; }
-        if (window.currentPlayerData) {
-          try { localStorage.setItem('playerData', JSON.stringify(window.currentPlayerData)); } catch(e){}
-        }
-      }
-    } catch(e) {
-      console.error('attachAuthListener error', e);
-      window.currentPlayerData = null;
-      window.player = null;
     }
 
+    if (window.currentPlayerData)
+      localStorage.setItem("playerData", JSON.stringify(window.currentPlayerData));
+    else
+      localStorage.removeItem("playerData");
+
+    // CHỈ GỌI Ở ĐÂY → ĐẢM BẢO DỮ LIỆU SẴN SÀNG
     if (window.startGameInit) window.startGameInit();
   });
 }
-
 // LOGIN
 window.firebaseLogin = async (email, password) => {
   const res = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
@@ -95,6 +76,7 @@ window.firebaseLogin = async (email, password) => {
   const ref = doc(window.firebaseDb, "players", user.uid);
   const snap = await getDoc(ref);
 
+  // Không được ghi đè profile bằng null!
   if (snap.exists()) {
       window.currentPlayerData = snap.data().playerData ?? null;
   }
@@ -102,17 +84,8 @@ window.firebaseLogin = async (email, password) => {
   return user;
 };
 
-// REGISTER (1 bản duy nhất, không trùng)
-window.firebaseRegister = async (email, password) => {
-  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-  const ref = doc(window.firebaseDb, "players", res.user.uid);
+// REGISTER
 
-  await setDoc(ref, { playerData: null });
-
-  window.justRegistered = true;
-
-  return res.user;
-};
 
 // SAVE
 window.firebaseSetPlayer = async (uid, obj) => {
@@ -123,4 +96,26 @@ window.firebaseSetPlayer = async (uid, obj) => {
 // LOGOUT
 window.firebaseLogout = async () => {
   await signOut(window.firebaseAuth);
+};
+
+window.firebaseRegister = async (email, password) => {
+  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+
+  const ref = doc(window.firebaseDb, "players", res.user.uid);
+  await setDoc(ref, { playerData: null });
+
+  window.justRegistered = true; // <— thêm dòng này
+
+  return res.user;
+};
+
+// REGISTER - create account but DO NOT keep user signed in (force to login afterwards)
+window.firebaseRegister = async (email, password) => {
+  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+  const ref = doc(window.firebaseDb, "players", res.user.uid);
+  // create empty playerData (null) so on next login we prompt for name
+  await setDoc(ref, { playerData: null });
+  // sign out immediately so user must log in explicitly
+  await signOut(window.firebaseAuth);
+  return res.user;
 };
