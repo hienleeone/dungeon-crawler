@@ -53,10 +53,10 @@ function attachAuthListener() {
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
-      await setDoc(ref, { playerData: null });
-      window.currentPlayerData = null;
+        // mới lần đầu đăng ký → chưa có profile → hỏi tên
+        window.currentPlayerData = null;
     } else {
-      window.currentPlayerData = snap.data().playerData ?? null;
+        window.currentPlayerData = snap.data().playerData ?? null;
     }
 
     if (window.currentPlayerData)
@@ -68,27 +68,31 @@ function attachAuthListener() {
     if (window.startGameInit) window.startGameInit();
   });
 }
+// LOGIN
+window.firebaseLogin = async (email, password) => {
+  const res = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+  const user = res.user;
+
+  const ref = doc(window.firebaseDb, "players", user.uid);
+  const snap = await getDoc(ref);
+
+  // Không được ghi đè profile bằng null!
+  if (snap.exists()) {
+      window.currentPlayerData = snap.data().playerData ?? null;
+  }
+
+  return user;
+};
+
 // REGISTER
 window.firebaseRegister = async (email, password) => {
   const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
   const ref = doc(window.firebaseDb, "players", res.user.uid);
+
+  // Tạo playerData rỗng lần đầu → để main.js kích hoạt màn hình đặt tên
   await setDoc(ref, { playerData: null });
+
   return res.user;
-};
-
-// LOGIN
-window.firebaseLogin = async (email, password) => {
-  const res = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
-
-  const user = res.user;
-  const ref = doc(window.firebaseDb, "players", user.uid);
-  const snap = await getDoc(ref);
-
-  // Nếu chưa có profile → tạo MỚI hoàn toàn, KHÔNG lấy localStorage
-  if (!snap.exists())
-    await setDoc(ref, { playerData: null });
-
-  return user;
 };
 
 // SAVE
