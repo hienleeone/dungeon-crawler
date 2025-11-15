@@ -6,7 +6,6 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-
 import { 
   getFirestore, 
   doc, 
@@ -14,11 +13,10 @@ import {
   setDoc 
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
+window.firebaseEnabled = false;
 window.firebaseAuth = null;
 window.firebaseDb = null;
-window.currentPlayerData = null;
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
   authDomain: "soulmc-account.firebaseapp.com",
@@ -29,158 +27,137 @@ const firebaseConfig = {
   measurementId: "G-NW033BL7PW"
 };
 
-// Init Firebase
-(function(){
-  const app = initializeApp(firebaseConfig);
-  window.firebaseAuth = getAuth(app);
-  window.firebaseDb = getFirestore(app);
-  console.log("Firebase initialized");
-
-  attachAuthListener();
-})();
- 
-// -----------------------------
-// AUTH LISTENER
-// -----------------------------
-function attachAuthListener() {
-
-  onAuthStateChanged(window.firebaseAuth, async (user) => {
-
-    console.log("Auth state changed:", user ? user.uid : "signed out");
-
-    if (!user) {
-      window.currentPlayerData = null;
-      localStorage.clear();
-      return;
-    }
-
-    const ref = doc(window.firebaseDb, "players", user.uid);
-    const snap = await getDoc(ref);
-
-    if (!snap.exists()) {
-      // user mới → để null → hỏi tên
-      await setDoc(ref, { playerData: null });
-      window.currentPlayerData = null;
-    }
-    else {
-      const data = snap.data().playerData;
-
-      if (data === null) {
-          // Đăng nhập user cũ nhưng playerData trống → tạo mặc định
-          const def = defaultPlayerProfile();
-          await setDoc(ref, { playerData: def });
-          window.currentPlayerData = def;
-      } else {
-          window.currentPlayerData = data;
-      }
-    }
-
-    // cập nhật local
-    if (window.currentPlayerData)
-      localStorage.setItem("playerData", JSON.stringify(window.currentPlayerData));
-    else
-      localStorage.removeItem("playerData");
-
-    if (window.startGameInit) window.startGameInit();
-  });
+function tryInit() {
+  try {
+    const app = initializeApp(firebaseConfig);
+    window.firebaseAuth = getAuth(app);
+    window.firebaseDb = getFirestore(app);
+    window.firebaseEnabled = true;
+    console.log("Firebase initialized");
+    attachAuthListener();
+  } catch (e) {
+    console.warn("Firebase init failed:", e);
+    window.firebaseEnabled = false;
+  }
 }
 
-// -----------------------------
-// REGISTER
-// -----------------------------
-window.firebaseRegister = async (email, password) => {
-  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-
-  // tạo profile rỗng → để hỏi tên
-  const ref = doc(window.firebaseDb, "players", res.user.uid);
-  await setDoc(ref, { playerData: null });
-
-  return res.user;
-};
-
-// -----------------------------
-// LOGIN
-// -----------------------------
+// LOGIN (IMPORT LOCAL → FIREBASE NẾU LẦN ĐẦU)
 window.firebaseLogin = async (email, password) => {
 
-  const res = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
-  const user = res.user;
+  const result = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+  const user = result.user;
 
   const ref = doc(window.firebaseDb, "players", user.uid);
   const snap = await getDoc(ref);
 
-  const local = JSON.parse(localStorage.getItem("playerData"));
-
-  // nếu hoàn toàn chưa có cloud save → dùng local nếu có, không thì null (để hỏi tên)
   if (!snap.exists()) {
-    await setDoc(ref, { playerData: local ?? null });
-  }
+    const local = JSON.parse(localStorage.getItem("playerData"));
 
-  // nếu cloud tồn tại nhưng lại null → dùng local, nếu không có thì tạo mặc định
-  else if (snap.data().playerData === null) {
     if (local) {
+      console.log("🔥 Importing local data to Firebase");
       await setDoc(ref, { playerData: local });
+      localStorage.removeItem("playerData");
     } else {
-      await setDoc(ref, { playerData: defaultPlayerProfile() });
+      console.log("🔥 Creating new Firebase profile");
+      await setDoc(ref, { playerData: null });
     }
   }
 
   return user;
 };
 
-// -----------------------------
-// SAVE TO CLOUD
-// -----------------------------
-window.firebaseSetPlayer = async (uid, playerObj) => {
-  const ref = doc(window.firebaseDb, "players", uid);
-  await setDoc(ref, { playerData: playerObj });
+onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+
+    const data = await firebaseGetPlayer(user.uid);
+
+    if (data) {
+        localStorage.setItem("playerData", JSON.stringify(data));
+        window.currentPlayerData = data;
+    } else {
+        // Tài khoản mới chưa có player → sẽ hỏi tên
+        window.currentPlayerData = null;
+    }
+});
+
+onAuthStateChanged(window.firebaseAuth, async (user) => {
+    if (!user) return;
+
+    const data = await firebaseGetPlayer(user.uid);
+
+    if (data) {
+        localStorage.setItem("playerData", JSON.stringify(data));
+        window.currentPlayerData = data;
+    } else {
+        window.currentPlayerData = null;
+        localStorage.removeItem("playerData");
+    }
+
+    // ⭐ LÚC NÀY MỚI ĐƯỢC PHÉP KHỞI CHẠY GAME ⭐
+    if (window.startGameInit) window.startGameInit();
+});
+
+function attachAuthListener() {
+  onAuthStateChanged(window.firebaseAuth, async (user) => {
+    if (user) {
+      console.log("Auth signed in:", user.uid);
+
+      const player = await window.firebaseGetPlayer(user.uid);
+
+      if (player) {
+          window.currentPlayerData = player;   // ★ lưu global
+          localStorage.setItem("playerData", JSON.stringify(player));
+      } else {
+          window.currentPlayerData = null;
+      }
+
+      if (!sessionStorage.getItem("firebase_reloaded")) {
+        sessionStorage.setItem("firebase_reloaded", "1");
+        location.reload();
+      }
+
+    } else {
+      console.log("Auth signed out");
+      sessionStorage.removeItem("firebase_reloaded");
+    }
+  });
+}
+
+// REGISTER
+window.firebaseRegister = async (email, password) => {
+  return createUserWithEmailAndPassword(window.firebaseAuth, email, password);
 };
 
-// -----------------------------
 // LOGOUT
-// -----------------------------
 window.firebaseLogout = async () => {
   await signOut(window.firebaseAuth);
+  location.reload();
 };
 
-// -----------------------------
-// DEFAULT PLAYER PROFILE
-// -----------------------------
-function defaultPlayerProfile() {
-  return {
-    name: "Player",
-    lvl: 1,
+// LOAD
+window.firebaseGetPlayer = async (uid) => {
+  try {
+    const ref = doc(window.firebaseDb, "players", uid);
+    const snap = await getDoc(ref);
 
-    stats: {
-      hp: 500, hpMax: 500, atk: 100, def: 50, pen: 0,
-      atkSpd: 0.6, vamp: 0, critRate: 0, critDmg: 50
-    },
+    if (snap.exists()) return snap.data().playerData;
+    return null;
+  } catch (e) {
+    console.error("firebaseGetPlayer error", e);
+    return null;
+  }
+};
 
-    baseStats: {
-      hp: 500, atk: 100, def: 50, pen: 0,
-      atkSpd: 0.6, vamp: 0, critRate: 0, critDmg: 50
-    },
+// SAVE
+window.firebaseSetPlayer = async (uid, playerObj) => {
+  try {
+    const ref = doc(window.firebaseDb, "players", uid);
+    await setDoc(ref, { playerData: playerObj });
+    return true;
+  } catch (e) {
+    console.error("firebaseSetPlayer error", e);
+    return false;
+  }
+};
 
-    equippedStats: {
-      hp:0, atk:0, def:0, pen:0, atkSpd:0, vamp:0,
-      critRate:0, critDmg:0, hpPct:0, atkPct:0, defPct:0, penPct:0
-    },
-
-    bonusStats: {
-      hp:0, atk:0, def:0, atkSpd:0, vamp:0, critRate:0, critDmg:0
-    },
-
-    exp: {
-      expCurr:0, expMax:100, expCurrLvl:0, expMaxLvl:100, lvlGained:0
-    },
-
-    inventory:{ consumables:[], equipment:[] },
-    equipped: [],
-
-    gold: 0,
-    playtime: 0,
-    kills: 0,
-    deaths: 0,
-    inCombat: false
-  };
-}
+tryInit();
