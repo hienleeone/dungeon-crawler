@@ -41,6 +41,31 @@ function tryInit() {
   }
 }
 
+// LOGIN (IMPORT LOCAL → FIREBASE NẾU LẦN ĐẦU)
+window.firebaseLogin = async (email, password) => {
+
+  const result = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+  const user = result.user;
+
+  const ref = doc(window.firebaseDb, "players", user.uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    const local = JSON.parse(localStorage.getItem("playerData"));
+
+    if (local) {
+      console.log("🔥 Importing local data to Firebase");
+      await setDoc(ref, { playerData: local });
+      localStorage.removeItem("playerData");
+    } else {
+      console.log("🔥 Creating new Firebase profile");
+      await setDoc(ref, { playerData: null });
+    }
+  }
+
+  return user;
+};
+
 function attachAuthListener() {
   onAuthStateChanged(window.firebaseAuth, async (user) => {
     if (user) {
@@ -49,9 +74,10 @@ function attachAuthListener() {
       const player = await window.firebaseGetPlayer(user.uid);
 
       if (player) {
-        localStorage.setItem("playerData", JSON.stringify(player));
+          window.currentPlayerData = player;   // ★ lưu global
+          localStorage.setItem("playerData", JSON.stringify(player));
       } else {
-        console.log("No profile → waiting for name creation.");
+          window.currentPlayerData = null;
       }
 
       if (!sessionStorage.getItem("firebase_reloaded")) {
@@ -71,18 +97,13 @@ window.firebaseRegister = async (email, password) => {
   return createUserWithEmailAndPassword(window.firebaseAuth, email, password);
 };
 
-// LOGIN
-window.firebaseLogin = async (email, password) => {
-  return signInWithEmailAndPassword(window.firebaseAuth, email, password);
-};
-
 // LOGOUT
 window.firebaseLogout = async () => {
   await signOut(window.firebaseAuth);
   location.reload();
 };
 
-// LOAD PLAYER
+// LOAD
 window.firebaseGetPlayer = async (uid) => {
   try {
     const ref = doc(window.firebaseDb, "players", uid);
@@ -96,7 +117,7 @@ window.firebaseGetPlayer = async (uid) => {
   }
 };
 
-// SAVE PLAYER
+// SAVE
 window.firebaseSetPlayer = async (uid, playerObj) => {
   try {
     const ref = doc(window.firebaseDb, "players", uid);

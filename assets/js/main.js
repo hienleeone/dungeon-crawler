@@ -1,14 +1,22 @@
 window.addEventListener("load", function () {
+    player = window.currentPlayerData
+           ?? JSON.parse(localStorage.getItem("playerData"))
+           ?? null;
+
     if (player === null) {
+        // Chưa có dữ liệu → tạo nhân vật
         runLoad("character-creation", "flex");
     } else {
-        let target = document.querySelector("#title-screen");
-        target.style.display = "flex";
+        // Có dữ liệu → vào màn hình title
+        document.querySelector("#title-screen").style.display = "flex";
     }
 
     // Title Screen Validation
     document.querySelector("#title-screen").addEventListener("click", function () {
-        const player = JSON.parse(localStorage.getItem("playerData"));
+        let player = window.currentPlayerData 
+                  ?? JSON.parse(localStorage.getItem("playerData")) 
+                  ?? null;
+        window.player = player;
         if (player.allocated) {
             enterDungeon();
         } else {
@@ -24,6 +32,12 @@ window.addEventListener("load", function () {
     // Submit Name
     document.querySelector("#name-submit").addEventListener("submit", function (e) {
         e.preventDefault();
+        if (window.firebaseAuth?.currentUser && window.currentPlayerData !== null) {
+            // Firebase đã có profile → không được tạo player mới
+            player = window.currentPlayerData;
+            runLoad("title-screen", "flex");
+            return;
+        }
         let playerName = document.querySelector("#name-input").value;
 
         var format = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
@@ -416,25 +430,17 @@ const saveData = () => {
     const enemyData = JSON.stringify(enemy);
     const volumeData = JSON.stringify(volume);
 
-    // Always keep a local copy for fallback / offline usage
     localStorage.setItem("playerData", playerData);
     localStorage.setItem("dungeonData", dungeonData);
     localStorage.setItem("enemyData", enemyData);
     localStorage.setItem("volumeData", volumeData);
 
-    // If Firebase is enabled and a user is signed in, push player profile to Firestore
-    try {
-        if (window.firebaseEnabled && window.firebaseAuth && window.firebaseAuth.currentUser) {
-            const uid = window.firebaseAuth.currentUser.uid;
-            // store the player object (not the serialized string)
-            window.firebaseSetPlayer(uid, player).then((ok) => {
-                if (!ok) console.warn("Failed to save player to Firebase");
-            }).catch((e)=> console.warn("Firebase save error:", e));
-        }
-    } catch (e) {
-        console.warn("saveData firebase check failed:", e);
+    // Nếu Firebase đã login → lưu lên cloud
+    if (window.firebaseEnabled && window.firebaseAuth.currentUser) {
+        const uid = window.firebaseAuth.currentUser.uid;
+        window.firebaseSetPlayer(uid, player);
     }
-}
+};
 
 // Calculate every player stat
 const calculateStats = () => {
