@@ -1,5 +1,5 @@
 
-// Firebase-integrated player manager
+// Firebase-integrated player manager (auto-inserted)
 let player = null;
 let currentUser = null;
 let remoteUnsubscribe = null;
@@ -14,50 +14,98 @@ function debounce(func, wait) {
 
 async function savePlayerLocal() {
   try {
-    localStorage.setItem("playerData", JSON.stringify(player));
+    savePlayer(, JSON.stringify(player));
   } catch (e) { console.warn(e); }
 }
 const savePlayerRemoteDebounced = debounce(async () => {
   if (!currentUser || !player) return;
-  const { db, doc, setDoc } = window._fb;
-  const ref = doc(db,"players",currentUser.uid);
-  await setDoc(ref,{playerData:player,updatedAt:Date.now()},{merge:true});
+  try {
+    const { db, doc, setDoc } = window._fb;
+    const ref = doc(db,"players",currentUser.uid);
+    await setDoc(ref,{playerData:player,updatedAt:Date.now()},{merge:true});
+  } catch(e){ console.error("Save remote error",e); }
 },800);
 
 async function savePlayer(){ savePlayerLocal(); savePlayerRemoteDebounced(); }
 
-function createDefaultPlayer(){
-  return { name:"New Player", gold:0, exp:{expCurr:0,expCurrLvl:0,expMax:50}, /*...*/ };
+function createDefaultPlayer() {
+  // Minimal default player structure inferred from code usage
+  return {
+    name: currentUser ? (currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : "Player")) : "Player",
+    gold: 0,
+    level: 1,
+    lvl: 1,
+    exp: { expCurr: 0, expCurrLvl: 0, expMax: 50, expMaxLvl: 50 },
+    inventory: [],
+    allocated: false
+  };
 }
 
-async function initPlayerForUser(user){
-  currentUser=user;
-  const {db,doc,getDoc,setDoc,onSnapshot}=window._fb;
-  const ref=doc(db,"players",user.uid);
-  const localRaw=localStorage.getItem("playerData");
-  if(localRaw){
-    const local=JSON.parse(localRaw);
-    const snap=await getDoc(ref);
-    if(!snap.exists()){
-      await setDoc(ref,{playerData:local,migratedFromLocalAt:Date.now()});
-      player=local;
+async function initPlayerForUser(user) {
+  currentUser = user;
+  const { db, doc, getDoc, setDoc, onSnapshot } = window._fb;
+  const ref = doc(db, "players", user.uid);
+  // If local exists and remote doesn't, migrate
+  const localRaw = window.player;
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      if (localRaw) {
+        try {
+          const local = JSON.parse(localRaw);
+          await setDoc(ref, { playerData: local, migratedFromLocalAt: Date.now() });
+          player = local;
+        } catch (e) {
+          player = createDefaultPlayer();
+          await setDoc(ref, { playerData: player, createdAt: Date.now() });
+        }
+      } else {
+        player = createDefaultPlayer();
+        await setDoc(ref, { playerData: player, createdAt: Date.now() });
+      }
+    } else {
+      const remote = snap.data().playerData;
+      if (remote) {
+        player = remote;
+      } else {
+        player = createDefaultPlayer();
+      }
     }
+  } catch (e) {
+    console.warn("initPlayerForUser error:", e);
+    player = player || createDefaultPlayer();
   }
-  remoteUnsubscribe=onSnapshot(ref,(snap)=>{
-    if(snap.exists()){
-      player=snap.data().playerData;
-      savePlayerLocal();
-      if(typeof refreshPlayerUI==="function")refreshPlayerUI();
-    }else{
-      if(!player){ player=createDefaultPlayer(); savePlayer(); }
-    }
-  });
+
+  // subscribe to remote changes
+  if (remoteUnsubscribe) remoteUnsubscribe();
+  try {
+    remoteUnsubscribe = onSnapshot(ref, (s) => {
+      if (s.exists()) {
+        const remote = s.data().playerData;
+        if (remote) {
+          player = remote;
+          savePlayerLocal();
+          if (typeof refreshPlayerUI === 'function') refreshPlayerUI();
+        }
+      }
+    });
+  } catch(e) { console.warn("onSnapshot error", e); }
+
+  // notify game that player is ready
+  if (typeof onPlayerReady === 'function') onPlayerReady();
 }
 
-window.addEventListener('firebaseUserReady',(e)=>{initPlayerForUser(e.detail)});
-window.addEventListener('firebaseUserSignedOut',()=>{currentUser=null; if(remoteUnsubscribe){remoteUnsubscribe();}; player=JSON.parse(localStorage.getItem("playerData"))||null;});
+window.addEventListener('firebaseUserReady', (e) => { initPlayerForUser(e.detail).catch(console.error); });
+window.addEventListener('firebaseUserSignedOut', () => {
+  currentUser = null;
+  if (remoteUnsubscribe) { remoteUnsubscribe(); remoteUnsubscribe = null; }
+  player = JSON.parse(window.player) || null;
+  if (typeof refreshPlayerUI === 'function') refreshPlayerUI();
+});
 
-// ---- ORIGINAL CODE BELOW ----
+// Replace direct localStorage usage in other files by encouraging savePlayer()
+// Note: original code will still call savePlayerLocal via savePlayer function
+// ---- original content continues below ----
 const playerExpGain = () => {
     player.exp.expCurr += enemy.rewards.exp;
     player.exp.expCurrLvl += enemy.rewards.exp;

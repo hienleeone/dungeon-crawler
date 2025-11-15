@@ -1,19 +1,21 @@
 window.addEventListener("load", function () {
-    if (player === null) {
-        runLoad("character-creation", "flex");
-    } else {
-        let target = document.querySelector("#title-screen");
-        target.style.display = "flex";
+    // Wait for Firebase auth / player to be ready
+    function startWhenReady() {
+        if (typeof player === 'undefined' || player === null) {
+            // show character creation only if player is null
+            runLoad("character-creation", "flex");
+        } else {
+            let target = document.querySelector("#title-screen");
+            target.style.display = "flex";
+        }
     }
 
-    // Title Screen Validation
-    document.querySelector("#title-screen").addEventListener("click", function () {
-        const player = JSON.parse(localStorage.getItem("playerData"));
-        if (player.allocated) {
-            enterDungeon();
-        } else {
-            allocationPopup();
-        }
+    // If using Firebase, wait for player ready event
+    window.addEventListener('firebaseUserReady', function() { startWhenReady(); });
+    window.addEventListener('firebaseUserSignedOut', function() { startWhenReady(); });
+
+    // Also call once on load
+    startWhenReady();
     });
 
     // Prevent double-click zooming on mobile devices
@@ -421,7 +423,7 @@ const saveData = () => {
     const dungeonData = JSON.stringify(dungeon);
     const enemyData = JSON.stringify(enemy);
     const volumeData = JSON.stringify(volume);
-    localStorage.setItem("playerData", playerData);
+    savePlayer(, playerData);
     localStorage.setItem("dungeonData", dungeonData);
     localStorage.setItem("enemyData", enemyData);
     localStorage.setItem("volumeData", volumeData);

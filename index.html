@@ -37,7 +37,7 @@
         </section>
 
         <!-- ===== Character Creation ===== -->
-        <section id="character-creation" class="game-container">
+        <section id="character-creation" class="game-container" style="display:none;">
             <form id="name-submit">
                 <h1>Bạn tên gì?</h1>
                 <input type="text" id="name-input" autocomplete="off">
@@ -178,14 +178,7 @@
     <script src="./assets/js/gacha.js"></script>
 
 
-<div id="authPanel" style="position:absolute;top:20px;left:20px;z-index:999;background:#222;padding:15px;border-radius:8px;color:white;">
-  <input id="emailInput" placeholder="Email"><br>
-  <input id="passwordInput" type="password" placeholder="Mật khẩu"><br>
-  <button id="signupBtn">Đăng ký</button>
-  <button id="loginBtn">Đăng nhập</button>
-  <button id="logoutBtn">Đăng xuất</button>
-  <div id="authMsg"></div>
-</div>
+<!-- Firebase & Auth UI -->
 <script type="module" src="assets/js/firebase-init.js"></script>
 <script src="assets/js/auth-ui.js"></script>
 
