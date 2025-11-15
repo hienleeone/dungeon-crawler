@@ -685,7 +685,8 @@ const allocationPopup = () => {
   const close = document.querySelector("#allocate-close");
 
   confirm.onclick = function () {
-    // Set base stats
+
+    // Lưu base stats
     player.baseStats = {
       hp: stats.hp,
       atk: stats.atk,
@@ -697,20 +698,27 @@ const allocationPopup = () => {
       critDmg: 50
     };
 
-    objectValidation();
+    // Passive
     const skill = document.querySelector("#select-skill")?.value;
     if (skill) player.skills.push(skill);
-    if (skill == "Devastator") {
-      player.baseStats.atkSpd = player.baseStats.atkSpd - ((30 * player.baseStats.atkSpd) / 100);
+    if (skill === "Devastator") {
+      player.baseStats.atkSpd -= (player.baseStats.atkSpd * 0.3);
     }
 
     player.allocated = true;
-    enterDungeon();
-    player.stats.hp = player.stats.hpMax;
-    playerLoadStats?.();
+
+    // 🟢 FIX QUAN TRỌNG
+    // đóng popup TRƯỚC KHI enterDungeon()
     defaultModalElement.style.display = "none";
     defaultModalElement.innerHTML = "";
     $("#title-screen")?.style && ($("#title-screen").style.filter = "brightness(100%)");
+
+    // 🟢 GỌI SAU KHI POPUP ĐÃ ĐÓNG
+    calculateStats();
+    player.stats.hp = player.stats.hpMax;
+    saveData();
+
+    enterDungeon();
   };
 
   reset.onclick = function () {
