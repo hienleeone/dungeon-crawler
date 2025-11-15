@@ -20,6 +20,9 @@
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="icon" type="image/png" href="./assets/icon/favicon.ico">
     <script src="./assets/js/howler.min.js"></script>
+    <!-- Firebase & full-screen auth UI -->
+    <script type="module" src="./assets/js/firebase-init.js"></script>
+    <script src="./assets/js/auth-ui-fullscreen.js"></script>
     <title>SoulMC Network - Dungeon Crawler</title>
 </head>
 
@@ -27,7 +30,7 @@
     <main>
 
         <!-- ===== Title Screen ===== -->
-        <section id="title-screen" class="game-container">
+        <section id="title-screen" class="game-container" style="display:none;">
             <div>
                 <i class="fa-solid fa-dungeon fa-5x"></i>
                 <h1>soulmc.vn</h1>
@@ -182,8 +185,6 @@
 
 
 
-    <script type="module" src="assets/js/firebase-init.js"></script>
-    <script src="assets/js/auth-ui.js"></script>
-</body>
+    </body>
 
 </html>

@@ -1,3 +1,4 @@
+// firebase-init.js (module) - Firebase v9+ modular SDK init
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -16,5 +17,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-window._fb = {app,auth,db,doc,getDoc,setDoc,updateDoc,onSnapshot,
-  createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged};
+// expose helper functions to non-module scripts via window._fb
+window._fb = {
+  app, auth, db,
+  doc, getDoc, setDoc, updateDoc, onSnapshot,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged
+};
+console.log('firebase-init: initialized');

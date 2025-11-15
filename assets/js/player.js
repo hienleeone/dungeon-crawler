@@ -4,6 +4,25 @@ let player = null;
 let currentUser = null;
 let remoteUnsubscribe = null;
 
+async function createDefaultPlayer(){
+  return {
+    name: (currentUser && currentUser.displayName) ? currentUser.displayName : 'Player',
+    gold:0, level:1, exp:{expCurr:0,expCurrLvl:0,expMax:50}, inventory:[]
+  };
+}
+
+async function savePlayerLocal(){ try{ localStorage.setItem('playerData', JSON.stringify(player)); }catch(e){}
+}
+
+function debounce(func, wait){ let t; return function(...a){ clearTimeout(t); t=setTimeout(()=>func.apply(this,a), wait); }; }
+
+const savePlayerRemoteDebounced = debounce(async ()=>{ if(!window._fb || !currentUser || !player) return; const { db, doc, setDoc } = window._fb; try{ await setDoc(doc(db, 'players', currentUser.uid), { playerData: player, updatedAt: Date.now() }, { merge: true }); }catch(e){ console.error('save remote', e); } }, 800);
+
+async function savePlayer(){ savePlayerLocal(); savePlayerRemoteDebounced(); }
+
+let currentUser = null;
+let remoteUnsubscribe = null;
+
 function debounce(func, wait) {
   let timeout;
   return function(...args) {

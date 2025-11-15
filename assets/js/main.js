@@ -815,3 +815,23 @@ const objectValidation = () => {
     }
     saveData();
 }
+
+// Show title-screen when playerLoaded fired
+window.addEventListener('playerLoaded', function(e){
+  // show title-screen (unhide)
+  const title = document.getElementById('title-screen'); if(title) title.style.display='flex';
+});
+
+// Start game when clicking title-screen (after player is loaded)
+document.addEventListener('click', function(e){
+  const title = document.getElementById('title-screen');
+  if(!title) return;
+  if(title.style.display==='flex' && title.contains(e.target)){
+    // ensure player loaded
+    if(window.player === undefined || window.player === null){
+      // try player from event detail
+      console.warn('Player not ready yet'); return;
+    }
+    try{ if(typeof startGame === 'function') startGame(); }catch(err){ console.error('startGame error', err); }
+  }
+});
