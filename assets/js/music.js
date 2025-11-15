@@ -1,23 +1,28 @@
-// Volume settings
-let volume;
-if (JSON.parse(localStorage.getItem("volumeData")) == undefined) {
+// ==================== FIX VOLUME SYSTEM ====================
+let volume = JSON.parse(localStorage.getItem("volumeData"));
+
+// Nếu không tồn tại hoặc sai cấu trúc → tạo mới
+if (
+    !volume ||
+    typeof volume.master !== "number" ||
+    typeof volume.bgm !== "number" ||
+    typeof volume.sfx !== "number"
+) {
     volume = {
-        master: 100 / 100,
-        bgm: (80 / 100) / 2,
-        sfx: 100 / 100
-    }
-} else {
-    volume = JSON.parse(localStorage.getItem("volumeData"));
+        master: 1,
+        bgm: 0.4, // giống config cũ của bạn
+        sfx: 1
+    };
+
+    localStorage.setItem("volumeData", JSON.stringify(volume));
 }
 
-
-// BGM
+// ==================== BGM / SFX Object ====================
 let bgmDungeon;
 let bgmBattleMain;
 let bgmBattleBoss;
 let bgmBattleGuardian;
 
-// SFX
 let sfxEncounter;
 let sfxEnemyDeath;
 let sfxAttack;
@@ -135,7 +140,7 @@ const setVolume = () => {
         src: ['./assets/sfx/buff.wav'],
         volume: volume.sfx * volume.master
     });
-}
+};
 
 document.querySelector("#title-screen").addEventListener("click", function () {
     setVolume();
