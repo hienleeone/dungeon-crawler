@@ -1,7 +1,6 @@
 window.addEventListener("load", function () {
-    player = window.currentPlayerData
-           ?? JSON.parse(localStorage.getItem("playerData"))
-           ?? null;
+    player = window.currentPlayerData ?? null;
+    window.player = player;
 
     if (player === null) {
         // Chưa có dữ liệu → tạo nhân vật
@@ -13,9 +12,8 @@ window.addEventListener("load", function () {
 
     // Title Screen Validation
     document.querySelector("#title-screen").addEventListener("click", function () {
-        let player = window.currentPlayerData 
-                  ?? JSON.parse(localStorage.getItem("playerData")) 
-                  ?? null;
+        player = window.currentPlayerData ?? null;
+        window.currentEnemyData = JSON.parse(localStorage.getItem("enemyData")) || null;
         window.player = player;
         if (player.allocated) {
             enterDungeon();
@@ -409,8 +407,8 @@ const enterDungeon = () => {
     sfxConfirm.play();
     document.querySelector("#title-screen").style.display = "none";
     runLoad("dungeon-main", "flex");
-    if (player.inCombat) {
-        enemy = JSON.parse(localStorage.getItem("enemyData"));
+    if (player.inCombat && window.currentEnemyData) {
+        enemy = window.currentEnemyData;
         showCombatInfo();
         startCombat(bgmBattleMain);
     } else {
