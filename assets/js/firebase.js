@@ -21,9 +21,8 @@ async function syncPlayerFromServer(uid) {
     if (snap.exists()) {
         const serverData = snap.data().playerData;
 
-        // Nếu client cố bug vàng vượt mức hợp lệ → reset server value
         if (window.player && window.player.gold !== serverData.gold) {
-            console.warn("⚠ Phát hiện thao tác vàng bất thường — reset!");
+            console.warn("⚠ Phát hiện bug vàng — reset!");
             window.player.gold = serverData.gold;
         }
 
@@ -56,7 +55,6 @@ const firebaseConfig = {
 function attachAuthListener() {
   onAuthStateChanged(window.firebaseAuth, async (user) => {
 
-    // If not logged in: clear currentPlayerData and call startGameInit (guest flow)
     if (!user) {
       window.currentPlayerData = null;
       window.player = null;
@@ -65,18 +63,15 @@ function attachAuthListener() {
       return;
     }
 
-    // If logged in: load player data from Firestore and set window.player
     try {
       const ref = doc(window.firebaseDb, 'players', user.uid);
       const snap = await getDoc(ref);
       if (!snap.exists()) {
-        // first time: no profile
         window.currentPlayerData = null;
         window.player = null;
         try { localStorage.removeItem('playerData'); } catch(e){}
       } else {
         window.currentPlayerData = snap.data().playerData ?? null;
-        // set window.player to a detached copy so client modifications don't affect server copy
         try { window.player = window.currentPlayerData ? JSON.parse(JSON.stringify(window.currentPlayerData)) : null; } catch(e) { window.player = window.currentPlayerData; }
         if (window.currentPlayerData) {
           try { localStorage.setItem('playerData', JSON.stringify(window.currentPlayerData)); } catch(e){}
@@ -84,16 +79,14 @@ function attachAuthListener() {
       }
     } catch(e) {
       console.error('attachAuthListener error', e);
-      // fall back: treat as no data
       window.currentPlayerData = null;
       window.player = null;
     }
 
-    // ensure game init runs after auth + data ready
     if (window.startGameInit) window.startGameInit();
   });
 }
-}
+
 // LOGIN
 window.firebaseLogin = async (email, password) => {
   const res = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
@@ -102,7 +95,6 @@ window.firebaseLogin = async (email, password) => {
   const ref = doc(window.firebaseDb, "players", user.uid);
   const snap = await getDoc(ref);
 
-  // Không được ghi đè profile bằng null!
   if (snap.exists()) {
       window.currentPlayerData = snap.data().playerData ?? null;
   }
@@ -110,13 +102,14 @@ window.firebaseLogin = async (email, password) => {
   return user;
 };
 
-// REGISTER
+// REGISTER (1 bản duy nhất, không trùng)
 window.firebaseRegister = async (email, password) => {
   const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
   const ref = doc(window.firebaseDb, "players", res.user.uid);
 
-  // Tạo playerData rỗng lần đầu → để main.js kích hoạt màn hình đặt tên
   await setDoc(ref, { playerData: null });
+
+  window.justRegistered = true;
 
   return res.user;
 };
@@ -130,15 +123,4 @@ window.firebaseSetPlayer = async (uid, obj) => {
 // LOGOUT
 window.firebaseLogout = async () => {
   await signOut(window.firebaseAuth);
-};
-
-window.firebaseRegister = async (email, password) => {
-  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-
-  const ref = doc(window.firebaseDb, "players", res.user.uid);
-  await setDoc(ref, { playerData: null });
-
-  window.justRegistered = true; // <— thêm dòng này
-
-  return res.user;
 };
