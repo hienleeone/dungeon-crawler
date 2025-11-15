@@ -1,5 +1,5 @@
 window.addEventListener("load", function () {
-    if (typeof player === "undefined" || player === null) {
+    if (player === null) {
         runLoad("character-creation", "flex");
     } else {
         let target = document.querySelector("#title-screen");
@@ -8,7 +8,7 @@ window.addEventListener("load", function () {
 
     // Title Screen Validation
     document.querySelector("#title-screen").addEventListener("click", function () {
-        const player = (typeof window.player !== "undefined" ? window.player : JSON.parse(localStorage.getItem("playerData")));
+        const player = JSON.parse(localStorage.getItem("playerData"));
         if (player.allocated) {
             enterDungeon();
         } else {
@@ -813,19 +813,4 @@ const objectValidation = () => {
         player.tempStats.atkSpd = 0;
     }
     saveData();
-}
-
-
-// override savePlayer to persist to firebase when available
-async function savePlayer() {
-  try {
-    if (window.savePlayerToFirebase && window.getCurrentUid && window.getCurrentUid()) {
-      await window.savePlayerToFirebase(window.getCurrentUid(), window.player);
-    } else {
-      localStorage.setItem('playerData', JSON.stringify(window.player));
-    }
-  } catch(e) {
-    console.error('savePlayer override error', e);
-    localStorage.setItem('playerData', JSON.stringify(window.player));
-  }
 }

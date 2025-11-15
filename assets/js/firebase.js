@@ -53,8 +53,7 @@ const firebaseConfig = {
   attachAuthListener();
 })();
 
-function attachAuthListener()
- {
+function attachAuthListener() {
   onAuthStateChanged(window.firebaseAuth, async (user) => {
 
     // 1. Chưa đăng nhập → reset và gọi startGameInit
@@ -77,14 +76,10 @@ function attachAuthListener()
         window.currentPlayerData = snap.data().playerData ?? null;
     }
 
-    // set window.player to server copy (detached)
-    if (window.currentPlayerData) {
+    if (window.currentPlayerData)
       localStorage.setItem("playerData", JSON.stringify(window.currentPlayerData));
-      try { window.player = JSON.parse(JSON.stringify(window.currentPlayerData)); } catch(e) { window.player = window.currentPlayerData; }
-    } else {
+    else
       localStorage.removeItem("playerData");
-      window.player = null;
-    }
 
     // CHỈ GỌI Ở ĐÂY → ĐẢM BẢO DỮ LIỆU SẴN SÀNG
     if (window.startGameInit) window.startGameInit();
@@ -137,56 +132,4 @@ window.firebaseRegister = async (email, password) => {
   window.justRegistered = true; // <— thêm dòng này
 
   return res.user;
-};
-
-
-// --- Anti-hack helpers: sync and save ---
-window.getCurrentUid = function() {
-  try {
-    return window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : null;
-  } catch(e) { return null; }
-};
-
-window.syncPlayerFromServer = async function(uid) {
-  if (!uid) uid = window.getCurrentUid();
-  if (!uid) return null;
-  const ref = doc(window.firebaseDb, "players", uid);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return null;
-  const serverData = snap.data().playerData ?? null;
-  // set global
-  window.currentPlayerData = serverData;
-  window.player = JSON.parse(JSON.stringify(serverData)); // detach copy for client use
-  // also update localStorage for backward compatibility
-  if (window.currentPlayerData) localStorage.setItem("playerData", JSON.stringify(window.currentPlayerData));
-  else localStorage.removeItem("playerData");
-  return serverData;
-};
-
-window.savePlayerToFirebase = async function(uid, playerObj) {
-  if (!uid) uid = window.getCurrentUid();
-  if (!uid) throw new Error("No uid to save");
-  // sanitize minimal data
-  const copy = JSON.parse(JSON.stringify(playerObj || window.player || {}));
-  const ref = doc(window.firebaseDb, "players", uid);
-  await setDoc(ref, { playerData: copy }, { merge: true });
-  // update cached
-  window.currentPlayerData = copy;
-  localStorage.setItem("playerData", JSON.stringify(copy));
-  return copy;
-};
-
-// perform server-validated action: sync -> validate -> run action -> save
-window.performServerAction = async function(actionFn) {
-  const uid = window.getCurrentUid();
-  if (!uid) throw new Error("Not authenticated");
-  const server = await window.syncPlayerFromServer(uid);
-  if (!server) throw new Error("No server data");
-  // update window.player to server copy
-  window.player = JSON.parse(JSON.stringify(server));
-  // run action (may modify window.player)
-  const res = await actionFn(window.player);
-  // after action, save back
-  await window.savePlayerToFirebase(uid, window.player);
-  return res;
 };

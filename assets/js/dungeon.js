@@ -1,18 +1,3 @@
-
-
-// helper to safely add gold via server flow
-async function addGoldServerSide(amount) {
-  try {
-    await window.performServerAction(async (player)=> {
-      if (typeof player.gold !== 'number') player.gold = 0;
-      await addGoldServerSide(amount);
-      return true;
-    });
-  } catch(e) {
-    console.error('addGoldServerSide error', e);
-  }
-}
-
 const dungeonActivity = document.querySelector("#dungeonActivity");
 const dungeonAction = document.querySelector("#dungeonAction");
 const dungeonTime = document.querySelector("#dungeonTime");
@@ -373,7 +358,7 @@ const goldDrop = () => {
     sfxSell.play();
     let goldValue = randomizeNum(50, 500) * dungeon.progress.floor;
     addDungeonLog(`Bạn đã tìm thấy <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(goldValue)}.`);
-    await addGoldServerSide(goldValue);
+    player.gold += goldValue;
     playerLoadStats();
 }
 
