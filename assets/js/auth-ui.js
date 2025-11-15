@@ -1,11 +1,24 @@
 
 
-function mapFirebaseError(msg){
-  if(msg.includes("user-not-found")) return "Tài khoản chưa tạo!";
-  if(msg.includes("wrong-password")) return "Sai mật khẩu!";
-  if(msg.includes("invalid-credential")) return "Sai tài khoản hoặc mật khẩu!";
-  if(msg.includes("email-already-in-use")) return "Gmail đã được sử dụng!";
-  return "Lỗi: " + msg;
+function mapFirebaseError(code) {
+  switch (code) {
+
+    case "auth/user-not-found":
+      return "Tài khoản chưa được tạo!";
+
+    case "auth/wrong-password":
+      return "Sai mật khẩu!";
+
+    case "auth/invalid-credential":
+    case "auth/invalid-login-credentials":
+      return "Sai tài khoản hoặc mật khẩu!";
+
+    case "auth/email-already-in-use":
+      return "Gmail đã được sử dụng!";
+
+    default:
+      return "Lỗi: " + code;
+  }
 }
 
 
