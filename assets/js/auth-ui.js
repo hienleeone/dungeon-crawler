@@ -54,16 +54,28 @@ document.addEventListener("DOMContentLoaded",()=>{
     }
   };
 
-  btnReg.onclick=async()=>{
+  btnReg.onclick = async () => {
     showErr("");
-    if(pass.value!==pass2.value){
+
+    if (pass.value !== pass2.value) {
       showErr("Mật khẩu không khớp!");
       return;
     }
-    try{
-      await window.firebaseRegister(email.value,pass.value);
-      m.style.display="none";
-    }catch(e){
+
+    try {
+      await window.firebaseRegister(email.value, pass.value);
+
+      // Firebase đã tự đăng nhập → ẩn modal luôn
+      m.style.display = "none";
+
+      // Reset UI về chế độ login (để lần sau mở lên không bị sai giao diện)
+      mode = "login";
+      pass2.style.display = "none";
+      btnLogin.style.display = "block";
+      btnReg.style.display = "none";
+      sw.textContent = "Chuyển sang Đăng ký";
+
+    } catch (e) {
       showErr(mapFirebaseError(e.code));
     }
   };
