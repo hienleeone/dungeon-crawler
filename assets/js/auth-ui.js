@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       await window.firebaseLogin(email.value,pass.value);
       m.style.display="none";
     }catch(e){
-      showErr(mapFirebaseError(e.message));
+      showErr(mapFirebaseError(e.code));
     }
   };
 
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       await window.firebaseRegister(email.value,pass.value);
       m.style.display="none";
     }catch(e){
-      showErr(mapFirebaseError(e.message));
+      showErr(mapFirebaseError(e.code));
     }
   };
 
