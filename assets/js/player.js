@@ -1,132 +1,10 @@
+let player = JSON.parse(localStorage.getItem("playerData"));
+if (player) { player.gold = Number(player.gold) || 0; }
+let inventoryOpen = false;
+let leveled = false;
+const lvlupSelect = document.querySelector("#lvlupSelect");
+const lvlupPanel = document.querySelector("#lvlupPanel");
 
-// Firebase-integrated player manager (auto-inserted)
-let player = null;
-let currentUser = null;
-let remoteUnsubscribe = null;
-
-async function createDefaultPlayer(){
-  return {
-    name: (currentUser && currentUser.displayName) ? currentUser.displayName : 'Player',
-    gold:0, level:1, exp:{expCurr:0,expCurrLvl:0,expMax:50}, inventory:[]
-  };
-}
-
-async function savePlayerLocal(){ try{ localStorage.setItem('playerData', JSON.stringify(player)); }catch(e){}
-}
-
-function debounce(func, wait){ let t; return function(...a){ clearTimeout(t); t=setTimeout(()=>func.apply(this,a), wait); }; }
-
-const savePlayerRemoteDebounced = debounce(async ()=>{ if(!window._fb || !currentUser || !player) return; const { db, doc, setDoc } = window._fb; try{ await setDoc(doc(db, 'players', currentUser.uid), { playerData: player, updatedAt: Date.now() }, { merge: true }); }catch(e){ console.error('save remote', e); } }, 800);
-
-async function savePlayer(){ savePlayerLocal(); savePlayerRemoteDebounced(); }
-
-let currentUser = null;
-let remoteUnsubscribe = null;
-
-function debounce(func, wait) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
-}
-
-async function savePlayerLocal() {
-  try {
-    localStorage.setItem("playerData", JSON.stringify(player));
-  } catch (e) { console.warn(e); }
-}
-const savePlayerRemoteDebounced = debounce(async () => {
-  if (!currentUser || !player) return;
-  try {
-    const { db, doc, setDoc } = window._fb;
-    const ref = doc(db,"players",currentUser.uid);
-    await setDoc(ref,{playerData:player,updatedAt:Date.now()},{merge:true});
-  } catch(e){ console.error("Save remote error",e); }
-},800);
-
-async function savePlayer(){ savePlayerLocal(); savePlayerRemoteDebounced(); }
-
-function createDefaultPlayer() {
-  // Minimal default player structure inferred from code usage
-  return {
-    name: currentUser ? (currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : "Player")) : "Player",
-    gold: 0,
-    level: 1,
-    lvl: 1,
-    exp: { expCurr: 0, expCurrLvl: 0, expMax: 50, expMaxLvl: 50 },
-    inventory: [],
-    allocated: false
-  };
-}
-
-async function initPlayerForUser(user) {
-  currentUser = user;
-  const { db, doc, getDoc, setDoc, onSnapshot } = window._fb;
-  const ref = doc(db, "players", user.uid);
-  // If local exists and remote doesn't, migrate
-  const localRaw = localStorage.getItem('playerData');
-  try {
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      if (localRaw) {
-        try {
-          const local = JSON.parse(localRaw);
-          await setDoc(ref, { playerData: local, migratedFromLocalAt: Date.now() });
-          player = local;
-        } catch (e) {
-          player = createDefaultPlayer();
-          await setDoc(ref, { playerData: player, createdAt: Date.now() });
-        }
-      } else {
-        player = createDefaultPlayer();
-        await setDoc(ref, { playerData: player, createdAt: Date.now() });
-      }
-    } else {
-      const remote = snap.data().playerData;
-      if (remote) {
-        player = remote;
-      } else {
-        player = createDefaultPlayer();
-      }
-    }
-  } catch (e) {
-    console.warn("initPlayerForUser error:", e);
-    player = player || createDefaultPlayer();
-  }
-
-  // subscribe to remote changes
-  if (remoteUnsubscribe) remoteUnsubscribe();
-  try {
-    remoteUnsubscribe = onSnapshot(ref, (s) => {
-      if (s.exists()) {
-        const remote = s.data().playerData;
-        if (remote) {
-          player = remote;
-          savePlayerLocal();
-          if (typeof refreshPlayerUI === 'function') refreshPlayerUI();
-        }
-      }
-    });
-  } catch(e) { console.warn("onSnapshot error", e); }
-
-  // notify game that player is ready
-  if (typeof onPlayerReady === 'function') onPlayerReady();
-  // Dispatch DOM event so UI can react when player data is loaded
-  window.dispatchEvent(new CustomEvent('playerLoaded', { detail: player }));
-}
-
-window.addEventListener('firebaseUserReady', (e) => { initPlayerForUser(e.detail).catch(console.error); });
-window.addEventListener('firebaseUserSignedOut', () => {
-  currentUser = null;
-  if (remoteUnsubscribe) { remoteUnsubscribe(); remoteUnsubscribe = null; }
-  player = JSON.parse(localStorage.getItem("playerData")||"null") || null;
-  if (typeof refreshPlayerUI === 'function') refreshPlayerUI();
-});
-
-// Replace direct localStorage usage in other files by encouraging savePlayer()
-// Note: original code will still call savePlayerLocal via savePlayer function
-// ---- original content continues below ----
 const playerExpGain = () => {
     player.exp.expCurr += enemy.rewards.exp;
     player.exp.expCurrLvl += enemy.rewards.exp;
@@ -395,19 +273,4 @@ const generateLvlStats = (rerolls, percentages) => {
             lvlupSelect.appendChild(button);
         }
     } catch (err) { }
-}
-
-async function savePlayer() {
-    try {
-        if (currentUser) {
-            // Firebase mode
-            await savePlayerToFirebase();
-        } else {
-            // Local fallback
-            savePlayerLocal();
-        }
-    } catch (e) {
-        console.error("Lỗi khi savePlayer(): ", e);
-        savePlayerLocal(); // fallback
-    }
 }

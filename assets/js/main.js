@@ -1,21 +1,19 @@
 window.addEventListener("load", function () {
-    // Wait for Firebase auth / player to be ready
-    function startWhenReady() {
-        if (typeof player === 'undefined' || player === null) {
-            // show character creation only if player is null
-            runLoad("character-creation", "flex");
-        } else {
-            let target = document.querySelector("#title-screen");
-            target.style.display = "flex";
-        }
+    if (player === null) {
+        runLoad("character-creation", "flex");
+    } else {
+        let target = document.querySelector("#title-screen");
+        target.style.display = "flex";
     }
 
-    // If using Firebase, wait for player ready event
-    window.addEventListener('firebaseUserReady', function() { startWhenReady(); });
-    window.addEventListener('firebaseUserSignedOut', function() { startWhenReady(); });
-
-    // Also call once on load
-    startWhenReady();
+    // Title Screen Validation
+    document.querySelector("#title-screen").addEventListener("click", function () {
+        const player = JSON.parse(localStorage.getItem("playerData"));
+        if (player.allocated) {
+            enterDungeon();
+        } else {
+            allocationPopup();
+        }
     });
 
     // Prevent double-click zooming on mobile devices
@@ -386,6 +384,7 @@ window.addEventListener("load", function () {
             dimDungeon.style.filter = "brightness(100%)";
         };
     });
+});
 
 // Loading Screen
 const runLoad = (id, display) => {
@@ -422,10 +421,25 @@ const saveData = () => {
     const dungeonData = JSON.stringify(dungeon);
     const enemyData = JSON.stringify(enemy);
     const volumeData = JSON.stringify(volume);
-    savePlayer();
+
+    // Always keep a local copy for fallback / offline usage
+    localStorage.setItem("playerData", playerData);
     localStorage.setItem("dungeonData", dungeonData);
     localStorage.setItem("enemyData", enemyData);
     localStorage.setItem("volumeData", volumeData);
+
+    // If Firebase is enabled and a user is signed in, push player profile to Firestore
+    try {
+        if (window.firebaseEnabled && window.firebaseAuth && window.firebaseAuth.currentUser) {
+            const uid = window.firebaseAuth.currentUser.uid;
+            // store the player object (not the serialized string)
+            window.firebaseSetPlayer(uid, player).then((ok) => {
+                if (!ok) console.warn("Failed to save player to Firebase");
+            }).catch((e)=> console.warn("Firebase save error:", e));
+        }
+    } catch (e) {
+        console.warn("saveData firebase check failed:", e);
+    }
 }
 
 // Calculate every player stat
@@ -815,23 +829,3 @@ const objectValidation = () => {
     }
     saveData();
 }
-
-// Show title-screen when playerLoaded fired
-window.addEventListener('playerLoaded', function(e){
-  // show title-screen (unhide)
-  const title = document.getElementById('title-screen'); if(title) title.style.display='flex';
-});
-
-// Start game when clicking title-screen (after player is loaded)
-document.addEventListener('click', function(e){
-  const title = document.getElementById('title-screen');
-  if(!title) return;
-  if(title.style.display==='flex' && title.contains(e.target)){
-    // ensure player loaded
-    if(window.player === undefined || window.player === null){
-      // try player from event detail
-      console.warn('Player not ready yet'); return;
-    }
-    try{ if(typeof startGame === 'function') startGame(); }catch(err){ console.error('startGame error', err); }
-  }
-});
