@@ -52,7 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
     showErr("");
     try {
       await window.firebaseLogin(email.value, pass.value);
-      modal.style.display = "none"; // Firebase sẽ gọi startGameInit
+      // firebase attachAuthListener will call startGameInit; hide modal here
+      modal.style.display = "none";
     } catch (e) {
       showErr(mapFirebaseError(e.code));
     }
@@ -70,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await window.firebaseRegister(email.value, pass.value);
 
-      showErr("Đăng ký thành công! Vui lòng đăng nhập.");
+      showErr("Thành công! Hãy đăng nhập.");
       mode = "login";
 
       pass2.style.display = "none";
@@ -84,13 +85,24 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 });
 
-// DÙNG TRONG MENU
+// Replace old export-import button with logout when DOM ready
 document.addEventListener("DOMContentLoaded", function(){
   const exportBtn = document.querySelector('#export-import');
   if (exportBtn) {
     exportBtn.textContent = 'Đăng Xuất';
     exportBtn.onclick = async function(){
-      await window.firebaseLogout();
+      if (window.firebaseLogout) {
+        await window.firebaseLogout();
+        // show auth modal after logout
+        const modal = document.getElementById("auth-modal");
+        if (modal) modal.style.display = "flex";
+        // clear local game state
+        localStorage.clear();
+        location.reload();
+      } else {
+        localStorage.clear();
+        location.reload();
+      }
     }
   }
 });

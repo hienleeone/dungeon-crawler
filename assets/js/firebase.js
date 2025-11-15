@@ -22,6 +22,10 @@ window.firebaseAuth = null;
 window.firebaseDb = null;
 window.currentPlayerData = null;
 
+// minimal rate-limit guard for sync calls
+window._lastServerSync = 0;
+window._serverSyncCooldown = 2000; // ms
+
 const firebaseConfig = {
   apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
   authDomain: "soulmc-account.firebaseapp.com",
@@ -52,6 +56,7 @@ function attachAuthListener() {
     if (!user) {
       window.currentPlayerData = null;
       localStorage.removeItem("playerData");
+      // show auth modal (auth-ui handles display)
       if (window.startGameInit) window.startGameInit();
       return;
     }
@@ -115,4 +120,36 @@ window.firebaseCheckNameExists = async function(name) {
 // LOGOUT
 window.firebaseLogout = async () => {
   await signOut(window.firebaseAuth);
+};
+
+// Sync player data from server and enforce server gold/critical fields
+window.syncPlayerFromServer = async function(uid) {
+  const now = Date.now();
+  if (now - (window._lastServerSync || 0) < window._serverSyncCooldown) return null;
+  window._lastServerSync = now;
+  try {
+    const ref = doc(window.firebaseDb, "players", uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const serverData = snap.data().playerData;
+    if (!serverData) return null;
+    // enforce gold/allocated/skills integrity
+    if (window.player && typeof window.player.gold === 'number' && serverData.gold !== undefined) {
+      if (window.player.gold !== serverData.gold) {
+        console.warn("⚠ Phát hiện gold client khác server — reset local gold to server value.");
+        window.player.gold = serverData.gold;
+      }
+    }
+    // enforce allocated flag
+    if (serverData.allocated && window.player && !window.player.allocated) {
+      window.player.allocated = true;
+    }
+    // update currentPlayerData snapshot
+    window.currentPlayerData = JSON.parse(JSON.stringify(serverData));
+    localStorage.setItem("playerData", JSON.stringify(window.currentPlayerData));
+    return serverData;
+  } catch (e) {
+    console.warn("syncPlayerFromServer error", e);
+    return null;
+  }
 };
