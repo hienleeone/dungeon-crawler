@@ -123,6 +123,7 @@ window.addEventListener("load", function () {
                 if (window.firebaseAuth.currentUser) {
                     window.firebaseSetPlayer(window.firebaseAuth.currentUser.uid, player);
                 }
+                window.currentPlayerData = player;
                 document.querySelector("#character-creation").style.display = "none";
                 runLoad("title-screen", "flex");
             }
