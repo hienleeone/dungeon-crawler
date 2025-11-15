@@ -62,7 +62,7 @@ function attachAuthListener() {
     // Nếu chưa có profile → tạo profile rỗng
     if (!snap.exists()) {
       console.log("Creating new empty profile...");
-      await setDoc(ref, { playerData: null });
+      await setDoc(ref, { playerData: local ?? defaultPlayerProfile() });
       window.currentPlayerData = null;
     } 
     else {
