@@ -1,10 +1,63 @@
-let player = JSON.parse(localStorage.getItem("playerData"));
-if (player) { player.gold = Number(player.gold) || 0; }
-let inventoryOpen = false;
-let leveled = false;
-const lvlupSelect = document.querySelector("#lvlupSelect");
-const lvlupPanel = document.querySelector("#lvlupPanel");
 
+// Firebase-integrated player manager
+let player = null;
+let currentUser = null;
+let remoteUnsubscribe = null;
+
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+async function savePlayerLocal() {
+  try {
+    localStorage.setItem("playerData", JSON.stringify(player));
+  } catch (e) { console.warn(e); }
+}
+const savePlayerRemoteDebounced = debounce(async () => {
+  if (!currentUser || !player) return;
+  const { db, doc, setDoc } = window._fb;
+  const ref = doc(db,"players",currentUser.uid);
+  await setDoc(ref,{playerData:player,updatedAt:Date.now()},{merge:true});
+},800);
+
+async function savePlayer(){ savePlayerLocal(); savePlayerRemoteDebounced(); }
+
+function createDefaultPlayer(){
+  return { name:"New Player", gold:0, exp:{expCurr:0,expCurrLvl:0,expMax:50}, /*...*/ };
+}
+
+async function initPlayerForUser(user){
+  currentUser=user;
+  const {db,doc,getDoc,setDoc,onSnapshot}=window._fb;
+  const ref=doc(db,"players",user.uid);
+  const localRaw=localStorage.getItem("playerData");
+  if(localRaw){
+    const local=JSON.parse(localRaw);
+    const snap=await getDoc(ref);
+    if(!snap.exists()){
+      await setDoc(ref,{playerData:local,migratedFromLocalAt:Date.now()});
+      player=local;
+    }
+  }
+  remoteUnsubscribe=onSnapshot(ref,(snap)=>{
+    if(snap.exists()){
+      player=snap.data().playerData;
+      savePlayerLocal();
+      if(typeof refreshPlayerUI==="function")refreshPlayerUI();
+    }else{
+      if(!player){ player=createDefaultPlayer(); savePlayer(); }
+    }
+  });
+}
+
+window.addEventListener('firebaseUserReady',(e)=>{initPlayerForUser(e.detail)});
+window.addEventListener('firebaseUserSignedOut',()=>{currentUser=null; if(remoteUnsubscribe){remoteUnsubscribe();}; player=JSON.parse(localStorage.getItem("playerData"))||null;});
+
+// ---- ORIGINAL CODE BELOW ----
 const playerExpGain = () => {
     player.exp.expCurr += enemy.rewards.exp;
     player.exp.expCurrLvl += enemy.rewards.exp;
