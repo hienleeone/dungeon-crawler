@@ -52,10 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showErr("");
     try {
       await window.firebaseLogin(email.value, pass.value);
-
-      // Firebase auto login sẽ gọi startGameInit → lúc đó main.js xử lý
-      modal.style.display = "none";
-
+      modal.style.display = "none"; // Firebase sẽ gọi startGameInit
     } catch (e) {
       showErr(mapFirebaseError(e.code));
     }
@@ -73,11 +70,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await window.firebaseRegister(email.value, pass.value);
 
-      // Firebase auto login → startGameInit nhận playerData=null → hiện tạo tên
-      modal.style.display = "none";
-
-      // Reset về login mode
+      showErr("Đăng ký thành công! Vui lòng đăng nhập.");
       mode = "login";
+
       pass2.style.display = "none";
       btnLogin.style.display = "block";
       btnReg.style.display = "none";
@@ -89,42 +84,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 });
 
-
-// --- Auth UI overrides to enforce required flow ---
-document.addEventListener('DOMContentLoaded', function(){
-  const regForm = document.querySelector('#auth-register-form') || document.querySelector('#register-form');
-  const loginForm = document.querySelector('#auth-login-form') || document.querySelector('#login-form');
-  if (regForm) {
-    regForm.addEventListener('submit', async function(e){
-      e.preventDefault();
-      const emailEl = regForm.querySelector('input[type="email"]') || regForm.querySelector('#reg-email');
-      const pwEl = regForm.querySelector('input[type="password"]') || regForm.querySelector('#reg-pass');
-      const email = emailEl ? emailEl.value : '';
-      const pw = pwEl ? pwEl.value : '';
-      try {
-        await window.firebaseRegister(email, pw);
-        alert('Đăng ký thành công. Vui lòng đăng nhập.');
-        if (loginForm) { loginForm.style.display = 'block'; regForm.style.display = 'none'; }
-      } catch(err) {
-        console.error(err);
-        alert('Lỗi đăng ký: ' + (err.message || err.code || ''));
-      }
-    });
-  }
-  if (loginForm) {
-    loginForm.addEventListener('submit', async function(e){
-      try { e.preventDefault();
-        const emailEl = loginForm.querySelector('input[type="email"]') || loginForm.querySelector('#auth-email');
-        const pwEl = loginForm.querySelector('input[type="password"]') || loginForm.querySelector('#auth-pass');
-        const email = emailEl ? emailEl.value : '';
-        const pw = pwEl ? pwEl.value : '';
-        if (window.firebaseLogin) { await window.firebaseLogin(email, pw); } else { await signInWithEmailAndPassword(window.firebaseAuth, email, pw); }
-      } catch(err) { console.error(err); alert('Lỗi đăng nhập: ' + (err.message || err.code || '')); }
-    });
-  }
+// DÙNG TRONG MENU
+document.addEventListener("DOMContentLoaded", function(){
   const exportBtn = document.querySelector('#export-import');
   if (exportBtn) {
     exportBtn.textContent = 'Đăng Xuất';
-    exportBtn.onclick = async function(){ try { await window.firebaseLogout(); } catch(e) { console.error(e); } }
+    exportBtn.onclick = async function(){
+      await window.firebaseLogout();
+    }
   }
 });

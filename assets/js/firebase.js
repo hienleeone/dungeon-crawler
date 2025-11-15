@@ -4,14 +4,18 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   onAuthStateChanged,
-  signOut
+  signOut,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
 import { 
   getFirestore, 
   doc, 
   getDoc, 
-  setDoc 
+  setDoc,
+  collection,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
 window.firebaseAuth = null;
@@ -28,35 +32,37 @@ const firebaseConfig = {
   measurementId: "G-NW033BL7PW"
 };
 
-(function() {
+(async function() {
   const app = initializeApp(firebaseConfig);
-  window.firebaseAuth = getAuth(app);
+  const auth = getAuth(app);
+
+  // GIỮ ĐĂNG NHẬP khi reload
+  await setPersistence(auth, browserLocalPersistence);
+
+  window.firebaseAuth = auth;
   window.firebaseDb = getFirestore(app);
 
   attachAuthListener();
 })();
 
+// LẮNG NGHE LOGIN
 function attachAuthListener() {
   onAuthStateChanged(window.firebaseAuth, async (user) => {
 
-    // 1. Chưa đăng nhập → reset và gọi startGameInit
     if (!user) {
       window.currentPlayerData = null;
       localStorage.removeItem("playerData");
-
       if (window.startGameInit) window.startGameInit();
       return;
     }
 
-    // 2. Đã đăng nhập → chờ firebase tải dữ liệu player xong rồi mới xử lý
     const ref = doc(window.firebaseDb, "players", user.uid);
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
-        // mới lần đầu đăng ký → chưa có profile → hỏi tên
-        window.currentPlayerData = null;
+      window.currentPlayerData = null;       // lần đầu đăng nhập → chưa có nhân vật
     } else {
-        window.currentPlayerData = snap.data().playerData ?? null;
+      window.currentPlayerData = snap.data().playerData ?? null;
     }
 
     if (window.currentPlayerData)
@@ -64,58 +70,49 @@ function attachAuthListener() {
     else
       localStorage.removeItem("playerData");
 
-    // CHỈ GỌI Ở ĐÂY → ĐẢM BẢO DỮ LIỆU SẴN SÀNG
     if (window.startGameInit) window.startGameInit();
   });
 }
+
 // LOGIN
 window.firebaseLogin = async (email, password) => {
   const res = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
-  const user = res.user;
-
-  const ref = doc(window.firebaseDb, "players", user.uid);
-  const snap = await getDoc(ref);
-
-  // Không được ghi đè profile bằng null!
-  if (snap.exists()) {
-      window.currentPlayerData = snap.data().playerData ?? null;
-  }
-
-  return user;
+  return res.user;
 };
 
-// REGISTER
+// REGISTER → KHÔNG auto login
+window.firebaseRegister = async (email, password) => {
+  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
 
+  const ref = doc(window.firebaseDb, "players", res.user.uid);
+  await setDoc(ref, { playerData: null });
 
-// SAVE
+  await signOut(window.firebaseAuth);  // BẮT BUỘC ĐĂNG NHẬP LẠI
+
+  return res.user;
+};
+
+// SAVE TO FIRESTORE
 window.firebaseSetPlayer = async (uid, obj) => {
   const ref = doc(window.firebaseDb, "players", uid);
   await setDoc(ref, { playerData: obj });
 };
 
+// CHECK NAME TRÙNG
+window.firebaseCheckNameExists = async function(name) {
+  const playersRef = collection(window.firebaseDb, "players");
+  const snap = await getDocs(playersRef);
+
+  for (let docu of snap.docs) {
+    const data = docu.data().playerData;
+    if (data && data.name && data.name.toLowerCase() === name.toLowerCase()) {
+      return true; // tên trùng
+    }
+  }
+  return false;
+};
+
 // LOGOUT
 window.firebaseLogout = async () => {
   await signOut(window.firebaseAuth);
-};
-
-window.firebaseRegister = async (email, password) => {
-  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-
-  const ref = doc(window.firebaseDb, "players", res.user.uid);
-  await setDoc(ref, { playerData: null });
-
-  window.justRegistered = true; // <— thêm dòng này
-
-  return res.user;
-};
-
-// REGISTER - create account but DO NOT keep user signed in (force to login afterwards)
-window.firebaseRegister = async (email, password) => {
-  const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-  const ref = doc(window.firebaseDb, "players", res.user.uid);
-  // create empty playerData (null) so on next login we prompt for name
-  await setDoc(ref, { playerData: null });
-  // sign out immediately so user must log in explicitly
-  await signOut(window.firebaseAuth);
-  return res.user;
 };
