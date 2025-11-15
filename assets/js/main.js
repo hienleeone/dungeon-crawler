@@ -1,34 +1,25 @@
-window.addEventListener("load", function () {
-    window.currentPlayerData = JSON.parse(localStorage.getItem("playerData")) ?? null;
-    player = window.currentPlayerData;
-    window.player = player;
+window.startGameInit = function () {
 
-    if (player === null) {
-        // Chưa có dữ liệu → tạo nhân vật
+    // lấy dữ liệu player đã nạp từ firebaseAuth listener
+    player = window.currentPlayerData;
+
+    // Trường hợp đăng ký user mới → currentPlayerData === null
+    if (window.currentPlayerData === null) {
+        document.querySelector("#title-screen").style.display = "none";
         runLoad("character-creation", "flex");
-    } else {
-        // Có dữ liệu → vào màn hình title
-        document.querySelector("#title-screen").style.display = "flex";
+        return;
     }
 
-    // Title Screen Validation
-    document.querySelector("#title-screen").addEventListener("click", function () {
-        player = window.currentPlayerData ?? null;
-        window.currentEnemyData = JSON.parse(localStorage.getItem("enemyData")) || null;
-        window.player = player;
+    // Trường hợp đăng nhập user cũ → currentPlayerData là object
+    if (typeof window.currentPlayerData === "object") {
+        runLoad("title-screen", "flex");
+        return;
+    }
 
-        // ❗ Không cho click title nếu chưa tạo nhân vật
-        if (!player) return;
-
-        // ❗ Firebase chưa có playerData → phải tạo nhân vật trước
-        if (!player.allocated) {
-            allocationPopup();
-            return;
-        }
-
-        // ❗ Có đầy đủ dữ liệu → vào dungeon
-        enterDungeon();
-    });
+    // Trường hợp listener CHƯA kịp load → chờ
+    console.warn("Firebase chưa trả dữ liệu — chờ 100ms...");
+    setTimeout(window.startGameInit, 100);
+};
 
     // Prevent double-click zooming on mobile devices
     document.ondblclick = function (e) {
@@ -38,9 +29,10 @@ window.addEventListener("load", function () {
     // Submit Name
     document.querySelector("#name-submit").addEventListener("submit", function (e) {
         e.preventDefault();
-        if (window.firebaseAuth?.currentUser && window.currentPlayerData !== null) {
-            // Firebase đã có profile → không được tạo player mới
-            player = window.currentPlayerData;
+        // Nếu Firebase chưa có playerData → được tạo nhân vật
+        // Chỉ cho phép tạo nhân vật nếu là user mới
+        if (window.currentPlayerData !== null) {
+            // user cũ → tuyệt đối không cho đặt tên lại
             runLoad("title-screen", "flex");
             return;
         }
@@ -124,7 +116,7 @@ window.addEventListener("load", function () {
                 if (window.firebaseAuth.currentUser) {
                     window.firebaseSetPlayer(window.firebaseAuth.currentUser.uid, player);
                 }
-                window.currentPlayerData = player;
+                window.currentPlayerData = JSON.parse(JSON.stringify(player));
                 document.querySelector("#character-creation").style.display = "none";
                 runLoad("title-screen", "flex");
             }
@@ -386,7 +378,11 @@ window.addEventListener("load", function () {
             };
             window.firebaseLogout = async () => {
                 await signOut(window.firebaseAuth);
-                localStorage.clear(); // 🔥 Xoá sạch dữ liệu cũ
+
+                // CHỈ xoá local sau khi signOut hoàn tất
+                localStorage.clear();
+
+                // reset UI
                 location.reload();
             };
 
