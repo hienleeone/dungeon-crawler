@@ -147,8 +147,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       window.currentPlayerData = window.player;
-      if (charCreation) charCreation.style.display = "none";
-      runLoad("title-screen", "flex");
+
+      // 🔥 GỌI THỐNG KÊ TẠI ĐÂY
+      allocationPopup();
+      return;
     });
   } // end name form
 
