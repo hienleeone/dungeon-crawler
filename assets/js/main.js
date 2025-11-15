@@ -1,5 +1,6 @@
 window.addEventListener("load", function () {
-    player = window.currentPlayerData ?? null;
+    window.currentPlayerData = JSON.parse(localStorage.getItem("playerData")) ?? null;
+    player = window.currentPlayerData;
     window.player = player;
 
     if (player === null) {
@@ -382,6 +383,11 @@ window.addEventListener("load", function () {
                     localStorage.clear();
                     location.reload();
                 }
+            };
+            window.firebaseLogout = async () => {
+                await signOut(window.firebaseAuth);
+                localStorage.clear(); // 🔥 Xoá sạch dữ liệu cũ
+                location.reload();
             };
 
             document.querySelector("#logout-cancel").onclick = () => {
