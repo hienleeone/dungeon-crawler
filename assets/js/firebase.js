@@ -116,3 +116,20 @@ window.firebaseRegister = async (email, password) => {
 
   return res.user;
 };
+
+async function syncPlayerFromServer(uid) {
+    const ref = doc(window.firebaseDb, "players", uid);
+    const snap = await getDoc(ref);
+
+    if (snap.exists()) {
+        const serverData = snap.data().playerData;
+
+        // Nếu client cố bug vàng vượt mức hợp lệ → reset server value
+        if (window.player && window.player.gold !== serverData.gold) {
+            console.warn("⚠ Phát hiện thao tác vàng bất thường — reset!");
+            window.player.gold = serverData.gold;
+        }
+
+        return serverData;
+    }
+}
