@@ -331,43 +331,37 @@ window.addEventListener("load", function () {
             };
         };
 
-        // Export/Import Save Data
+        // Nút Đăng Xuất – thay thế Export/Import Save Data
+        const logoutBtn = document.createElement("button");
+        logoutBtn.id = "logout-btn";
+        logoutBtn.textContent = "Đăng Xuất";
+        menuModalElement.querySelector(".content").appendChild(logoutBtn);
 
+        logoutBtn.onclick = () => {
             sfxOpen.play();
-
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
+
             defaultModalElement.innerHTML = `
-            <div class="content" id="ei-tab">
-                <div class="content-head">
-                    <h3>Đăng Xuất</h3>
-                    <p id="ei-close"><i class="fa fa-xmark"></i></p>
+                <div class="content">
+                    <p>Bạn có chắc muốn đăng xuất?</p>
+                    <div class="button-container">
+                        <button id="logout-confirm">Đăng Xuất</button>
+                        <button id="logout-cancel">Hủy</button>
+                    </div>
                 </div>
-                <h4>Xuất Dữ Liệu</h4>
+            `;
 
-
-                <h4>Nhập Dữ Liệu</h4>
-
-
-            </div>`;
-            let eiTab = document.querySelector('#ei-tab');
-            eiTab.style.width = "15rem";
-            let eiClose = document.querySelector('#ei-close');
-
-
-
-            copyExport.onclick = function () {
+            document.querySelector("#logout-confirm").onclick = () => {
                 sfxConfirm.play();
-
-                copyText.select();
-                copyText.setSelectionRange(0, 99999);
-                navigator.clipboard.writeText(copyText.value);
-                copyExport.innerHTML = "Copied!";
-            }
-            dataImport.onclick = function () {
-
+                if (window.firebaseLogout) window.firebaseLogout();
+                else {
+                    localStorage.clear();
+                    location.reload();
+                }
             };
-            eiClose.onclick = function () {
+
+            document.querySelector("#logout-cancel").onclick = () => {
                 sfxDecline.play();
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
@@ -511,62 +505,6 @@ const progressReset = () => {
     dungeon.statistics.runtime = 0;
     combatBacklog.length = 0;
     saveData();
-}
-
-// Export and Import Save Data
-
-
-
-}
-
-
-    try {
-
-        if (playerImport.inventory !== undefined) {
-            sfxOpen.play();
-            defaultModalElement.style.display = "none";
-            confirmationModalElement.style.display = "flex";
-            confirmationModalElement.innerHTML = `
-            <div class="content">
-                <p>Bạn có chắc chắn muốn nhập dữ liệu này không? Thao tác này sẽ xóa dữ liệu hiện tại và đặt lại tiến trình hầm ngục của bạn.</p>
-                <div class="button-container">
-
-                    <button id="cancel-btn">Hủy Bỏ</button>
-                </div>
-            </div>`;
-
-            let cancel = document.querySelector("#cancel-btn");
-            confirm.onclick = function () {
-                sfxConfirm.play();
-                player = playerImport;
-                saveData();
-                bgmDungeon.stop();
-                let dimDungeon = document.querySelector('#dungeon-main');
-                dimDungeon.style.filter = "brightness(100%)";
-                dimDungeon.style.display = "none";
-                menuModalElement.style.display = "none";
-                menuModalElement.innerHTML = "";
-                confirmationModalElement.style.display = "none";
-                confirmationModalElement.innerHTML = "";
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                runLoad("title-screen", "flex");
-                clearInterval(dungeonTimer);
-                clearInterval(playTimer);
-                progressReset();
-            }
-            cancel.onclick = function () {
-                sfxDecline.play();
-                confirmationModalElement.style.display = "none";
-                confirmationModalElement.innerHTML = "";
-                defaultModalElement.style.display = "flex";
-            }
-        } else {
-            sfxDeny.play();
-        }
-    } catch (err) {
-        sfxDeny.play();
-    }
 }
 
 // Player Stat Allocation

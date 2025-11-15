@@ -1,26 +1,18 @@
-
-
 function mapFirebaseError(code) {
   switch (code) {
-
     case "auth/user-not-found":
       return "Tài khoản chưa được tạo!";
-
     case "auth/wrong-password":
       return "Sai mật khẩu!";
-
-    case "auth/invalid-credential":
     case "auth/invalid-login-credentials":
+    case "auth/invalid-credential":
       return "Sai tài khoản hoặc mật khẩu!";
-
     case "auth/email-already-in-use":
-      return "Gmail đã được sử dụng!";
-
+      return "Email đã được sử dụng!";
     default:
       return "Lỗi: " + code;
   }
 }
-
 
 document.addEventListener("DOMContentLoaded",()=>{
   const m=document.getElementById("auth-modal");
@@ -32,7 +24,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const btnReg=document.getElementById("auth-register-btn");
   const sw=document.getElementById("auth-switch");
 
-  let mode="login"; // or register
+  let mode="login";
 
   function showErr(t){err.textContent=t;}
 
@@ -65,7 +57,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   btnReg.onclick=async()=>{
     showErr("");
     if(pass.value!==pass2.value){
-      showErr("Mật khẩu không khớp");
+      showErr("Mật khẩu không khớp!");
       return;
     }
     try{
@@ -76,11 +68,9 @@ document.addEventListener("DOMContentLoaded",()=>{
     }
   };
 
-  // Hide modal if already signed in
-  const int=setInterval(()=>{
+  setInterval(()=>{
     if(window.firebaseAuth && window.firebaseAuth.currentUser){
       m.style.display="none";
-      clearInterval(int);
     }
   },500);
 });
