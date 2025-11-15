@@ -39,21 +39,23 @@ const firebaseConfig = {
 function attachAuthListener() {
   onAuthStateChanged(window.firebaseAuth, async (user) => {
 
+    // 1. Chưa đăng nhập → reset và gọi startGameInit
     if (!user) {
       window.currentPlayerData = null;
       localStorage.removeItem("playerData");
+
       if (window.startGameInit) window.startGameInit();
       return;
     }
 
+    // 2. Đã đăng nhập → chờ firebase tải dữ liệu player xong rồi mới xử lý
     const ref = doc(window.firebaseDb, "players", user.uid);
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
       await setDoc(ref, { playerData: null });
       window.currentPlayerData = null;
-    } 
-    else {
+    } else {
       window.currentPlayerData = snap.data().playerData ?? null;
     }
 
@@ -62,10 +64,10 @@ function attachAuthListener() {
     else
       localStorage.removeItem("playerData");
 
+    // CHỈ GỌI Ở ĐÂY → ĐẢM BẢO DỮ LIỆU SẴN SÀNG
     if (window.startGameInit) window.startGameInit();
   });
 }
-
 // REGISTER
 window.firebaseRegister = async (email, password) => {
   const res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
