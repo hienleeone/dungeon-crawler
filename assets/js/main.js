@@ -1,5 +1,5 @@
 window.addEventListener("load", function () {
-    if (player === null) {
+    if (typeof window.player === 'undefined' || window.player === null) {
         runLoad("character-creation", "flex");
     } else {
         let target = document.querySelector("#title-screen");
@@ -8,7 +8,7 @@ window.addEventListener("load", function () {
 
     // Title Screen Validation
     document.querySelector("#title-screen").addEventListener("click", function () {
-        const player = JSON.parse(localStorage.getItem("playerData"));
+        const player = (typeof window.player !== "undefined" && window.player !== null) ? window.player : JSON.parse(localStorage.getItem("playerData")||"null");
         if (player.allocated) {
             enterDungeon();
         } else {

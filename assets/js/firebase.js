@@ -56,34 +56,43 @@ const firebaseConfig = {
 function attachAuthListener() {
   onAuthStateChanged(window.firebaseAuth, async (user) => {
 
-    // 1. Chưa đăng nhập → reset và gọi startGameInit
+    // If not logged in: clear currentPlayerData and call startGameInit (guest flow)
     if (!user) {
       window.currentPlayerData = null;
-      localStorage.removeItem("playerData");
-
+      window.player = null;
+      try { localStorage.removeItem('playerData'); } catch(e){}
       if (window.startGameInit) window.startGameInit();
       return;
     }
 
-    // 2. Đã đăng nhập → chờ firebase tải dữ liệu player xong rồi mới xử lý
-    const ref = doc(window.firebaseDb, "players", user.uid);
-    const snap = await getDoc(ref);
-
-    if (!snap.exists()) {
-        // mới lần đầu đăng ký → chưa có profile → hỏi tên
+    // If logged in: load player data from Firestore and set window.player
+    try {
+      const ref = doc(window.firebaseDb, 'players', user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        // first time: no profile
         window.currentPlayerData = null;
-    } else {
+        window.player = null;
+        try { localStorage.removeItem('playerData'); } catch(e){}
+      } else {
         window.currentPlayerData = snap.data().playerData ?? null;
+        // set window.player to a detached copy so client modifications don't affect server copy
+        try { window.player = window.currentPlayerData ? JSON.parse(JSON.stringify(window.currentPlayerData)) : null; } catch(e) { window.player = window.currentPlayerData; }
+        if (window.currentPlayerData) {
+          try { localStorage.setItem('playerData', JSON.stringify(window.currentPlayerData)); } catch(e){}
+        }
+      }
+    } catch(e) {
+      console.error('attachAuthListener error', e);
+      // fall back: treat as no data
+      window.currentPlayerData = null;
+      window.player = null;
     }
 
-    if (window.currentPlayerData)
-      localStorage.setItem("playerData", JSON.stringify(window.currentPlayerData));
-    else
-      localStorage.removeItem("playerData");
-
-    // CHỈ GỌI Ở ĐÂY → ĐẢM BẢO DỮ LIỆU SẴN SÀNG
+    // ensure game init runs after auth + data ready
     if (window.startGameInit) window.startGameInit();
   });
+}
 }
 // LOGIN
 window.firebaseLogin = async (email, password) => {
