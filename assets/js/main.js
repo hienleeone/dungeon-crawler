@@ -113,6 +113,9 @@ window.addEventListener("load", function () {
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
                 saveData();
+                if (window.firebaseAuth.currentUser) {
+                    window.firebaseSetPlayer(window.firebaseAuth.currentUser.uid, player);
+                }
                 document.querySelector("#character-creation").style.display = "none";
                 runLoad("title-screen", "flex");
             }
