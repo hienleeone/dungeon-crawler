@@ -42,19 +42,27 @@ window.addEventListener("load", function () {
                         const defaultPlayer = createDefaultPlayerData(playerName);
                         player = defaultPlayer;
                         
-                        // Save to Firebase
-                        if (currentUser) {
-                            createPlayerData(currentUser.uid, playerName, defaultPlayer)
+                        // Save to Firebase (use auth.currentUser as fallback)
+                        const authUser = currentUser || getCurrentUser();
+                        if (authUser) {
+                            createPlayerData(authUser.uid, playerName, defaultPlayer)
                                 .then(() => {
                                     document.querySelector("#alert").innerHTML = "";
-                                    // Follow original flow: show title screen "Nhấn để khám phá hầm ngục"
-                                    // Player allocation will occur when they click the title screen.
+                                    // Load the player document we just created to ensure canonical structure
+                                    try {
+                                        loadPlayerDataFromFirebase(authUser.uid);
+                                    } catch (e) {
+                                        console.warn("loadPlayerDataFromFirebase not available yet:", e);
+                                    }
+                                    // Show title screen; allocation happens when player clicks
                                     runLoad("title-screen", "flex");
                                 })
                                 .catch((error) => {
                                     console.error("Error creating player:", error);
                                     document.querySelector("#alert").innerHTML = "Lỗi tạo người chơi!";
                                 });
+                        } else {
+                            document.querySelector("#alert").innerHTML = "Bạn cần đăng nhập trước!";
                         }
                     }
                 }).catch((error) => {
