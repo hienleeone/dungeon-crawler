@@ -21,29 +21,25 @@ service cloud.firestore {
                      && isOwner(userId)
                      && request.resource.data.name is string
                      && request.resource.data.name.size() >= 3
-                     && request.resource.data.name.size() <= 15
-                     && request.resource.data.lvl is number
-                     && request.resource.data.lvl == 1
-                     && request.resource.data.gold is number
-                     && request.resource.data.gold == 0
-                     && request.resource.data.allocated is bool
-                     && request.resource.data.allocated == false;
+                     && request.resource.data.name.size() <= 15;
 
-      // UPDATE: Client can update most fields, but CANNOT change gold/lvl/allocated
-      // These critical fields can ONLY be updated by Cloud Functions (admin SDK)
+      // UPDATE: Client can update most fields, but CANNOT change gold/lvl
+      // allocated can change from false -> true only (for first-time allocation)
       allow update: if isAuthenticated()
                      && isOwner(userId)
                      && (
-                        // If gold is in request, it must equal current gold (no changes)
+                        // Gold: must stay the same (only Cloud Functions can change)
                         !('gold' in request.resource.data) || request.resource.data.gold == resource.data.gold
                      )
                      && (
-                        // If lvl is in request, it must equal current lvl (no changes)
+                        // Lvl: must stay the same (only Cloud Functions can change)
                         !('lvl' in request.resource.data) || request.resource.data.lvl == resource.data.lvl
                      )
                      && (
-                        // If allocated is in request, it must equal current allocated (no changes)
-                        !('allocated' in request.resource.data) || request.resource.data.allocated == resource.data.allocated
+                        // Allocated: can change from false -> true only (first allocation)
+                        !('allocated' in request.resource.data) 
+                        || request.resource.data.allocated == resource.data.allocated
+                        || (resource.data.allocated == false && request.resource.data.allocated == true)
                      );
 
       // DELETE: Only owner can delete

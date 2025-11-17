@@ -1,6 +1,8 @@
 // ===== SECURITY PROTECTION =====
-// Thêm file này vào index.html trước các file script khác
+// TEMPORARILY DISABLED FOR DEBUGGING
+// Uncomment to re-enable security features
 
+/*
 (function() {
     'use strict';
 
@@ -261,5 +263,6 @@
         return originalLog.apply(console, arguments);
     };
 
-    console.info('🔒 Hệ thống bảo mật đã được kích hoạt!');
+})();
+*/    console.info('🔒 Hệ thống bảo mật đã được kích hoạt!');
 })();
