@@ -44,9 +44,11 @@ window.addEventListener("load", function () {
                         
                         // Save to Firebase (use auth.currentUser as fallback)
                         const authUser = currentUser || getCurrentUser();
+                        console.log("[main] name-submit -> authUser:", authUser && authUser.uid, authUser && authUser.email);
                         if (authUser) {
                             createPlayerData(authUser.uid, playerName, defaultPlayer)
-                                .then(() => {
+                                .then((doc) => {
+                                    console.log("[main] createPlayerData succeeded for uid:", authUser.uid);
                                     document.querySelector("#alert").innerHTML = "";
                                     // Load the player document we just created to ensure canonical structure
                                     try {
