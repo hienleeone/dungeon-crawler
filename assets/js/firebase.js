@@ -118,3 +118,14 @@ const getCurrentUser = () => auth.currentUser;
 
 // =============================
 console.log("🔥 Firebase initialized");
+
+const checkPlayerNameExists = async (name) => {
+    const snapshot = await db
+        .collection("players")
+        .where("name", "==", name)
+        .get();
+
+    return !snapshot.empty;
+};
+
+window.checkPlayerNameExists = checkPlayerNameExists;
