@@ -272,10 +272,10 @@ const savePlayerDataToFirebase = async () => {
         await batch.commit();
         console.log("10. Batch commit thành công!");
 
-        // Cập nhật leaderboards
-        console.log("11. Cập nhật leaderboards...");
-        await updateLeaderboards();
-        console.log("12. Hoàn tất!");
+        // Tạm thời bỏ leaderboard để tránh lỗi quota
+        // console.log("11. Cập nhật leaderboards...");
+        // await updateLeaderboards();
+        console.log("11. Hoàn tất!");
     } catch (error) {
         console.error("Lỗi lưu dữ liệu:", error);
         throw error; // Throw lại để main.js xử lý
