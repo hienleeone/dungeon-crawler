@@ -426,7 +426,8 @@ const enterDungeon = () => {
         showCombatInfo();
         startCombat(bgmBattleMain);
     } else {
-        bgmDungeon.play();
+        // Không auto-play nhạc, chờ người chơi ấn Khám Phá
+        // bgmDungeon.play();
     }
     if (player.stats.hp == 0) {
         progressReset();

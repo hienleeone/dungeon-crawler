@@ -92,6 +92,11 @@ const initialDungeonLoad = () => {
 const dungeonStartPause = () => {
     if (!dungeon.status.paused) {
         sfxPause.play();
+        
+        // Dừng nhạc khi tạm dừng
+        if (typeof bgmDungeon !== 'undefined' && bgmDungeon) {
+            bgmDungeon.pause();
+        }
 
         dungeonAction.innerHTML = "Tạm Dừng...";
         dungeonActivity.innerHTML = "Khám Phá";
@@ -99,6 +104,11 @@ const dungeonStartPause = () => {
         dungeon.status.paused = true;
     } else {
         sfxUnpause.play();
+        
+        // Phát nhạc khi bắt đầu khám phá
+        if (typeof bgmDungeon !== 'undefined' && bgmDungeon && !player.inCombat) {
+            bgmDungeon.play();
+        }
 
         dungeonAction.innerHTML = "Khám Phá...";
         dungeonActivity.innerHTML = "Tạm dừng";
