@@ -81,12 +81,11 @@ window.addEventListener("load", function () {
                                     const charCreation = document.querySelector("#character-creation");
                                     if (charCreation) {
                                         charCreation.style.display = "none !important";
-                                        charCreation.innerHTML = ""; // Clear form to prevent re-display
                                     }
                                     const defaultModal = document.querySelector("#defaultModal");
                                     if (defaultModal) defaultModal.style.display = "none";
-                                    // Show title screen; allocation happens when player clicks
-                                    runLoad("title-screen", "flex");
+                                    // Show title screen immediately (player will be loaded from Firebase)
+                                    document.querySelector("#title-screen").style.display = "flex";
                                 })
                                 .catch((error) => {
                                     console.error("Error creating player:", error);
@@ -409,7 +408,6 @@ const runLoad = (id, display) => {
         const charCreation = document.querySelector("#character-creation");
         if (charCreation) {
             charCreation.style.display = "none !important";
-            charCreation.innerHTML = "";
         }
         const target = document.querySelector(`#${id}`);
         if (target) target.style.display = `${display}`;
