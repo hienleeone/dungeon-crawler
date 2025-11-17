@@ -15,6 +15,7 @@ firebase.initializeApp(firebaseConfig);
 // Get Firebase services
 const auth = firebase.auth();
 const db = firebase.firestore();
+const functions = firebase.functions();
 
 // Global variables
 let currentUser = null;
@@ -145,20 +146,61 @@ const getPlayerData = (userId) => {
 /**
  * Update player data in Firestore
  */
-const updatePlayerData = (userId, playerData) => {
-    const updateData = {
-        ...playerData,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
+const updatePlayerData = async (userId, playerData) => {
+    // Whitelist keys allowed in snapshot (keep in sync with function)
+    const allowedKeys = ['inventory', 'equipped', 'playtime', 'kills', 'deaths', 'inCombat', 'dungeon', 'stats', 'equippedStats', 'bonusStats', 'gold', 'lvl'];
 
-    return db.collection("players").doc(userId).update(updateData)
-        .then(() => {
-            console.log("Cập nhật dữ liệu người chơi thành công");
-        })
-        .catch((error) => {
-            console.error("Lỗi cập nhật dữ liệu:", error);
-            throw error;
-        });
+    const snapshot = {};
+    Object.keys(playerData).forEach(k => {
+        if (allowedKeys.includes(k)) snapshot[k] = playerData[k];
+    });
+
+    try {
+        const saveFn = functions.httpsCallable('savePlayerSnapshot');
+        const res = await saveFn({ snapshot });
+        console.log('savePlayerSnapshot result:', res.data);
+        return res.data;
+    } catch (error) {
+        console.error('Error calling savePlayerSnapshot:', error);
+        throw error;
+    }
+};
+
+// Cloud Function helpers for common operations
+const addGold = async (amount) => {
+    try {
+        const fn = functions.httpsCallable('addGold');
+        const res = await fn({ amount });
+        console.log('addGold result:', res.data);
+        return res.data;
+    } catch (err) {
+        console.error('addGold error:', err);
+        throw err;
+    }
+};
+
+const addLevel = async (amount) => {
+    try {
+        const fn = functions.httpsCallable('addLevel');
+        const res = await fn({ amount });
+        console.log('addLevel result:', res.data);
+        return res.data;
+    } catch (err) {
+        console.error('addLevel error:', err);
+        throw err;
+    }
+};
+
+const spendGold = async (amount) => {
+    try {
+        const fn = functions.httpsCallable('spendGold');
+        const res = await fn({ amount });
+        console.log('spendGold result:', res.data);
+        return res.data;
+    } catch (err) {
+        console.error('spendGold error:', err);
+        throw err;
+    }
 };
 
 /**

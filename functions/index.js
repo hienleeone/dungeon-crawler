@@ -162,3 +162,70 @@ exports.spendGold = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
+
+/**
+ * Callable Cloud Function to save a player snapshot.
+ * This is a general-purpose save endpoint for non-critical fields.
+ * It validates that protected fields (gold, lvl) are either absent or within allowed deltas.
+ */
+exports.savePlayerSnapshot = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const userId = context.auth.uid;
+    const snapshot = data.snapshot;
+
+    if (!snapshot || typeof snapshot !== 'object') {
+        throw new functions.https.HttpsError('invalid-argument', 'Snapshot must be an object');
+    }
+
+    try {
+        const playerRef = db.collection('players').doc(userId);
+        const playerDoc = await playerRef.get();
+        if (!playerDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Player not found');
+        }
+
+        const current = playerDoc.data();
+
+        // Protect gold and lvl: if present, ensure only allowed increases
+        if ('gold' in snapshot) {
+            const newGold = snapshot.gold;
+            if (typeof newGold !== 'number' || newGold < current.gold) {
+                throw new functions.https.HttpsError('invalid-argument', 'Invalid gold value');
+            }
+            if ((newGold - (current.gold || 0)) > 1000000) {
+                throw new functions.https.HttpsError('invalid-argument', 'Gold increase too large');
+            }
+        }
+        if ('lvl' in snapshot) {
+            const newLvl = snapshot.lvl;
+            if (typeof newLvl !== 'number' || newLvl < current.lvl) {
+                throw new functions.https.HttpsError('invalid-argument', 'Invalid level value');
+            }
+            if ((newLvl - (current.lvl || 1)) > 5) {
+                throw new functions.https.HttpsError('invalid-argument', 'Level increase too large');
+            }
+        }
+
+        // Whitelist fields that may be updated by snapshot (non-exhaustive)
+        const allowedKeys = [
+            'inventory', 'equipped', 'playtime', 'kills', 'deaths', 'inCombat', 'dungeon', 'stats', 'equippedStats', 'bonusStats', 'updatedAt', 'gold', 'lvl'
+        ];
+
+        const updateData = {};
+        Object.keys(snapshot).forEach(k => {
+            if (allowedKeys.includes(k)) updateData[k] = snapshot[k];
+        });
+
+        updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+        await playerRef.update(updateData);
+
+        return { success: true, message: 'Snapshot saved' };
+    } catch (err) {
+        console.error('Error in savePlayerSnapshot:', err);
+        throw new functions.https.HttpsError('internal', err.message);
+    }
+});
