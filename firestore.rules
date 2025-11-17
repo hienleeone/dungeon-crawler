@@ -1,102 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ===== Helper Functions =====
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    // ===== Players Collection =====
-    match /players/{userId} {
-      // READ: Allow authenticated users to read (for leaderboard, profile view)
-      allow read: if isAuthenticated();
 
-      // CREATE: Only owner can create their own player doc
-      allow create: if isAuthenticated()
-                     && isOwner(userId)
-                     && request.resource.data.name is string
-                     && request.resource.data.name.size() >= 3
-                     && request.resource.data.name.size() <= 15;
-
-      // UPDATE: Allow updates with some anti-cheat measures
-      allow update: if isAuthenticated()
-                     && isOwner(userId)
-                     && (
-                        // If document doesn't exist yet (first save), allow anything
-                        !exists(/databases/$(database)/documents/players/$(userId))
-                        || (
-                          // If gold is being updated, limit increase to 1M per save
-                          (!('gold' in request.resource.data)
-                          || (
-                            request.resource.data.gold >= 0 
-                            && request.resource.data.gold <= resource.data.gold + 1000000
-                          ))
-                          && 
-                          // If lvl is being updated, limit increase to 10 per save and max 1000
-                          (!('lvl' in request.resource.data)
-                          || (
-                            request.resource.data.lvl >= resource.data.lvl
-                            && request.resource.data.lvl <= resource.data.lvl + 10
-                            && request.resource.data.lvl <= 1000
-                          ))
-                        )
-                     );
-
-      // DELETE: Only owner can delete
-      allow delete: if isAuthenticated()
-                     && isOwner(userId);
-      
-      // Dungeon subcollection
-      match /dungeon/{dungeonId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
-      }
-      
-      // Volume settings subcollection
-      match /settings/{settingId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
-      }
-    }
-    
-    // ===== Dungeon Game Player Names (for duplicate check) =====
-    match /dungeonPlayerNames/{name} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() 
-                     && !exists(/databases/$(database)/documents/dungeonPlayerNames/$(name));
-      allow delete: if isAuthenticated();
-    }
-
-    // ===== Volume Settings (subcollection) =====
-    match /players/{userId}/settings/{document=**} {
-      allow read: if isAuthenticated() && isOwner(userId);
-      allow write: if isAuthenticated() && isOwner(userId);
-    }
-
-    // ===== USERS COLLECTION (for other web features) =====
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update, delete: if isAuthenticated() &&
-        (isOwner(userId) ||
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update, delete: if request.auth != null && 
+        (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
 
       match /attendance/{attId} {
-        allow read, write: if isAuthenticated() &&
-          (isOwner(userId) ||
-           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+        allow read, write: if request.auth != null && 
+          (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
       }
     }
 
-    // ===== CHAT =====
     match /chatMessages/{msgId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if request.auth != null;
     }
 
-    // ===== REVIEWS =====
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if
@@ -106,30 +27,39 @@ service cloud.firestore {
         request.resource.data.comment is string &&
         request.resource.data.email.size() > 3 &&
         request.resource.data.ingame.size() > 2 &&
-        request.resource.data.rating >= 1 &&
-        request.resource.data.rating <= 5;
+        request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
       allow update, delete: if false;
     }
-
-    // ===== LEADERBOARDS =====
-    match /leaderboards/{type} {
-      allow read: if true;
-      
-      match /rankings/{userId} {
-        allow read: if true;
-        allow write: if isAuthenticated() && isOwner(userId);
-      }
+    
+    match /players/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.gold <= 1000000000
+        && request.resource.data.lvl <= 1000;
     }
     
-    // ===== DUNGEON CRAWLER LEADERBOARDS =====
-    match /dungeonLeaderboards/{category} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+    match /playerNames/{name} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null 
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 15;
+      allow update, delete: if false;
     }
-
-    // ===== Deny all other access =====
-    match /{document=**} {
-      allow read, write: if false;
+    
+    match /leaderboards/gold {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /leaderboards/level {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /leaderboards/floor {
+      allow read: if true;
+      allow write: if false;
     }
   }
-}
+}   

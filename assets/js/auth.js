@@ -1,464 +1,339 @@
-// Authentication Module
-let isAuthReady = false;
+// Authentication Handler
 
-// Wait for DOM to be ready before setting up auth
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAuth);
-} else {
-    initAuth();
-}
-
-function initAuth() {
-    // Check authentication state
-    auth.onAuthStateChanged(async (user) => {
+// Kiểm tra trạng thái đăng nhập khi load trang
+firebase.auth().onAuthStateChanged(async (user) => {
+    if (user) {
         currentUser = user;
+        // Người dùng đã đăng nhập, load dữ liệu từ Firebase
+        await loadPlayerDataFromFirebase(user.uid);
         
-        if (user) {
-            console.log("User logged in:", user.email);
-            // Load player data from Firestore
-            await loadPlayerDataFromFirestore(user.uid);
-            isAuthReady = true;
-            
-            // Check if player has character created
-            if (player === null || !player.name) {
-                showScreen("character-creation");
-            } else {
-                showScreen("title-screen");
-            }
+        // Kiểm tra xem người chơi đã có tên chưa
+        if (player === null || !player.name) {
+            runLoad("character-creation", "flex");
+        } else if (player.allocated) {
+            runLoad("title-screen", "flex");
         } else {
-            console.log("No user logged in");
-            isAuthReady = true;
-            showScreen("auth-screen");
+            runLoad("title-screen", "flex");
         }
-    });
-}
+    } else {
+        // Chưa đăng nhập, hiển thị màn hình auth
+        currentUser = null;
+        document.querySelector("#auth-screen").style.display = "flex";
+    }
+});
 
-// Show specific screen
-const showScreen = (screenId) => {
-    const screens = ["auth-screen", "character-creation", "title-screen", "dungeon-main", "loading"];
-    screens.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.style.display = id === screenId ? "flex" : "none";
-        }
-    });
-};
+// Chuyển đổi giữa login và register form
+document.querySelector("#show-register-btn").addEventListener("click", function () {
+    document.querySelector("#login-form").style.display = "none";
+    document.querySelector("#register-form").style.display = "block";
+    document.querySelector("#register-alert").innerHTML = "";
+});
 
-// Login form handler
-document.getElementById("login-submit").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-password").value;
-    const alertElement = document.getElementById("login-alert");
-    
+document.querySelector("#show-login-btn").addEventListener("click", function () {
+    document.querySelector("#register-form").style.display = "none";
+    document.querySelector("#login-form").style.display = "block";
+    document.querySelector("#login-alert").innerHTML = "";
+});
+
+// Đăng nhập
+document.querySelector("#login-btn").addEventListener("click", async function () {
+    const email = document.querySelector("#login-email").value;
+    const password = document.querySelector("#login-password").value;
+    const alertElement = document.querySelector("#login-alert");
+
+    if (!email || !password) {
+        alertElement.innerHTML = "Vui lòng nhập đầy đủ thông tin!";
+        return;
+    }
+
     try {
-        alertElement.textContent = "Đang đăng nhập...";
-        await auth.signInWithEmailAndPassword(email, password);
-        alertElement.textContent = "";
+        alertElement.innerHTML = "Đang đăng nhập...";
+        await firebase.auth().signInWithEmailAndPassword(email, password);
+        alertElement.innerHTML = "";
+        // onAuthStateChanged sẽ tự động xử lý sau khi đăng nhập thành công
     } catch (error) {
-        console.error("Login error:", error);
-        switch (error.code) {
-            case "auth/user-not-found":
-                alertElement.textContent = "Tài khoản không tồn tại!";
-                break;
-            case "auth/wrong-password":
-                alertElement.textContent = "Sai mật khẩu!";
-                break;
-            case "auth/invalid-email":
-                alertElement.textContent = "Email không hợp lệ!";
-                break;
-            case "auth/too-many-requests":
-                alertElement.textContent = "Quá nhiều lần thử. Vui lòng thử lại sau!";
-                break;
-            case "auth/invalid-credential":
-                alertElement.textContent = "Email hoặc mật khẩu không đúng!";
-                break;
-            default:
-                alertElement.textContent = "Đăng nhập thất bại!";
+        if (error.code === 'auth/user-not-found') {
+            alertElement.innerHTML = "Tài khoản không tồn tại!";
+        } else if (error.code === 'auth/wrong-password') {
+            alertElement.innerHTML = "Mật khẩu không đúng!";
+        } else if (error.code === 'auth/invalid-email') {
+            alertElement.innerHTML = "Email không hợp lệ!";
+        } else {
+            alertElement.innerHTML = "Lỗi: " + error.message;
         }
     }
 });
 
-// Register form handler
-document.getElementById("register-submit").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("register-email").value;
-    const password = document.getElementById("register-password").value;
-    const confirmPassword = document.getElementById("register-confirm").value;
-    const alertElement = document.getElementById("register-alert");
-    
-    // Validate passwords match
+// Đăng ký
+document.querySelector("#register-btn").addEventListener("click", async function () {
+    const email = document.querySelector("#register-email").value;
+    const password = document.querySelector("#register-password").value;
+    const confirmPassword = document.querySelector("#register-password-confirm").value;
+    const alertElement = document.querySelector("#register-alert");
+
+    if (!email || !password || !confirmPassword) {
+        alertElement.innerHTML = "Vui lòng nhập đầy đủ thông tin!";
+        return;
+    }
+
     if (password !== confirmPassword) {
-        alertElement.textContent = "Mật khẩu không khớp!";
+        alertElement.innerHTML = "Mật khẩu không khớp!";
         return;
     }
-    
-    // Validate password length
+
     if (password.length < 6) {
-        alertElement.textContent = "Mật khẩu phải có ít nhất 6 ký tự!";
+        alertElement.innerHTML = "Mật khẩu phải có ít nhất 6 ký tự!";
         return;
     }
-    
+
     try {
-        alertElement.textContent = "Đang tạo tài khoản...";
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        alertElement.textContent = "";
-        // Player data will be created when they submit their name
-    } catch (error) {
-        console.error("Register error:", error);
-        switch (error.code) {
-            case "auth/email-already-in-use":
-                alertElement.textContent = "Email đã được sử dụng!";
-                break;
-            case "auth/invalid-email":
-                alertElement.textContent = "Email không hợp lệ!";
-                break;
-            case "auth/weak-password":
-                alertElement.textContent = "Mật khẩu quá yếu!";
-                break;
-            default:
-                alertElement.textContent = "Đăng ký thất bại: " + error.message;
-        }
-    }
-});
-
-// Toggle between login and register forms
-document.getElementById("show-register").addEventListener("click", () => {
-    document.getElementById("login-form").style.display = "none";
-    document.getElementById("register-form").style.display = "block";
-    document.getElementById("register-alert").textContent = "";
-});
-
-document.getElementById("show-login").addEventListener("click", () => {
-    document.getElementById("register-form").style.display = "none";
-    document.getElementById("login-form").style.display = "block";
-    document.getElementById("login-alert").textContent = "";
-});
-
-// Logout function
-const logoutUser = async () => {
-    try {
-        // Clear all modals first
-        const modals = ['inventory', 'equipmentInfo', 'combatPanel', 'lvlupPanel', 'defaultModal', 'menuModal', 'confirmationModal', 'leaderboardModal', 'gachaModal'];
-        modals.forEach(modalId => {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'none';
-                modal.innerHTML = '';
-            }
+        alertElement.innerHTML = "Đang đăng ký...";
+        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        
+        // Tạo document rỗng cho người chơi mới
+        await db.collection('players').doc(userCredential.user.uid).set({
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            email: email
         });
         
-        await auth.signOut();
-        player = null;
-        if (typeof dungeon !== 'undefined') {
-            dungeon = null;
-        }
-        enemy = null;
-        console.log("User logged out");
+        alertElement.innerHTML = "";
+        // onAuthStateChanged sẽ tự động xử lý sau khi đăng ký thành công
     } catch (error) {
-        console.error("Logout error:", error);
+        if (error.code === 'auth/email-already-in-use') {
+            alertElement.innerHTML = "Email đã được sử dụng!";
+        } else if (error.code === 'auth/invalid-email') {
+            alertElement.innerHTML = "Email không hợp lệ!";
+        } else if (error.code === 'auth/weak-password') {
+            alertElement.innerHTML = "Mật khẩu quá yếu!";
+        } else {
+            alertElement.innerHTML = "Lỗi: " + error.message;
+        }
+    }
+});
+
+// Đăng xuất
+const logoutUser = async () => {
+    try {
+        await firebase.auth().signOut();
+        player = null;
+        
+        // Dừng game nếu đang chơi
+        if (typeof bgmDungeon !== 'undefined') {
+            bgmDungeon.stop();
+        }
+        if (typeof clearInterval !== 'undefined' && typeof dungeonTimer !== 'undefined') {
+            clearInterval(dungeonTimer);
+        }
+        if (typeof clearInterval !== 'undefined' && typeof playTimer !== 'undefined') {
+            clearInterval(playTimer);
+        }
+        
+        // Reset màn hình
+        document.querySelector("#dungeon-main").style.display = "none";
+        document.querySelector("#title-screen").style.display = "none";
+        document.querySelector("#character-creation").style.display = "none";
+        document.querySelector("#auth-screen").style.display = "flex";
+        
+        // Reset các modal
+        if (typeof menuModalElement !== 'undefined') {
+            menuModalElement.style.display = "none";
+            menuModalElement.innerHTML = "";
+        }
+        if (typeof defaultModalElement !== 'undefined') {
+            defaultModalElement.style.display = "none";
+            defaultModalElement.innerHTML = "";
+        }
+    } catch (error) {
+        console.error("Lỗi đăng xuất:", error);
     }
 };
 
-// Load player data from Firestore
-const loadPlayerDataFromFirestore = async (userId) => {
+// Load dữ liệu người chơi từ Firebase
+const loadPlayerDataFromFirebase = async (userId) => {
     try {
-        const docRef = db.collection("players").doc(userId);
+        const docRef = db.collection('players').doc(userId);
         const doc = await docRef.get();
-        
-        if (doc.exists) {
-            player = doc.data();
-            player.gold = Number(player.gold) || 0;
-            console.log("Player data loaded from Firestore");
-            
-            // Recalculate stats after loading
-            if (typeof calculateStats === 'function') {
-                calculateStats();
+
+        if (doc.exists && doc.data().playerData) {
+            player = doc.data().playerData;
+            // Đảm bảo gold là number
+            if (player) {
+                player.gold = Number(player.gold) || 0;
             }
             
-            // Load dungeon data if exists
-            const dungeonDoc = await docRef.collection("dungeon").doc("current").get();
-            if (dungeonDoc.exists) {
-                dungeon = dungeonDoc.data();
+            // Load dungeon data nếu có
+            const docData = doc.data();
+            if (docData.dungeonData) {
+                dungeon = docData.dungeonData;
             }
             
-            // Load volume settings
-            const settingsDoc = await docRef.collection("settings").doc("volume").get();
-            if (settingsDoc.exists) {
-                volume = settingsDoc.data();
+            // Load enemy data nếu có
+            if (docData.enemyData) {
+                enemy = docData.enemyData;
             }
         } else {
             player = null;
-            console.log("No player data found in Firestore");
         }
     } catch (error) {
-        console.error("Error loading player data:", error);
+        console.error("Lỗi load dữ liệu:", error);
         player = null;
     }
 };
 
-// Save player data to Firestore
-const savePlayerDataToFirestore = async () => {
-    if (!currentUser) {
-        console.error("No user logged in");
-        return;
-    }
-    
-    if (!player) {
-        console.error("No player data to save");
-        return;
-    }
-    
-    try {
-        const userId = currentUser.uid;
-        const docRef = db.collection("players").doc(userId);
-        
-        // Save player data
-        await docRef.set(player, { merge: true });
-        
-        // Save dungeon data if it exists
-        if (typeof dungeon !== 'undefined' && dungeon) {
-            await docRef.collection("dungeon").doc("current").set(dungeon);
-        }
-        
-        // Save volume settings if it exists
-        if (typeof volume !== 'undefined' && volume) {
-            await docRef.collection("settings").doc("volume").set(volume);
-        }
-        
-        // Update leaderboards
-        await updateLeaderboards();
-        
-        console.log("Data saved to Firestore");
-    } catch (error) {
-        console.error("Error saving to Firestore:", error);
-    }
-};
-
-// Check if player name is already taken
-const isPlayerNameTaken = async (name) => {
-    try {
-        const doc = await db.collection("dungeonPlayerNames").doc(name).get();
-        return doc.exists;
-    } catch (error) {
-        console.error("Error checking name:", error);
-        return false;
-    }
-};
-
-// Register player name
-const registerPlayerName = async (name) => {
-    if (!currentUser) return false;
-    
-    try {
-        await db.collection("dungeonPlayerNames").doc(name).set({
-            userId: currentUser.uid,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        return true;
-    } catch (error) {
-        console.error("Error registering name:", error);
-        return false;
-    }
-};
-
-// Delete player name registration (for name changes or account deletion)
-const unregisterPlayerName = async (name) => {
-    try {
-        await db.collection("dungeonPlayerNames").doc(name).delete();
-    } catch (error) {
-        console.error("Error unregistering name:", error);
-    }
-};
-
-// Update leaderboards
-const updateLeaderboards = async () => {
-    if (!currentUser || !player) return;
-    
-    try {
-        const userId = currentUser.uid;
-        
-        // Update gold leaderboard
-        await db.collection("dungeonLeaderboards").doc("gold").set({
-            [userId]: {
-                name: player.name,
-                value: player.gold || 0,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }
-        }, { merge: true });
-        
-        // Update level leaderboard
-        await db.collection("dungeonLeaderboards").doc("level").set({
-            [userId]: {
-                name: player.name,
-                value: player.lvl || 1,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }
-        }, { merge: true });
-        
-        // Update floor leaderboard (only if dungeon exists)
-        if (typeof dungeon !== 'undefined' && dungeon && dungeon.progress) {
-            const maxFloor = dungeon.progress.floor || 0;
-            await db.collection("dungeonLeaderboards").doc("floor").set({
-                [userId]: {
-                    name: player.name,
-                    value: maxFloor,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }
-            }, { merge: true });
-        }
-        
-    } catch (error) {
-        console.error("Error updating leaderboards:", error);
-    }
-};
-
-// Get top 3 players for a category
-const getTopPlayers = async (category) => {
-    try {
-        const doc = await db.collection("dungeonLeaderboards").doc(category).get();
-        
-        if (!doc.exists) return [];
-        
-        const data = doc.data();
-        const players = Object.entries(data).map(([userId, playerData]) => ({
-            userId,
-            name: playerData.name,
-            value: playerData.value
-        }));
-        
-        // Sort by value descending and get top 3
-        return players.sort((a, b) => b.value - a.value).slice(0, 3);
-    } catch (error) {
-        console.error("Error getting top players:", error);
-        return [];
-    }
-};
-
-// Show leaderboard modal
-const showLeaderboard = async () => {
-    const leaderboardModal = document.getElementById("leaderboardModal");
-    const menuModal = document.getElementById("menuModal");
-    const dimDungeon = document.querySelector('#dungeon-main');
-    
-    dimDungeon.style.filter = "brightness(50%)";
-    leaderboardModal.style.display = "flex";
-    
-    // Fetch top players
-    const topGold = await getTopPlayers("gold");
-    const topLevel = await getTopPlayers("level");
-    const topFloor = await getTopPlayers("floor");
-    
-    leaderboardModal.innerHTML = `
-    <div class="content">
-        <div class="content-head">
-            <h3>Xếp Hạng</h3>
-            <p id="close-leaderboard"><i class="fa fa-xmark"></i></p>
-        </div>
-        <div class="leaderboard-section">
-            <h4>🏆 Top Vàng</h4>
-            ${topGold.map((p, i) => `<p>${i + 1}. ${p.name}: ${nFormatter(p.value)} vàng</p>`).join('') || '<p>Chưa có dữ liệu</p>'}
-        </div>
-        <div class="leaderboard-section">
-            <h4>⭐ Top Cấp Độ</h4>
-            ${topLevel.map((p, i) => `<p>${i + 1}. ${p.name}: Level ${p.value}</p>`).join('') || '<p>Chưa có dữ liệu</p>'}
-        </div>
-        <div class="leaderboard-section">
-            <h4>🏰 Top Tầng</h4>
-            ${topFloor.map((p, i) => `<p>${i + 1}. ${p.name}: Tầng ${p.value}</p>`).join('') || '<p>Chưa có dữ liệu</p>'}
-        </div>
-        <button id="back-to-menu" style="margin-top: 15px;">Quay Lại Menu</button>
-    </div>`;
-    
-    document.getElementById("close-leaderboard").onclick = () => {
-        leaderboardModal.style.display = "none";
-        menuModal.style.display = "flex";
-    };
-    
-    document.getElementById("back-to-menu").onclick = () => {
-        leaderboardModal.style.display = "none";
-        menuModal.style.display = "flex";
-    };
-};
-
-// Delete all player data
-const deleteAllPlayerData = async () => {
+// Lưu dữ liệu người chơi lên Firebase
+const savePlayerDataToFirebase = async () => {
     if (!currentUser) return;
-    
+
     try {
-        // Clear all modals first
-        const modals = ['inventory', 'equipmentInfo', 'combatPanel', 'lvlupPanel', 'defaultModal', 'menuModal', 'confirmationModal', 'leaderboardModal', 'gachaModal'];
-        modals.forEach(modalId => {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'none';
-                modal.innerHTML = '';
-            }
-        });
+        const docRef = db.collection('players').doc(currentUser.uid);
         
-        const userId = currentUser.uid;
-        const docRef = db.collection("players").doc(userId);
-        
-        // Delete player name registration
-        if (player && player.name) {
-            await unregisterPlayerName(player.name);
-        }
-        
-        // Delete dungeon subcollection
-        const dungeonDocs = await docRef.collection("dungeon").get();
-        for (const doc of dungeonDocs.docs) {
-            await doc.ref.delete();
-        }
-        
-        // Delete settings subcollection
-        const settingsDocs = await docRef.collection("settings").get();
-        for (const doc of settingsDocs.docs) {
-            await doc.ref.delete();
-        }
-        
-        // Delete main player document
-        await docRef.delete();
-        
-        // Reset local data
-        player = null;
-        enemy = null;
-        
-        // Reset dungeon to default
-        if (typeof dungeon !== 'undefined') {
-            dungeon = {
-                rating: 500,
-                grade: "E",
-                progress: {
-                    floor: 1,
-                    room: 1,
-                    floorLimit: 100,
-                    roomLimit: 5,
-                },
-                settings: {
-                    enemyBaseLvl: 1,
-                    enemyLvlGap: 5,
-                    enemyBaseStats: 1,
-                    enemyScaling: 1.1,
-                },
-                status: {
-                    exploring: false,
-                    paused: true,
-                    event: false,
-                },
-                statistics: {
-                    kills: 0,
-                    runtime: 0,
-                },
-                backlog: [],
-                action: 0,
-            };
-        }
-        
-        console.log("All player data deleted");
-        
-        // Show character creation
-        showScreen("character-creation");
+        await docRef.set({
+            playerData: player,
+            dungeonData: typeof dungeon !== 'undefined' ? dungeon : null,
+            enemyData: typeof enemy !== 'undefined' ? enemy : null,
+            name: player.name,
+            lvl: player.lvl,
+            gold: player.gold,
+            floor: typeof dungeon !== 'undefined' ? dungeon.progress.floor : 1,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        // Cập nhật leaderboards
+        await updateLeaderboards();
     } catch (error) {
-        console.error("Error deleting player data:", error);
+        console.error("Lỗi lưu dữ liệu:", error);
+    }
+};
+
+// Cập nhật bảng xếp hạng
+const updateLeaderboards = async () => {
+    if (!currentUser || !player || !player.name) return;
+
+    try {
+        const batch = db.batch();
+
+        // Top gold
+        const goldRef = db.collection('leaderboards').doc('gold');
+        batch.set(goldRef, {
+            [currentUser.uid]: {
+                name: player.name,
+                value: player.gold,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }
+        }, { merge: true });
+
+        // Top level
+        const levelRef = db.collection('leaderboards').doc('level');
+        batch.set(levelRef, {
+            [currentUser.uid]: {
+                name: player.name,
+                value: player.lvl,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }
+        }, { merge: true });
+
+        // Top floor
+        const floorRef = db.collection('leaderboards').doc('floor');
+        const currentFloor = (typeof dungeon !== 'undefined' && dungeon.progress) ? dungeon.progress.floor : 1;
+        batch.set(floorRef, {
+            [currentUser.uid]: {
+                name: player.name,
+                value: currentFloor,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }
+        }, { merge: true });
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Lỗi cập nhật leaderboards:", error);
+    }
+};
+
+// Kiểm tra tên người chơi có trùng không
+const checkPlayerNameExists = async (name) => {
+    try {
+        const snapshot = await db.collection('players')
+            .where('name', '==', name)
+            .limit(1)
+            .get();
+        
+        return !snapshot.empty;
+    } catch (error) {
+        console.error("Lỗi kiểm tra tên:", error);
+        return false;
+    }
+};
+
+// Hiển thị bảng xếp hạng
+const showLeaderboard = async () => {
+    try {
+        sfxOpen.play();
+        
+        const [goldDoc, levelDoc, floorDoc] = await Promise.all([
+            db.collection('leaderboards').doc('gold').get(),
+            db.collection('leaderboards').doc('level').get(),
+            db.collection('leaderboards').doc('floor').get()
+        ]);
+
+        const goldData = goldDoc.exists ? goldDoc.data() : {};
+        const levelData = levelDoc.exists ? levelDoc.data() : {};
+        const floorData = floorDoc.exists ? floorDoc.data() : {};
+
+        // Chuyển đổi object thành array và sắp xếp
+        const goldTop = Object.values(goldData)
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 3);
+        
+        const levelTop = Object.values(levelData)
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 3);
+        
+        const floorTop = Object.values(floorData)
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 3);
+
+        // Tạo HTML cho leaderboard
+        let goldHTML = '<h4>🏆 Top Vàng</h4>';
+        goldTop.forEach((entry, index) => {
+            goldHTML += `<p>${index + 1}. ${entry.name}: ${nFormatter(entry.value)}</p>`;
+        });
+
+        let levelHTML = '<h4>⭐ Top Level</h4>';
+        levelTop.forEach((entry, index) => {
+            levelHTML += `<p>${index + 1}. ${entry.name}: Lv.${entry.value}</p>`;
+        });
+
+        let floorHTML = '<h4>🏔️ Top Tầng</h4>';
+        floorTop.forEach((entry, index) => {
+            floorHTML += `<p>${index + 1}. ${entry.name}: Tầng ${entry.value}</p>`;
+        });
+
+        defaultModalElement.style.display = "flex";
+        defaultModalElement.innerHTML = `
+        <div class="content" id="leaderboard-tab">
+            <div class="content-head">
+                <h3>Xếp Hạng</h3>
+                <p id="leaderboard-close"><i class="fa fa-xmark"></i></p>
+            </div>
+            <div style="text-align: left; max-height: 400px; overflow-y: auto;">
+                ${goldHTML}
+                <br>
+                ${levelHTML}
+                <br>
+                ${floorHTML}
+            </div>
+        </div>`;
+
+        let close = document.querySelector('#leaderboard-close');
+        close.onclick = function () {
+            sfxDecline.play();
+            defaultModalElement.style.display = "none";
+            defaultModalElement.innerHTML = "";
+            if (menuModalElement.style.display === "none") {
+                menuModalElement.style.display = "flex";
+            }
+        };
+    } catch (error) {
+        console.error("Lỗi hiển thị leaderboard:", error);
     }
 };

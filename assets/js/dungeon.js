@@ -40,33 +40,56 @@ dungeonActivity.addEventListener('click', function () {
 
 // Sets up the initial dungeon
 const initialDungeonLoad = () => {
-    // Dungeon data is now loaded from Firestore in auth.js
-    // Just need to set the status
-    if (dungeon) {
+    // Dungeon data sẽ được load từ Firebase trong auth.js
+    // Không cần load từ localStorage nữa
+    if (!dungeon || !dungeon.progress) {
+        dungeon = {
+            rating: 500,
+            grade: "E",
+            progress: {
+                floor: 1,
+                room: 1,
+                floorLimit: 100,
+                roomLimit: 5,
+            },
+            settings: {
+                enemyBaseLvl: 1,
+                enemyLvlGap: 5,
+                enemyBaseStats: 1,
+                enemyScaling: 1.1,
+            },
+            status: {
+                exploring: false,
+                paused: true,
+                event: false,
+            },
+            statistics: {
+                kills: 0,
+                runtime: 0,
+            },
+            backlog: [],
+            action: 0,
+        };
+    }
+    if (!dungeon.status) {
         dungeon.status = {
             exploring: false,
             paused: true,
             event: false,
         };
-        updateDungeonLog();
-        loadDungeonProgress();
-        dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
-    } else {
-        // Initialize default dungeon if none exists
-        dungeonTime.innerHTML = "00:00:00";
-        floorCount.innerHTML = "Tầng 1";
-        roomCount.innerHTML = "Phòng 1";
     }
+    updateDungeonLog();
+    loadDungeonProgress();
+    dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
     dungeonAction.innerHTML = "Tạm Dừng...";
     dungeonActivity.innerHTML = "Khám Phá";
+    dungeonTime.innerHTML = "00:00:00";
     dungeonTimer = setInterval(dungeonEvent, 1000);
     playTimer = setInterval(dungeonCounter, 1000);
 }
 
 // Start and Pause Functionality
 const dungeonStartPause = () => {
-    if (!dungeon || !dungeon.status) return;
-    
     if (!dungeon.status.paused) {
         sfxPause.play();
 
@@ -86,8 +109,6 @@ const dungeonStartPause = () => {
 
 // Counts the total time for the current run and total playtime
 const dungeonCounter = () => {
-    if (!dungeon || !dungeon.statistics || !player) return;
-    
     player.playtime++;
     dungeon.statistics.runtime++;
     dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
@@ -96,8 +117,6 @@ const dungeonCounter = () => {
 
 // Loads the floor and room count
 const loadDungeonProgress = () => {
-    if (!dungeon || !dungeon.progress) return;
-    
     if (dungeon.progress.room > dungeon.progress.roomLimit) {
         dungeon.progress.room = 1;
         dungeon.progress.floor++;
@@ -108,29 +127,28 @@ const loadDungeonProgress = () => {
 
 // ========== Events in the Dungeon ==========
 const dungeonEvent = () => {
-    if (!dungeon || !dungeon.status || !dungeon.status.exploring || dungeon.status.event) return;
-    
-    dungeon.action++;
-    let choices;
-    let eventRoll;
-    let eventTypes = ["blessing", "curse", "treasure", "enemy", "enemy", "nothing", "nothing", "nothing", "nothing", "monarch"];
-    if (dungeon.action > 2 && dungeon.action < 6) {
-        eventTypes.push("nextroom");
-    } else if (dungeon.action > 5) {
-        eventTypes = ["nextroom"];
-    }
-    const event = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+    if (dungeon.status.exploring && !dungeon.status.event) {
+        dungeon.action++;
+        let choices;
+        let eventRoll;
+        let eventTypes = ["blessing", "curse", "treasure", "enemy", "enemy", "nothing", "nothing", "nothing", "nothing", "monarch"];
+        if (dungeon.action > 2 && dungeon.action < 6) {
+            eventTypes.push("nextroom");
+        } else if (dungeon.action > 5) {
+            eventTypes = ["nextroom"];
+        }
+        const event = eventTypes[Math.floor(Math.random() * eventTypes.length)];
 
-    switch (event) {
-        case "nextroom":
-            dungeon.status.event = true;
-            choices = `
-                <div class="decision-panel">
-                    <button id="choice1">Đi Vào</button>
-                    <button id="choice2">Bỏ Qua</button>
-                </div>`;
-            if (dungeon.progress.room == dungeon.progress.roomLimit) {
-                addDungeonLog(`<span class="Heirloom">Bạn đã tìm thấy cửa vào phòng Boss.</span>`, choices);
+        switch (event) {
+            case "nextroom":
+                dungeon.status.event = true;
+                choices = `
+                    <div class="decision-panel">
+                        <button id="choice1">Đi Vào</button>
+                        <button id="choice2">Bỏ Qua</button>
+                    </div>`;
+                if (dungeon.progress.room == dungeon.progress.roomLimit) {
+                    addDungeonLog(`<span class="Heirloom">Bạn đã tìm thấy cửa vào phòng Boss.</span>`, choices);
                 } else {
                     addDungeonLog("Bạn đã tìm thấy một cánh cửa.", choices);
                 }
@@ -367,8 +385,6 @@ const chestEvent = () => {
 
 // Calculates Gold Drop
 const goldDrop = () => {
-    if (!dungeon || !dungeon.progress || !player) return;
-    
     sfxSell.play();
     let goldValue = randomizeNum(50, 500) * dungeon.progress.floor;
     addDungeonLog(`Bạn đã tìm thấy <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(goldValue)}.`);
@@ -451,8 +467,6 @@ const ignoreEvent = () => {
 
 // Increase room or floor accordingly
 const incrementRoom = () => {
-    if (!dungeon || !dungeon.progress) return;
-    
     dungeon.progress.room++;
     dungeon.action = 0;
     loadDungeonProgress();

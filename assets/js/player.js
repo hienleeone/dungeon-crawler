@@ -1,4 +1,4 @@
-let player = null; // Will be loaded from Firestore
+let player = null;
 let inventoryOpen = false;
 let leveled = false;
 const lvlupSelect = document.querySelector("#lvlupSelect");
@@ -101,9 +101,7 @@ const playerLoadStats = () => {
 const openInventory = () => {
     sfxOpen.play();
 
-    if (typeof dungeon !== 'undefined' && dungeon && dungeon.status) {
-        dungeon.status.exploring = false;
-    }
+    dungeon.status.exploring = false;
     inventoryOpen = true;
     let openInv = document.querySelector('#inventory');
     let dimDungeon = document.querySelector('#dungeon-main');
@@ -169,14 +167,14 @@ const closeInventory = () => {
     openInv.style.display = "none";
     dimDungeon.style.filter = "brightness(100%)";
     inventoryOpen = false;
-    if (typeof dungeon !== 'undefined' && dungeon && dungeon.status && !dungeon.status.paused) {
+    if (!dungeon.status.paused) {
         dungeon.status.exploring = true;
     }
 }
 
 // Continue exploring if inventory is not open and the game is not paused
 const continueExploring = () => {
-    if (!inventoryOpen && typeof dungeon !== 'undefined' && dungeon && dungeon.status && !dungeon.status.paused) {
+    if (!inventoryOpen && !dungeon.status.paused) {
         dungeon.status.exploring = true;
     }
 }
