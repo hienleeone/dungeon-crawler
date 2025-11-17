@@ -10,37 +10,29 @@ if (JSON.parse(localStorage.getItem("volumeData")) == undefined) {
     volume = JSON.parse(localStorage.getItem("volumeData"));
 }
 
-// Safe wrapper for undefined sounds
-const safeSoundWrapper = {
-    play: () => {},
-    stop: () => {},
-    pause: () => {},
-    volume: () => {},
-    fade: () => {}
-};
 
 // BGM
-let bgmDungeon = Object.create(safeSoundWrapper);
-let bgmBattleMain = Object.create(safeSoundWrapper);
-let bgmBattleBoss = Object.create(safeSoundWrapper);
-let bgmBattleGuardian = Object.create(safeSoundWrapper);
+let bgmDungeon;
+let bgmBattleMain;
+let bgmBattleBoss;
+let bgmBattleGuardian;
 
 // SFX
-let sfxEncounter = Object.create(safeSoundWrapper);
-let sfxEnemyDeath = Object.create(safeSoundWrapper);
-let sfxAttack = Object.create(safeSoundWrapper);
-let sfxLvlUp = Object.create(safeSoundWrapper);
-let sfxConfirm = Object.create(safeSoundWrapper);
-let sfxDecline = Object.create(safeSoundWrapper);
-let sfxDeny = Object.create(safeSoundWrapper);
-let sfxEquip = Object.create(safeSoundWrapper);
-let sfxUnequip = Object.create(safeSoundWrapper);
-let sfxOpen = Object.create(safeSoundWrapper);
-let sfxPause = Object.create(safeSoundWrapper);
-let sfxUnpause = Object.create(safeSoundWrapper);
-let sfxSell = Object.create(safeSoundWrapper);
-let sfxItem = Object.create(safeSoundWrapper);
-let sfxBuff = Object.create(safeSoundWrapper);
+let sfxEncounter;
+let sfxEnemyDeath;
+let sfxAttack;
+let sfxLvlUp;
+let sfxConfirm;
+let sfxDecline;
+let sfxDeny;
+let sfxEquip;
+let sfxUnequip;
+let sfxOpen;
+let sfxPause;
+let sfxUnpause;
+let sfxSell;
+let sfxItem;
+let sfxBuff;
 
 const setVolume = () => {
     // ===== BGM =====
@@ -145,28 +137,7 @@ const setVolume = () => {
     });
 }
 
-// Safe play function that won't crash if sound not loaded
-window.safePlay = function(sound) {
-    try {
-        if (sound && typeof sound.play === 'function') {
-            sound.play();
-        }
-    } catch (e) {
-        // Sound not loaded yet, ignore
-    }
-};
-
-window.safeStop = function(sound) {
-    try {
-        if (sound && typeof sound.stop === 'function') {
-            sound.stop();
-        }
-    } catch (e) {
-        // Sound not loaded yet, ignore
-    }
-};
-
 document.querySelector("#title-screen").addEventListener("click", function () {
     setVolume();
-    safePlay(sfxOpen);
+    sfxOpen.play();
 });

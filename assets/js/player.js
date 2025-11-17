@@ -1,5 +1,4 @@
-// Player will be loaded from Firebase via auth
-let player = null;
+let player = null; // Will be loaded from Firestore
 let inventoryOpen = false;
 let leveled = false;
 const lvlupSelect = document.querySelector("#lvlupSelect");

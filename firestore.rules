@@ -55,6 +55,19 @@ service cloud.firestore {
       match /dungeon/{dungeonId} {
         allow read, write: if isAuthenticated() && isOwner(userId);
       }
+      
+      // Volume settings subcollection
+      match /settings/{settingId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+    
+    // ===== Dungeon Game Player Names (for duplicate check) =====
+    match /dungeonPlayerNames/{name} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() 
+                     && !exists(/databases/$(database)/documents/dungeonPlayerNames/$(name));
+      allow delete: if isAuthenticated();
     }
 
     // ===== Volume Settings (subcollection) =====
@@ -106,6 +119,12 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isAuthenticated() && isOwner(userId);
       }
+    }
+    
+    // ===== DUNGEON CRAWLER LEADERBOARDS =====
+    match /dungeonLeaderboards/{category} {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     // ===== Deny all other access =====
