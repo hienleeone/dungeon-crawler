@@ -297,6 +297,7 @@ const updateLeaderboards = async () => {
 // Kiểm tra tên người chơi có trùng không
 const checkPlayerNameExists = async (name) => {
     try {
+        // Chỉ kiểm tra trong playerNames (vì không có quyền query players)
         const docRef = db.collection('playerNames').doc(name);
         const doc = await docRef.get();
         
