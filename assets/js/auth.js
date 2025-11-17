@@ -213,20 +213,33 @@ const loadPlayerDataFromFirebase = async (userId) => {
 
 // Lưu dữ liệu người chơi lên Firebase
 const savePlayerDataToFirebase = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.error("Không có currentUser!");
+        throw new Error("Chưa đăng nhập");
+    }
 
     try {
+        console.log("1. Bắt đầu lưu...");
+        
         // Check tên trùng trước
         if (player.name) {
+            console.log("2. Kiểm tra tên:", player.name);
             const nameRef = db.collection('playerNames').doc(player.name);
             const nameDoc = await nameRef.get();
             
+            console.log("3. Name doc exists:", nameDoc.exists);
+            if (nameDoc.exists) {
+                console.log("4. Name doc data:", nameDoc.data());
+            }
+            
             // Nếu tên đã tồn tại VÀ không phải của user này
             if (nameDoc.exists && nameDoc.data().userId !== currentUser.uid) {
+                console.error("5. Tên đã tồn tại!");
                 throw new Error('NAME_EXISTS');
             }
         }
 
+        console.log("6. Tạo batch...");
         const batch = db.batch();
         
         // Lưu player data
@@ -242,6 +255,8 @@ const savePlayerDataToFirebase = async () => {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         
+        console.log("7. Thêm player data vào batch");
+        
         // Lưu tên vào collection playerNames
         if (player.name) {
             const nameRef = db.collection('playerNames').doc(player.name);
@@ -250,12 +265,17 @@ const savePlayerDataToFirebase = async () => {
                 userId: currentUser.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+            console.log("8. Thêm playerNames vào batch");
         }
         
+        console.log("9. Commit batch...");
         await batch.commit();
+        console.log("10. Batch commit thành công!");
 
         // Cập nhật leaderboards
+        console.log("11. Cập nhật leaderboards...");
         await updateLeaderboards();
+        console.log("12. Hoàn tất!");
     } catch (error) {
         console.error("Lỗi lưu dữ liệu:", error);
         throw error; // Throw lại để main.js xử lý

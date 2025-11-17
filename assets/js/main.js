@@ -99,18 +99,22 @@ window.addEventListener("load", function () {
                 
                 // Lưu - nếu tên trùng, Firebase Rules sẽ từ chối
                 try {
+                    console.log("Đang lưu player:", player.name);
                     await savePlayerDataToFirebase();
+                    console.log("Lưu thành công!");
                     document.querySelector("#character-creation").style.display = "none";
                     runLoad("title-screen", "flex");
                 } catch (error) {
                     console.error("Lỗi tạo nhân vật:", error);
+                    console.error("Error code:", error.code);
+                    console.error("Error message:", error.message);
                     // Kiểm tra lỗi
                     if (error.message === 'NAME_EXISTS') {
                         document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
                     } else if (error.code === 'permission-denied' || error.message.includes('PERMISSION_DENIED')) {
                         document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
                     } else {
-                        document.querySelector("#alert").innerHTML = "Lỗi lưu dữ liệu. Vui lòng thử lại!";
+                        document.querySelector("#alert").innerHTML = "Lỗi: " + (error.message || "Vui lòng thử lại!");
                     }
                     player = null; // Reset player nếu lỗi
                 }
