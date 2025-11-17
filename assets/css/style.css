@@ -550,7 +550,6 @@ button:focus {
 /* Login & Register Screens */
 #login-screen,
 #register-screen {
-    display: flex !important;
     flex-direction: column;
     justify-content: center;
     align-items: center;
