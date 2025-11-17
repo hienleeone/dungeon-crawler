@@ -10,29 +10,36 @@ if (JSON.parse(localStorage.getItem("volumeData")) == undefined) {
     volume = JSON.parse(localStorage.getItem("volumeData"));
 }
 
+// Create dummy sound objects with safe play function
+const createDummySound = () => ({
+    play: () => {},
+    stop: () => {},
+    pause: () => {},
+    volume: () => {}
+});
 
 // BGM
-let bgmDungeon;
-let bgmBattleMain;
-let bgmBattleBoss;
-let bgmBattleGuardian;
+let bgmDungeon = createDummySound();
+let bgmBattleMain = createDummySound();
+let bgmBattleBoss = createDummySound();
+let bgmBattleGuardian = createDummySound();
 
 // SFX
-let sfxEncounter;
-let sfxEnemyDeath;
-let sfxAttack;
-let sfxLvlUp;
-let sfxConfirm;
-let sfxDecline;
-let sfxDeny;
-let sfxEquip;
-let sfxUnequip;
-let sfxOpen;
-let sfxPause;
-let sfxUnpause;
-let sfxSell;
-let sfxItem;
-let sfxBuff;
+let sfxEncounter = createDummySound();
+let sfxEnemyDeath = createDummySound();
+let sfxAttack = createDummySound();
+let sfxLvlUp = createDummySound();
+let sfxConfirm = createDummySound();
+let sfxDecline = createDummySound();
+let sfxDeny = createDummySound();
+let sfxEquip = createDummySound();
+let sfxUnequip = createDummySound();
+let sfxOpen = createDummySound();
+let sfxPause = createDummySound();
+let sfxUnpause = createDummySound();
+let sfxSell = createDummySound();
+let sfxItem = createDummySound();
+let sfxBuff = createDummySound();
 
 const setVolume = () => {
     // ===== BGM =====
