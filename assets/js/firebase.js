@@ -1,6 +1,26 @@
-// =============================
-// Firebase Configuration
-// =============================
+// ===============================
+// Firebase v9 Modular (CHUẨN)
+// ===============================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import {
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// ========================================
+// Firebase Config (LẤY TỪ FIREBASE CONSOLE)
+// ========================================
 const firebaseConfig = {
     apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
     authDomain: "soulmc-account.firebaseapp.com",
@@ -11,121 +31,101 @@ const firebaseConfig = {
     measurementId: "G-NW033BL7PW"
 };
 
-// =============================
-// Initialize Firebase
-// =============================
-firebase.initializeApp(firebaseConfig);
+// ========================================
+// Init Firebase
+// ========================================
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// =============================
-// SERVICES
-// =============================
-const auth = firebase.auth();
-const db = firebase.firestore();
-const functions = firebase.app().functions("asia-southeast1");
-
-// EXPORT GLOBAL
 window.auth = auth;
 window.db = db;
-window.functions = functions;
 
+// =======================================================
+// AUTH FUNCTIONS
+// =======================================================
 
-// =============================
-// CHECKSUM
-// =============================
-const generateChecksum = (data) => {
-    const str = JSON.stringify({
-        gold: data.gold,
-        lvl: data.lvl,
-        stats: data.stats ? {
-            atk: data.stats.atk,
-            def: data.stats.def,
-            hp: data.stats.hp,
-            hpMax: data.stats.hpMax
-        } : null
-    });
+export function firebaseLogin(email, password) {
+    return signInWithEmailAndPassword(auth, email, password);
+}
 
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
-    }
-    return hash;
-};
+export function firebaseRegister(email, password) {
+    return createUserWithEmailAndPassword(auth, email, password)
+        .then((cred) => cred.user);
+}
 
-const verifyChecksum = (d, c) => generateChecksum(d) === c;
+export function firebaseLogout() {
+    return signOut(auth);
+}
 
+export function getCurrentUser() {
+    return auth.currentUser;
+}
 
-// =============================
-// SECURITY VALIDATION
-// =============================
-const validateBeforeSave = (p) => {
-    if (!p) return null;
-    if (p.gold > 1e9) p.gold = 1e9;
-    if (p.gold < 0) p.gold = 0;
-    if (p.lvl > 1000) p.lvl = 1000;
-    if (p.lvl < 1) p.lvl = 1;
+// =======================================================
+// FIRESTORE FUNCTIONS
+// =======================================================
 
-    if (p.stats) {
-        if (p.stats.atk > 999999) p.stats.atk = 999999;
-        if (p.stats.def > 999999) p.stats.def = 999999;
-        if (p.stats.hpMax > 99999999) p.stats.hpMax = 99999999;
-        if (p.stats.hp > p.stats.hpMax) p.stats.hp = p.stats.hpMax;
-        if (p.stats.critRate > 100) p.stats.critRate = 100;
-        if (p.stats.critDmg > 1000) p.stats.critDmg = 1000;
-    }
+// Lấy player
+export async function getPlayerData(uid) {
+    const ref = doc(db, "players", uid);
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : null;
+}
 
-    return p;
-};
+// Tạo player
+export async function createPlayerData(uid, name, data) {
+    const ref = doc(db, "players", uid);
+    await setDoc(ref, data);
+    return true;
+}
 
+// Update player (auto-save)
+export async function updatePlayerData(uid, playerData) {
+    const ref = doc(db, "players", uid);
+    return updateDoc(ref, playerData);
+}
 
-// =============================
-// CLOUD FUNCTIONS
-// =============================
-const createPlayerData = async (name) => {
-    const fn = window.functions.httpsCallable("createPlayer");
-    const res = await fn({ name });
-    return res.data.player;
-};
+// Xoá player
+export async function deletePlayerData(uid) {
+    const ref = doc(db, "players", uid);
+    return setDoc(ref, {}); // xoá sạch dữ liệu
+}
 
-const updatePlayerData = async (uid, data) => {
-    const valid = validateBeforeSave(data);
-    const fn = window.functions.httpsCallable("serverUpdatePlayer");
-    return fn({ player: valid });
-};
+// Volume settings
+export async function getVolumeData(uid) {
+    const ref = doc(db, "volume", uid);
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : null;
+}
 
+export async function saveVolumeData(uid, volume) {
+    const ref = doc(db, "volume", uid);
+    return setDoc(ref, volume);
+}
 
-// =============================
-// FIRESTORE
-// =============================
-const getPlayerData = (uid) =>
-    db.collection("players").doc(uid).get()
-        .then(doc => doc.exists ? doc.data() : null);
+// =======================================================
+// AUTO SAVE SYSTEM
+// =======================================================
 
+let autoSaveInterval = null;
 
-// =============================
-// AUTH SHORTCUTS
-// =============================
-const firebaseLogin = (email, pass) =>
-    auth.signInWithEmailAndPassword(email, pass);
+export function startAutoSave(uid, getPlayerFunc) {
+    if (autoSaveInterval) clearInterval(autoSaveInterval);
 
-const firebaseRegister = (email, pass) =>
-    auth.createUserWithEmailAndPassword(email, pass);
+    autoSaveInterval = setInterval(async () => {
+        const player = getPlayerFunc();
+        if (player) {
+            try {
+                await updatePlayerData(uid, player);
+            } catch (err) {
+                console.error("Auto-save error:", err);
+            }
+        }
+    }, 5000);
+}
 
-const firebaseLogout = () => auth.signOut();
-
-const getCurrentUser = () => auth.currentUser;
-
-
-// =============================
-console.log("🔥 Firebase initialized");
-
-const checkPlayerNameExists = async (name) => {
-    const snapshot = await db
-        .collection("players")
-        .where("name", "==", name)
-        .get();
-
-    return !snapshot.empty;
-};
-
-window.checkPlayerNameExists = checkPlayerNameExists;
+export function stopAutoSave() {
+    if (autoSaveInterval) clearInterval(autoSaveInterval);
+    autoSaveInterval = null;
+}
