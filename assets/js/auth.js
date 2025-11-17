@@ -12,7 +12,7 @@ firebase.auth().onAuthStateChanged(async (user) => {
         await loadPlayerDataFromFirebase(user.uid);
         
         // Kiểm tra xem người chơi đã có tên chưa
-        if (player === null || !player.name) {
+        if (player === null || !player || !player.name) {
             runLoad("character-creation", "flex");
         } else if (player.allocated) {
             runLoad("title-screen", "flex");
@@ -22,9 +22,11 @@ firebase.auth().onAuthStateChanged(async (user) => {
     } else {
         // Chưa đăng nhập, hiển thị màn hình auth
         currentUser = null;
+        player = null;
         document.querySelector("#auth-screen").style.display = "flex";
         document.querySelector("#character-creation").style.display = "none";
         document.querySelector("#title-screen").style.display = "none";
+        document.querySelector("#dungeon-main").style.display = "none";
     }
 });
 
@@ -130,15 +132,17 @@ const logoutUser = async () => {
     try {
         await firebase.auth().signOut();
         player = null;
+        dungeon = null;
+        enemy = null;
         
         // Dừng game nếu đang chơi
-        if (typeof bgmDungeon !== 'undefined') {
+        if (typeof bgmDungeon !== 'undefined' && bgmDungeon) {
             bgmDungeon.stop();
         }
-        if (typeof clearInterval !== 'undefined' && typeof dungeonTimer !== 'undefined') {
+        if (typeof dungeonTimer !== 'undefined') {
             clearInterval(dungeonTimer);
         }
-        if (typeof clearInterval !== 'undefined' && typeof playTimer !== 'undefined') {
+        if (typeof playTimer !== 'undefined') {
             clearInterval(playTimer);
         }
         

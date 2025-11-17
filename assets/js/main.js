@@ -6,7 +6,7 @@ window.addEventListener("load", function () {
     document.querySelector("#title-screen").addEventListener("click", function () {
         if (player && player.allocated) {
             enterDungeon();
-        } else {
+        } else if (player) {
             allocationPopup();
         }
     });
@@ -251,9 +251,19 @@ window.addEventListener("load", function () {
                 sfxConfirm.play();
                 
                 // Xóa dữ liệu trên Firebase
-                if (currentUser) {
+                if (currentUser && player && player.name) {
                     try {
-                        await db.collection('players').doc(currentUser.uid).delete();
+                        const batch = db.batch();
+                        
+                        // Xóa player data
+                        const playerRef = db.collection('players').doc(currentUser.uid);
+                        batch.delete(playerRef);
+                        
+                        // Xóa tên khỏi playerNames
+                        const nameRef = db.collection('playerNames').doc(player.name);
+                        batch.delete(nameRef);
+                        
+                        await batch.commit();
                     } catch (error) {
                         console.error("Lỗi xóa dữ liệu:", error);
                     }
@@ -274,7 +284,9 @@ window.addEventListener("load", function () {
                 runLoad("character-creation", "flex");
                 clearInterval(dungeonTimer);
                 clearInterval(playTimer);
-                progressReset();
+                if (typeof progressReset === 'function') {
+                    progressReset();
+                }
             };
             cancel.onclick = function () {
                 sfxDecline.play();
