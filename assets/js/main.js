@@ -28,12 +28,8 @@ window.addEventListener("load", function () {
             if (playerName.length < 3 || playerName.length > 15) {
                 document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
             } else {
-                // Kiểm tra tên trùng
-                const nameExists = await checkPlayerNameExists(playerName);
-                if (nameExists) {
-                    document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
-                    return;
-                }
+                // TẠM THỜI BỎ KIỂM TRA TÊN TRÙNG - Firestore Rules sẽ validate
+                // Nếu tên thật sự trùng, sẽ bị lỗi khi lưu vào Firebase
                 
                 player = {
                     name: playerName,
