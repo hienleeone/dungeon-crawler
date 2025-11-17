@@ -478,9 +478,11 @@ const enterDungeon = () => {
     playerLoadStats();
 }
 
-// Save all the data to Firebase
+// Save all the data to Firebase (MANUAL ONLY - Chỉ gọi qua nút "Lưu Game")
 const saveData = async () => {
-    await savePlayerDataToFirebase();
+    // BỎ AUTO-SAVE - Chỉ lưu qua nút Menu
+    // await savePlayerDataToFirebase();
+    console.log("saveData() bị vô hiệu hóa - Chỉ lưu qua nút Menu");
 }
 
 // Calculate every player stat
@@ -814,5 +816,5 @@ const objectValidation = () => {
         player.tempStats.atk = 0;
         player.tempStats.atkSpd = 0;
     }
-    saveData();
+    // saveData(); // BỎ - objectValidation được gọi liên tục trong combat
 }

@@ -1,15 +1,33 @@
 // Authentication Handler
 
+let isLoadingPlayerData = false; // Flag để ngăn load loop
+let hasLoadedInitialData = false; // Flag để chỉ load 1 lần
+
 // Kiểm tra trạng thái đăng nhập khi load trang
 firebase.auth().onAuthStateChanged(async (user) => {
+    if (isLoadingPlayerData) {
+        console.log("Đang load data, bỏ qua onAuthStateChanged");
+        return;
+    }
+    
     if (user) {
         currentUser = user;
+        
+        // CHỈ LOAD DATA 1 LẦN DUY NHẤT khi đăng nhập
+        if (hasLoadedInitialData) {
+            console.log("Đã load data rồi, bỏ qua onAuthStateChanged");
+            return;
+        }
+        
+        hasLoadedInitialData = true;
         
         // Ẩn màn hình auth
         document.querySelector("#auth-screen").style.display = "none";
         
         // Người dùng đã đăng nhập, load dữ liệu từ Firebase
+        isLoadingPlayerData = true;
         await loadPlayerDataFromFirebase(user.uid);
+        isLoadingPlayerData = false;
         
         // Kiểm tra xem người chơi đã có tên chưa
         if (player === null || !player || !player.name) {
@@ -23,6 +41,7 @@ firebase.auth().onAuthStateChanged(async (user) => {
         // Chưa đăng nhập, hiển thị màn hình auth
         currentUser = null;
         player = null;
+        hasLoadedInitialData = false; // Reset flag khi logout
         document.querySelector("#auth-screen").style.display = "flex";
         document.querySelector("#character-creation").style.display = "none";
         document.querySelector("#title-screen").style.display = "none";
@@ -213,8 +232,7 @@ const loadPlayerDataFromFirebase = async (userId) => {
 
 // Debounce để tránh gọi save quá nhiều lần
 let saveTimeout = null;
-let isSaving = false;
-let hasUnsavedChanges = false; // Track nếu có thay đổi chưa lưu
+// isSaving và hasUnsavedChanges đã khai báo trong firebase-config.js
 
 // Đánh dấu có thay đổi chưa lưu
 const markUnsaved = () => {
@@ -236,6 +254,7 @@ const savePlayerDataToFirebase = async () => {
 
     try {
         isSaving = true;
+        console.trace("savePlayerDataToFirebase được gọi từ:"); // Trace để xem ai gọi
         console.log("Bắt đầu lưu...");
         
         // Lưu player data trực tiếp
@@ -270,6 +289,10 @@ const savePlayerDataToFirebase = async () => {
         
         console.log("Hoàn tất!");
         hasUnsavedChanges = false; // Reset flag sau khi lưu thành công
+        
+        // Cập nhật leaderboards
+        await updateLeaderboards();
+        console.log("Đã cập nhật leaderboards");
     } catch (error) {
         console.error("Lỗi lưu dữ liệu:", error);
         throw error;

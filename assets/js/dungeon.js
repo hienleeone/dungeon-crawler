@@ -114,6 +114,9 @@ const dungeonStartPause = () => {
         dungeonActivity.innerHTML = "Tạm dừng";
         dungeon.status.exploring = true;
         dungeon.status.paused = false;
+        
+        // Đánh dấu có thay đổi chưa lưu khi bắt đầu chơi
+        hasUnsavedChanges = true;
     }
 }
 
@@ -122,7 +125,7 @@ const dungeonCounter = () => {
     player.playtime++;
     dungeon.statistics.runtime++;
     dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
-    saveData();
+    // saveData(); // BỎ AUTO-SAVE - Người chơi phải ấn nút "Lưu Game" thủ công
 }
 
 // Loads the floor and room count
@@ -130,7 +133,7 @@ const loadDungeonProgress = () => {
     if (dungeon.progress.room > dungeon.progress.roomLimit) {
         dungeon.progress.room = 1;
         dungeon.progress.floor++;
-        if (typeof markUnsaved === 'function') markUnsaved(); // Đánh dấu thay đổi khi lên tầng
+        // if (typeof markUnsaved === 'function') markUnsaved(); // Tạm tắt
     }
     floorCount.innerHTML = `Tầng ${dungeon.progress.floor}`;
     roomCount.innerHTML = `Phòng ${dungeon.progress.room}`;

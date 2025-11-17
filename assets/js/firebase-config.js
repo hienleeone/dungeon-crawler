@@ -19,3 +19,7 @@ const db = firebase.firestore();
 
 // Biến global để lưu user hiện tại
 let currentUser = null;
+
+// Biến global để track unsaved changes
+let hasUnsavedChanges = false;
+let isSaving = false;

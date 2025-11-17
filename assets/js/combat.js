@@ -37,7 +37,7 @@ const hpValidation = () => {
         playerExpGain();
         addCombatLog(`${enemy.name} rơi <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(enemy.rewards.gold)} vàng.`)
         player.gold += enemy.rewards.gold;
-        if (typeof markUnsaved === 'function') markUnsaved(); // Đánh dấu thay đổi
+        // if (typeof markUnsaved === 'function') markUnsaved(); // Tạm tắt
         playerLoadStats();
         if (enemy.rewards.drop) {
             createEquipmentPrint("combat");
@@ -110,14 +110,14 @@ const playerAttack = () => {
         player.baseStats.atk += 5;
         objectValidation();
         player.tempStats.atk += 5;
-        saveData();
+        // saveData(); // BỎ - Không auto-save mỗi đòn đánh
     }
     if (player.skills.includes("Blade Dance")) {
         // Gain increased attack speed after each hit. Stack resets after battle
         player.baseStats.atkSpd += 0.01;
         objectValidation();
         player.tempStats.atkSpd += 0.01;
-        saveData();
+        // saveData(); // BỎ - Không auto-save mỗi đòn đánh
     }
 
     // Lifesteal formula
@@ -296,14 +296,14 @@ const endCombat = () => {
         objectValidation();
         player.baseStats.atk -= player.tempStats.atk;
         player.tempStats.atk = 0;
-        saveData();
+        // saveData(); // BỎ - Không auto-save
     }
     if (player.skills.includes("Blade Dance")) {
         // Remove Blade Dance attack speed buff
         objectValidation();
         player.baseStats.atkSpd -= player.tempStats.atkSpd;
         player.tempStats.atkSpd = 0;
-        saveData();
+        // saveData(); // BỎ - Không auto-save
     }
 
     // Stops every timer in combat
