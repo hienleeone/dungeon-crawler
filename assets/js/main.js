@@ -104,8 +104,10 @@ window.addEventListener("load", function () {
                     runLoad("title-screen", "flex");
                 } catch (error) {
                     console.error("Lỗi tạo nhân vật:", error);
-                    // Kiểm tra lỗi permission từ Firebase
-                    if (error.code === 'permission-denied' || error.message.includes('PERMISSION_DENIED')) {
+                    // Kiểm tra lỗi
+                    if (error.message === 'NAME_EXISTS') {
+                        document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
+                    } else if (error.code === 'permission-denied' || error.message.includes('PERMISSION_DENIED')) {
                         document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
                     } else {
                         document.querySelector("#alert").innerHTML = "Lỗi lưu dữ liệu. Vui lòng thử lại!";

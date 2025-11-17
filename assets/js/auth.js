@@ -216,6 +216,17 @@ const savePlayerDataToFirebase = async () => {
     if (!currentUser) return;
 
     try {
+        // Check tên trùng trước
+        if (player.name) {
+            const nameRef = db.collection('playerNames').doc(player.name);
+            const nameDoc = await nameRef.get();
+            
+            // Nếu tên đã tồn tại VÀ không phải của user này
+            if (nameDoc.exists && nameDoc.data().userId !== currentUser.uid) {
+                throw new Error('NAME_EXISTS');
+            }
+        }
+
         const batch = db.batch();
         
         // Lưu player data
