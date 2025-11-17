@@ -24,6 +24,125 @@ let volume = {
     sfx: 0.5
 };
 
+// ===== SECURITY FUNCTIONS =====
+
+/**
+ * Validate player data before saving
+ */
+const validateBeforeSave = (playerData) => {
+    const issues = [];
+
+    // Kiểm tra vàng (max 1 tỷ)
+    if (playerData.gold > 1000000000) {
+        issues.push('Gold exceeds maximum (1B)');
+        playerData.gold = 1000000000; // Cap at max
+    }
+
+    if (playerData.gold < 0) {
+        issues.push('Gold is negative');
+        playerData.gold = 0;
+    }
+
+    // Kiểm tra level (max 1000)
+    if (playerData.lvl > 1000) {
+        issues.push('Level exceeds maximum (1000)');
+        playerData.lvl = 1000;
+    }
+
+    if (playerData.lvl < 1) {
+        issues.push('Level is too low');
+        playerData.lvl = 1;
+    }
+
+    // Kiểm tra stats
+    if (playerData.stats) {
+        if (playerData.stats.atk > 999999) {
+            issues.push('ATK too high');
+            playerData.stats.atk = 999999;
+        }
+        if (playerData.stats.def > 999999) {
+            issues.push('DEF too high');
+            playerData.stats.def = 999999;
+        }
+        if (playerData.stats.atkSpd > 10) {
+            issues.push('ATK.SPD too high');
+            playerData.stats.atkSpd = 10;
+        }
+        if (playerData.stats.hp > playerData.stats.hpMax) {
+            playerData.stats.hp = playerData.stats.hpMax;
+        }
+        if (playerData.stats.hpMax > 99999999) {
+            issues.push('HP Max too high');
+            playerData.stats.hpMax = 99999999;
+        }
+        if (playerData.stats.vamp > 100) {
+            issues.push('Vamp too high');
+            playerData.stats.vamp = 100;
+        }
+        if (playerData.stats.critRate > 100) {
+            issues.push('Crit Rate too high');
+            playerData.stats.critRate = 100;
+        }
+        if (playerData.stats.critDmg > 1000) {
+            issues.push('Crit Damage too high');
+            playerData.stats.critDmg = 1000;
+        }
+    }
+
+    // Kiểm tra inventory
+    if (playerData.inventory && playerData.inventory.equipment) {
+        if (playerData.inventory.equipment.length > 1000) {
+            issues.push('Too many items in inventory');
+            playerData.inventory.equipment = playerData.inventory.equipment.slice(0, 1000);
+        }
+    }
+
+    // Log issues nếu có
+    if (issues.length > 0) {
+        console.warn('⚠️ Data validation issues found and fixed:', issues);
+        
+        // Nếu có quá nhiều issues, có thể là cheat
+        if (issues.length > 5) {
+            console.error('❌ Too many validation issues - possible cheating detected');
+            return null; // Trả về null để từ chối lưu
+        }
+    }
+
+    return playerData;
+};
+
+/**
+ * Generate checksum để verify data integrity
+ */
+const generateChecksum = (data) => {
+    const str = JSON.stringify({
+        gold: data.gold,
+        lvl: data.lvl,
+        stats: data.stats ? {
+            atk: data.stats.atk,
+            def: data.stats.def,
+            hp: data.stats.hp,
+            hpMax: data.stats.hpMax
+        } : null
+    });
+    
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return hash;
+};
+
+/**
+ * Verify checksum
+ */
+const verifyChecksum = (data, checksum) => {
+    const calculated = generateChecksum(data);
+    return calculated === checksum;
+};
+
 // ===== Authentication Functions =====
 
 /**
@@ -96,28 +215,35 @@ const checkPlayerNameExists = (playerName) => {
 // ===== Player Data Functions =====
 
 /**
- * Create new player in Firestore
+ * Create new player in Firestore with validation
  */
 const createPlayerData = (userId, playerName, playerData) => {
+    // Validate data trước khi tạo
+    const validatedData = validateBeforeSave(playerData);
+    
+    if (!validatedData) {
+        console.error("❌ Invalid player data - cannot create");
+        return Promise.reject(new Error("Invalid player data"));
+    }
+
     const playerDocData = {
-        ...playerData,
+        ...validatedData,
         userId: userId,
         name: playerName,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        checksum: generateChecksum(validatedData)
     };
 
-    // Debug: log attempt to create player doc
     console.log("[firebase] createPlayerData -> creating player doc for uid:", userId, "name:", playerName);
-    console.log("[firebase] createPlayerData -> payload keys:", Object.keys(playerDocData));
 
     return db.collection("players").doc(userId).set(playerDocData)
         .then(() => {
-            console.log("Tạo dữ liệu người chơi thành công for uid:", userId);
+            console.log("✅ Tạo dữ liệu người chơi thành công for uid:", userId);
             return playerDocData;
         })
         .catch((error) => {
-            console.error("Lỗi tạo dữ liệu:", error);
+            console.error("❌ Lỗi tạo dữ liệu:", error);
             throw error;
         });
 };
@@ -129,34 +255,53 @@ const getPlayerData = (userId) => {
     return db.collection("players").doc(userId).get()
         .then((doc) => {
             if (doc.exists) {
-                console.log("Lấy dữ liệu người chơi thành công");
-                return doc.data();
+                const data = doc.data();
+                
+                // Verify checksum nếu có
+                if (data.checksum) {
+                    const isValid = verifyChecksum(data, data.checksum);
+                    if (!isValid) {
+                        console.warn("⚠️ Checksum mismatch - data may be corrupted");
+                    }
+                }
+                
+                console.log("✅ Lấy dữ liệu người chơi thành công");
+                return data;
             } else {
                 console.log("Không tìm thấy dữ liệu người chơi");
                 return null;
             }
         })
         .catch((error) => {
-            console.error("Lỗi lấy dữ liệu:", error);
+            console.error("❌ Lỗi lấy dữ liệu:", error);
             throw error;
         });
 };
 
 /**
- * Update player data in Firestore
+ * Update player data in Firestore with validation
  */
 const updatePlayerData = (userId, playerData) => {
+    // Validate trước khi lưu
+    const validatedData = validateBeforeSave(playerData);
+    
+    if (!validatedData) {
+        console.error("❌ Invalid player data - cannot update");
+        return Promise.reject(new Error("Invalid player data"));
+    }
+
     const updateData = {
-        ...playerData,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        ...validatedData,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        checksum: generateChecksum(validatedData)
     };
 
     return db.collection("players").doc(userId).update(updateData)
         .then(() => {
-            console.log("Cập nhật dữ liệu người chơi thành công");
+            console.log("✅ Cập nhật dữ liệu người chơi thành công");
         })
         .catch((error) => {
-            console.error("Lỗi cập nhật dữ liệu:", error);
+            console.error("❌ Lỗi cập nhật dữ liệu:", error);
             throw error;
         });
 };
@@ -167,10 +312,10 @@ const updatePlayerData = (userId, playerData) => {
 const deletePlayerData = (userId) => {
     return db.collection("players").doc(userId).delete()
         .then(() => {
-            console.log("Xóa dữ liệu người chơi thành công");
+            console.log("✅ Xóa dữ liệu người chơi thành công");
         })
         .catch((error) => {
-            console.error("Lỗi xóa dữ liệu:", error);
+            console.error("❌ Lỗi xóa dữ liệu:", error);
             throw error;
         });
 };
@@ -211,7 +356,7 @@ const getLeaderboard = (type, limit = 3) => {
             return leaderboard;
         })
         .catch((error) => {
-            console.error("Lỗi lấy xếp hạng:", error);
+            console.error("❌ Lỗi lấy xếp hạng:", error);
             throw error;
         });
 };
@@ -226,7 +371,7 @@ const saveVolumeData = (userId, volumeData) => {
         volumeSettings: volumeData
     })
         .catch((error) => {
-            console.error("Lỗi lưu cài đặt âm thanh:", error);
+            console.error("❌ Lỗi lưu cài đặt âm thanh:", error);
         });
 };
 
@@ -242,25 +387,31 @@ const getVolumeData = (userId) => {
             return null;
         })
         .catch((error) => {
-            console.error("Lỗi lấy cài đặt âm thanh:", error);
+            console.error("❌ Lỗi lấy cài đặt âm thanh:", error);
             return null;
         });
 };
 
-// ===== Auto-save Function =====
+// ===== Auto-save Function with Security =====
 
-/**
- * Setup auto-save function
- */
 let autoSaveInterval;
 
+/**
+ * Setup auto-save function with validation
+ */
 const startAutoSave = (userId, getPlayerDataFunc) => {
     // Auto-save every 30 seconds
     autoSaveInterval = setInterval(() => {
         const currentPlayer = getPlayerDataFunc();
         if (currentPlayer && getCurrentUser()) {
+            // Validate trước khi lưu
+            if (window.validatePlayerData && !window.validatePlayerData()) {
+                console.error('❌ Validation failed, skipping auto-save');
+                return;
+            }
+            
             updatePlayerData(userId, currentPlayer).catch((error) => {
-                console.error("Lỗi auto-save:", error);
+                console.error("❌ Lỗi auto-save:", error);
             });
         }
     }, 30000);
@@ -271,3 +422,5 @@ const stopAutoSave = () => {
         clearInterval(autoSaveInterval);
     }
 };
+
+console.log("🔥 Firebase initialized with security features");
