@@ -6,7 +6,8 @@ const firebaseConfig = {
     projectId: "data-dc-soulmc",
     storageBucket: "data-dc-soulmc.firebasestorage.app",
     messagingSenderId: "539439303064",
-    appId: "1:539439303064:web:b2038f2bfe81d95a6603ed"
+    appId: "1:539439303064:web:b2038f2bfe81d95a6603ed",
+    measurementId: "G-FKGXSSW90C"
 };
 
 // Khởi tạo Firebase
