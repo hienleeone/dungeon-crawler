@@ -42,12 +42,6 @@ dungeonActivity.addEventListener('click', function () {
 const initialDungeonLoad = () => {
     if (localStorage.getItem("dungeonData") !== null) {
         dungeon = JSON.parse(localStorage.getItem("dungeonData"));
-
-        // FIX LỖI backLog undefined
-        if (!Array.isArray(dungeon.backlog)) {
-            dungeon.backlog = [];
-        }
-
         dungeon.status = {
             exploring: false,
             paused: true,
