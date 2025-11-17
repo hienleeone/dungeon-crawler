@@ -33,7 +33,7 @@
                 <h1>soulmc.vn</h1>
                 <h1>Dungeon Crawler</h1>
             </div>
-            <p>Nhấn để khám phá nhầm ngục!</p>
+            <p>Nhấn để khám phá hầm ngục!</p>
         </section>
 
         <!-- ===== Character Creation ===== -->
@@ -163,6 +163,36 @@
             </div>
         </div>
 
+<!-- Auth Screen (add near other modals) -->
+<div class="modal-container" id="authModal" style="display:none;">
+  <div class="content auth-content">
+    <div class="content-head">
+      <h3>Đăng Nhập</h3>
+      <p id="auth-close"><i class="fa fa-xmark"></i></p>
+    </div>
+
+    <div id="login-box">
+      <input id="auth-email" type="email" placeholder="Gmail" autocomplete="off">
+      <input id="auth-password" type="password" placeholder="Mật khẩu">
+      <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+        <button id="btn-login">Đăng Nhập</button>
+        <button id="btn-show-register" style="font-size:0.9rem;">Đăng Ký</button>
+      </div>
+    </div>
+
+    <div id="register-box" style="display:none; margin-top:0.5rem;">
+      <input id="reg-email" type="email" placeholder="Gmail" autocomplete="off">
+      <input id="reg-password" type="password" placeholder="Mật khẩu">
+      <input id="reg-password2" type="password" placeholder="Nhập lại mật khẩu">
+      <input id="reg-username" type="text" placeholder="Tên hiển thị (3-15 ký tự)">
+      <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+        <button id="btn-register">Đồng Ý</button>
+        <button id="btn-cancel-register">Hủy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
     </main>
 
     <!-- ===== Scripts ===== -->
@@ -174,6 +204,7 @@
     <script src="./assets/js/combat.js"></script>
     <script src="./assets/js/dungeon.js"></script>
     <script src="./assets/js/enemy.js"></script>
+    <script type="module" src="./assets/js/firebase.js"></script>
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
 

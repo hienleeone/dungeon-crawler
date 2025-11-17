@@ -1,816 +1,956 @@
-window.addEventListener("load", function () {
-    if (player === null) {
-        runLoad("character-creation", "flex");
-    } else {
-        let target = document.querySelector("#title-screen");
-        target.style.display = "flex";
+// Import Firebase functions (firebase.js MUST load before main.js)
+import {
+    onAuthChanged,
+    signInWithEmail,
+    signUpWithEmail,
+    signOut,
+    loadPlayerData,
+    savePlayerData,
+    deletePlayerData,
+    getTopBy
+} from "./assets/js/firebase.js";
+
+// FIREBASE USER + GAME DATA
+let currentUser = null;
+let currentGameData = null;
+
+// GAME GLOBALS
+let player = null;
+let dungeon = null;
+let enemy = null;
+let volume = { master: 1, bgm: 1, sfx: 1 };
+
+// DOM SHORTCUTS
+const defaultModalElement = document.querySelector("#defaultModal");
+const confirmationModalElement = document.querySelector("#confirmationModal");
+const menuModalElement = document.querySelector("#menuModal");
+
+// ===============================
+// 1. KHỞI TẠO DỮ LIỆU TỪ FIREBASE
+// ===============================
+
+function initGameStateFromData(data) {
+    player = data.player || {};
+    dungeon = data.dungeon || {};
+    enemy = data.enemy || {};
+    volume = data.volume || { master: 1, bgm: 1, sfx: 1 };
+
+    // SET MẶC ĐỊNH KHI MISSING
+    player.baseStats = player.baseStats || {
+        hp: 500, atk: 100, def: 50, pen: 0,
+        atkSpd: 0.6, vamp: 0, critRate: 0, critDmg: 50
+    };
+
+    dungeon.progress = dungeon.progress || { floor: 1, room: 1 };
+    dungeon.statistics = dungeon.statistics || { kills: 0, runtime: 0 };
+    dungeon.status = dungeon.status || {
+        exploring: false,
+        paused: true,
+        event: false
+    };
+}
+
+
+// ===============================
+// 2. FIREBASE AUTH STATE LISTENER
+// ===============================
+
+onAuthChanged(async (user, data) => {
+    currentUser = user;
+    currentGameData = data;
+
+    // CHƯA ĐĂNG NHẬP → SHOW LOGIN
+    if (!user) {
+        document.querySelector("#auth-screen").style.display = "flex";
+        document.querySelector("#title-screen").style.display = "none";
+        document.querySelector("#character-creation").style.display = "none";
+        return;
     }
 
-    // Title Screen Validation
-    document.querySelector("#title-screen").addEventListener("click", function () {
-        const player = JSON.parse(localStorage.getItem("playerData"));
-        if (player.allocated) {
-            enterDungeon();
-        } else {
-            allocationPopup();
-        }
-    });
+    // ĐÃ ĐĂNG NHẬP → NẾU CHƯA CÓ GAME DATA → TẠO TRỐNG
+    if (!currentGameData) {
+        currentGameData = {
+            player: {
+                name: "Player",
+                lvl: 1,
+                stats: {},
+                baseStats: {
+                    hp: 500, atk: 100, def: 50, pen: 0,
+                    atkSpd: 0.6, vamp: 0, critRate: 0, critDmg: 50
+                },
+                equippedStats: {},
+                bonusStats: {},
+                exp: { expCurr: 0, expMax: 100, expCurrLvl: 0, expMaxLvl: 100, lvlGained: 0 },
+                inventory: { consumables: [], equipment: [] },
+                equipped: [],
+                gold: 0, playtime: 0, kills: 0, deaths: 0,
+                inCombat: false, allocated: false
+            },
+            dungeon: {
+                progress: { floor: 1, room: 1 },
+                statistics: { kills: 0, runtime: 0 },
+                status: { exploring: false, paused: true, event: false },
+                settings: { enemyBaseLvl: 1, enemyLvlGap: 5, enemyBaseStats: 1, enemyScaling: 1.1 },
+                floorMax: 1
+            },
+            meta: { createdAt: Date.now(), updatedAt: Date.now() }
+        };
 
-    // Prevent double-click zooming on mobile devices
-    document.ondblclick = function (e) {
-        e.preventDefault();
+        await savePlayerData(user.uid, currentGameData);
     }
 
-    // Submit Name
-    document.querySelector("#name-submit").addEventListener("submit", function (e) {
-        e.preventDefault();
-        let playerName = document.querySelector("#name-input").value;
+    // LOAD VÀO GAME
+    initGameStateFromData(currentGameData);
 
-        var format = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
-        if (format.test(playerName)) {
-            document.querySelector("#alert").innerHTML = "Tên của bạn không được chứa ký tự đặc biệt!";
-        } else {
-            if (playerName.length < 3 || playerName.length > 15) {
-                document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
-            } else {
-                player = {
-                    name: playerName,
-                    lvl: 1,
-                    stats: {
-                        hp: null,
-                        hpMax: null,
-                        atk: null,
-                        def: null,
-                        pen: null,
-                        atkSpd: null,
-                        vamp: null,
-                        critRate: null,
-                        critDmg: null
-                    },
-                    baseStats: {
-                        hp: 500,
-                        atk: 100,
-                        def: 50,
-                        pen: 0,
-                        atkSpd: 0.6,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 50
-                    },
-                    equippedStats: {
-                        hp: 0,
-                        atk: 0,
-                        def: 0,
-                        pen: 0,
-                        atkSpd: 0,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 0,
-                        hpPct: 0,
-                        atkPct: 0,
-                        defPct: 0,
-                        penPct: 0,
-                    },
-                    bonusStats: {
-                        hp: 0,
-                        atk: 0,
-                        def: 0,
-                        atkSpd: 0,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 0
-                    },
-                    exp: {
-                        expCurr: 0,
-                        expMax: 100,
-                        expCurrLvl: 0,
-                        expMaxLvl: 100,
-                        lvlGained: 0
-                    },
-                    inventory: {
-                        consumables: [],
-                        equipment: []
-                    },
-                    equipped: [],
-                    gold: 0,
-                    playtime: 0,
-                    kills: 0,
-                    deaths: 0,
-                    inCombat: false
-                };
-                calculateStats();
-                player.stats.hp = player.stats.hpMax;
-                saveData();
-                document.querySelector("#character-creation").style.display = "none";
-                runLoad("title-screen", "flex");
-            }
-        }
-    });
-
-    // Unequip all items
-    document.querySelector("#unequip-all").addEventListener("click", function () {
-        sfxOpen.play();
-
-        dungeon.status.exploring = false;
-        let dimTarget = document.querySelector('#inventory');
-        dimTarget.style.filter = "brightness(50%)";
-        defaultModalElement.style.display = "flex";
-        defaultModalElement.innerHTML = `
-        <div class="content">
-            <p>Bỏ hết vật phẩm của bạn?</p>
-            <div class="button-container">
-                <button id="unequip-confirm">Bỏ Vật Phẩm</button>
-                <button id="unequip-cancel">Hủy Bỏ</button>
-            </div>
-        </div>`;
-        let confirm = document.querySelector('#unequip-confirm');
-        let cancel = document.querySelector('#unequip-cancel');
-        confirm.onclick = function () {
-            sfxUnequip.play();
-            unequipAll();
-            continueExploring();
-            defaultModalElement.style.display = "none";
-            defaultModalElement.innerHTML = "";
-            dimTarget.style.filter = "brightness(100%)";
-        };
-        cancel.onclick = function () {
-            sfxDecline.play();
-            continueExploring();
-            defaultModalElement.style.display = "none";
-            defaultModalElement.innerHTML = "";
-            dimTarget.style.filter = "brightness(100%)";
-        };
-    });
-
-    document.querySelector("#menu-btn").addEventListener("click", function () {
-        closeInventory();
-
-        dungeon.status.exploring = false;
-        let dimDungeon = document.querySelector('#dungeon-main');
-        dimDungeon.style.filter = "brightness(50%)";
-        menuModalElement.style.display = "flex";
-
-        // Menu tab
-        menuModalElement.innerHTML = `
-        <div class="content">
-            <div class="content-head">
-                <h3>Menu</h3>
-                <p id="close-menu"><i class="fa fa-xmark"></i></p>
-            </div>
-            <button id="player-menu"><i class="fas fa-user"></i>${player.name}</button>
-            <button id="stats">Chỉ Số Chính</button>
-            <button id="volume-btn">Âm Thanh</button>
-            <button id="export-import">Mã Dữ Liệu</button>
-            <button id="quit-run">Xóa Hầm Ngục</button>
-        </div>`;
-
-        let close = document.querySelector('#close-menu');
-        let playerMenu = document.querySelector('#player-menu');
-        let runMenu = document.querySelector('#stats');
-        let quitRun = document.querySelector('#quit-run');
-        let exportImport = document.querySelector('#export-import');
-        let volumeSettings = document.querySelector('#volume-btn');
-
-        // Player profile click function
-        playerMenu.onclick = function () {
-            sfxOpen.play();
-            let playTime = new Date(player.playtime * 1000).toISOString().slice(11, 19);
-            menuModalElement.style.display = "none";
-            defaultModalElement.style.display = "flex";
-            defaultModalElement.innerHTML = `
-            <div class="content" id="profile-tab">
-                <div class="content-head">
-                    <h3>Thông Tin</h3>
-                    <p id="profile-close"><i class="fa fa-xmark"></i></p>
-                </div>
-                <p>${player.name} Lv.${player.lvl}</p>
-                <p>Giết: ${nFormatter(player.kills)}</p>
-                <p>Chết: ${nFormatter(player.deaths)}</p>
-                <p>Chơi: ${playTime}</p>
-            </div>`;
-            let profileTab = document.querySelector('#profile-tab');
-            profileTab.style.width = "15rem";
-            let profileClose = document.querySelector('#profile-close');
-            profileClose.onclick = function () {
-                sfxDecline.play();
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                menuModalElement.style.display = "flex";
-            };
-        };
-
-        // Dungeon run click function
-        runMenu.onclick = function () {
-            sfxOpen.play();
-            let runTime = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
-            menuModalElement.style.display = "none";
-            defaultModalElement.style.display = "flex";
-            defaultModalElement.innerHTML = `
-            <div class="content" id="run-tab">
-                <div class="content-head">
-                    <h3>Chỉ Số</h3>
-                    <p id="run-close"><i class="fa fa-xmark"></i></p>
-                </div>
-                <p>${player.name} Lv.${player.lvl} (${player.skills})</p>
-                <p>Phước Lành Lvl.${player.blessing}</p>
-                <p>Lời Nguyền Lvl.${Math.round((dungeon.settings.enemyScaling - 1) * 10)}</p>
-                <p>Giết Được: ${nFormatter(dungeon.statistics.kills)}</p>
-                <p>Hoạt Động: ${runTime}</p>
-            </div>`;
-            let runTab = document.querySelector('#run-tab');
-            runTab.style.width = "15rem";
-            let runClose = document.querySelector('#run-close');
-            runClose.onclick = function () {
-                sfxDecline.play();
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                menuModalElement.style.display = "flex";
-            };
-        };
-
-        // Quit the current run
-        quitRun.onclick = function () {
-            sfxOpen.play();
-            menuModalElement.style.display = "none";
-            defaultModalElement.style.display = "flex";
-            defaultModalElement.innerHTML = `
-            <div class="content">
-                <p>Bạn có muốn xóa hầm ngục này?</p>
-                <div class="button-container">
-                    <button id="quit-run">Đồng Ý</button>
-                    <button id="cancel-quit">Hủy Bỏ</button>
-                </div>
-            </div>`;
-            let quit = document.querySelector('#quit-run');
-            let cancel = document.querySelector('#cancel-quit');
-            quit.onclick = function () {
-                sfxConfirm.play();
-                // Clear out everything, send the player back to meny and clear progress.
-                bgmDungeon.stop();
-                let dimDungeon = document.querySelector('#dungeon-main');
-                dimDungeon.style.filter = "brightness(100%)";
-                dimDungeon.style.display = "none";
-                menuModalElement.style.display = "none";
-                menuModalElement.innerHTML = "";
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                runLoad("title-screen", "flex");
-                clearInterval(dungeonTimer);
-                clearInterval(playTimer);
-                progressReset();
-            };
-            cancel.onclick = function () {
-                sfxDecline.play();
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                menuModalElement.style.display = "flex";
-            };
-        };
-
-        // Opens the volume settings
-        volumeSettings.onclick = function () {
-            sfxOpen.play();
-
-            let master = volume.master * 100;
-            let bgm = (volume.bgm * 100) * 2;
-            let sfx = volume.sfx * 100;
-            menuModalElement.style.display = "none";
-            defaultModalElement.style.display = "flex";
-            defaultModalElement.innerHTML = `
-            <div class="content" id="volume-tab">
-                <div class="content-head">
-                    <h3>Âm Thanh</h3>
-                    <p id="volume-close"><i class="fa fa-xmark"></i></p>
-                </div>
-                <label id="master-label" for="master-volume">Tổng (${master}%)</label>
-                <input type="range" id="master-volume" min="0" max="100" value="${master}">
-                <label id="bgm-label" for="bgm-volume">Nhạc Nền (${bgm}%)</label>
-                <input type="range" id="bgm-volume" min="0" max="100" value="${bgm}">
-                <label id="sfx-label" for="sfx-volume">Hiệu Ứng (${sfx}%)</label>
-                <input type="range" id="sfx-volume" min="0" max="100" value="${sfx}">
-                <button id="apply-volume">Áp Dụng</button>
-            </div>`;
-            let masterVol = document.querySelector('#master-volume');
-            let bgmVol = document.querySelector('#bgm-volume');
-            let sfxVol = document.querySelector('#sfx-volume');
-            let applyVol = document.querySelector('#apply-volume');
-            let volumeTab = document.querySelector('#volume-tab');
-            volumeTab.style.width = "15rem";
-            let volumeClose = document.querySelector('#volume-close');
-            volumeClose.onclick = function () {
-                sfxDecline.play();
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                menuModalElement.style.display = "flex";
-            };
-
-            // Volume Control
-            masterVol.oninput = function () {
-                master = this.value;
-                document.querySelector('#master-label').innerHTML = `Tổng (${master}%)`;
-            };
-
-            bgmVol.oninput = function () {
-                bgm = this.value;
-                document.querySelector('#bgm-label').innerHTML = `Nhạc Nền (${bgm}%)`;
-            };
-
-            sfxVol.oninput = function () {
-                sfx = this.value;
-                document.querySelector('#sfx-label').innerHTML = `Hiệu Ứng (${sfx}%)`;
-            };
-
-            applyVol.onclick = function () {
-                volume.master = master / 100;
-                volume.bgm = (bgm / 100) / 2;
-                volume.sfx = sfx / 100;
-                bgmDungeon.stop();
-                setVolume();
-                bgmDungeon.play();
-                saveData();
-            };
-        };
-
-        // Export/Import Save Data
-        exportImport.onclick = function () {
-            sfxOpen.play();
-            let exportedData = exportData();
-            menuModalElement.style.display = "none";
-            defaultModalElement.style.display = "flex";
-            defaultModalElement.innerHTML = `
-            <div class="content" id="ei-tab">
-                <div class="content-head">
-                    <h3>Mã Dữ Liệu</h3>
-                    <p id="ei-close"><i class="fa fa-xmark"></i></p>
-                </div>
-                <h4>Xuất Dữ Liệu</h4>
-                <input type="text" id="export-input" autocomplete="off" value="${exportedData}" readonly>
-                <button id="copy-export">Sao Chép</button>
-                <h4>Nhập Dữ Liệu</h4>
-                <input type="text" id="import-input" autocomplete="off">
-                <button id="data-import">Đồng Ý</button>
-            </div>`;
-            let eiTab = document.querySelector('#ei-tab');
-            eiTab.style.width = "15rem";
-            let eiClose = document.querySelector('#ei-close');
-            let copyExport = document.querySelector('#copy-export')
-            let dataImport = document.querySelector('#data-import');
-            let importInput = document.querySelector('#import-input');
-            copyExport.onclick = function () {
-                sfxConfirm.play();
-                let copyText = document.querySelector('#export-input');
-                copyText.select();
-                copyText.setSelectionRange(0, 99999);
-                navigator.clipboard.writeText(copyText.value);
-                copyExport.innerHTML = "Copied!";
-            }
-            dataImport.onclick = function () {
-                importData(importInput.value);
-            };
-            eiClose.onclick = function () {
-                sfxDecline.play();
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                menuModalElement.style.display = "flex";
-            };
-        };
-
-        // Close menu
-        close.onclick = function () {
-            sfxDecline.play();
-            continueExploring();
-            menuModalElement.style.display = "none";
-            menuModalElement.innerHTML = "";
-            dimDungeon.style.filter = "brightness(100%)";
-        };
-    });
+    // HIDE LOGIN → SHOW TITLE
+    document.querySelector("#auth-screen").style.display = "none";
+    document.querySelector("#title-screen").style.display = "flex";
 });
 
-// Loading Screen
+
+// ===============================
+// 3. ĐĂNG NHẬP / ĐĂNG KÝ
+// ===============================
+
+document.querySelector("#login-btn").onclick = async () => {
+    let email = document.querySelector("#login-email").value;
+    let pw = document.querySelector("#login-password").value;
+
+    try {
+        await signInWithEmail({ email, password: pw });
+    } catch (err) {
+        alert("Sai thông tin đăng nhập!");
+    }
+};
+
+document.querySelector("#register-btn").onclick = async () => {
+    let email = document.querySelector("#reg-email").value;
+    let pw = document.querySelector("#reg-password").value;
+    let pw2 = document.querySelector("#reg-password2").value;
+    let username = document.querySelector("#reg-username").value.trim();
+
+    if (pw !== pw2) return alert("Mật khẩu nhập lại không khớp!");
+
+    try {
+        await signUpWithEmail({ email, password: pw, username });
+    } catch (err) {
+        if (err.code === "USERNAME_TAKEN") {
+            alert("Tên này đã có người dùng!");
+        } else {
+            alert("Đăng ký thất bại!");
+        }
+    }
+};
+
+
+// ===============================
+// 4. HÀM SAVE ( Firebase thay LocalStorage )
+// ===============================
+
+async function saveData() {
+    if (!currentUser) return;
+
+    const payload = {
+        player,
+        dungeon,
+        enemy,
+        volume,
+        meta: { updatedAt: Date.now() }
+    };
+
+    try {
+        await savePlayerData(currentUser.uid, payload);
+    } catch (err) {
+        console.error("SAVE ERROR:", err);
+    }
+}
+
+
+// ===============================
+// 5. LOADING
+// ===============================
+
 const runLoad = (id, display) => {
     let loader = document.querySelector("#loading");
     loader.style.display = "flex";
-    setTimeout(async () => {
+    setTimeout(() => {
         loader.style.display = "none";
-        document.querySelector(`#${id}`).style.display = `${display}`;
-    }, 1000);
-}
+        document.querySelector(`#${id}`).style.display = display;
+    }, 600);
+};
 
-// Start the game
-const enterDungeon = () => {
+
+// ===============================
+// 6. ENTER DUNGEON (Firebase Version)
+// ===============================
+
+function enterDungeon() {
     sfxConfirm.play();
     document.querySelector("#title-screen").style.display = "none";
     runLoad("dungeon-main", "flex");
-    if (player.inCombat) {
-        enemy = JSON.parse(localStorage.getItem("enemyData"));
+
+    if (player.inCombat && enemy) {
         showCombatInfo();
         startCombat(bgmBattleMain);
     } else {
         bgmDungeon.play();
     }
-    if (player.stats.hp == 0) {
+
+    if (player.stats.hp <= 0) {
         progressReset();
     }
+
     initialDungeonLoad();
     playerLoadStats();
 }
 
-// Save all the data into local storage
-const saveData = () => {
-    const playerData = JSON.stringify(player);
-    const dungeonData = JSON.stringify(dungeon);
-    const enemyData = JSON.stringify(enemy);
-    const volumeData = JSON.stringify(volume);
-    localStorage.setItem("playerData", playerData);
-    localStorage.setItem("dungeonData", dungeonData);
-    localStorage.setItem("enemyData", enemyData);
-    localStorage.setItem("volumeData", volumeData);
+// =====================================
+// 7. NÚT "ĐĂNG XUẤT" THAY CHO "MÃ DỮ LIỆU"
+// =====================================
+
+document.querySelector("#menu-logout").onclick = async () => {
+    const ok = confirm("Bạn có chắc muốn đăng xuất?");
+    if (!ok) return;
+
+    await signOut();
+    location.reload();
+};
+
+
+// =====================================
+// 8. "XÓA DỮ LIỆU" THAY CHO "XÓA HẦM NGỤC"
+// =====================================
+
+document.querySelector("#menu-reset-data").onclick = async () => {
+    if (!currentUser) return;
+
+    const ok = confirm("Bạn có chắc muốn xóa toàn bộ dữ liệu và chơi lại từ đầu?");
+    if (!ok) return;
+
+    await deletePlayerData(currentUser.uid);
+
+    // Reset game state về mặc định
+    player = null;
+    dungeon = null;
+    enemy = null;
+
+    location.reload();
+};
+
+
+// ===============================
+// 9. AUTO-SAVE MỖI 20 GIÂY
+// ===============================
+setInterval(() => {
+    if (currentUser) saveData();
+}, 20000);
+
+
+// ===============================
+// 10. HÌNH THỨC BẮT ĐẦU GAME SAU TẠO NHÂN VẬT
+// ===============================
+
+function goToTitleScreen() {
+    document.querySelector("#character-creation").style.display = "none";
+    runLoad("title-screen", "flex");
 }
 
-// Calculate every player stat
-const calculateStats = () => {
-    let equipmentAtkSpd = player.baseStats.atkSpd * (player.equippedStats.atkSpd / 100);
-    let playerHpBase = player.baseStats.hp;
-    let playerAtkBase = player.baseStats.atk;
-    let playerDefBase = player.baseStats.def;
-    let playerAtkSpdBase = player.baseStats.atkSpd;
-    let playerVampBase = player.baseStats.vamp;
-    let playerCRateBase = player.baseStats.critRate;
-    let playerCDmgBase = player.baseStats.critDmg;
+document.querySelector("#char-create-confirm").onclick = async () => {
+    const name = document.querySelector("#char-create-name").value.trim();
+    if (!name) return alert("Tên không được để trống!");
 
-    player.stats.hpMax = Math.round((playerHpBase + playerHpBase * (player.bonusStats.hp / 100)) + player.equippedStats.hp);
-    player.stats.atk = Math.round((playerAtkBase + playerAtkBase * (player.bonusStats.atk / 100)) + player.equippedStats.atk);
-    player.stats.def = Math.round((playerDefBase + playerDefBase * (player.bonusStats.def / 100)) + player.equippedStats.def);
-    player.stats.atkSpd = (playerAtkSpdBase + playerAtkSpdBase * (player.bonusStats.atkSpd / 100)) + equipmentAtkSpd + (equipmentAtkSpd * (player.equippedStats.atkSpd / 100));
-    player.stats.vamp = playerVampBase + player.bonusStats.vamp + player.equippedStats.vamp;
-    player.stats.critRate = playerCRateBase + player.bonusStats.critRate + player.equippedStats.critRate;
-    player.stats.critDmg = playerCDmgBase + player.bonusStats.critDmg + player.equippedStats.critDmg;
-
-    // Caps attack speed to 2.5
-    if (player.stats.atkSpd > 2.5) {
-        player.stats.atkSpd = 2.5;
-    }
-}
-
-// Resets the progress back to start
-const progressReset = () => {
-    player.stats.hp = player.stats.hpMax;
-    player.lvl = 1;
-    player.blessing = 1;
-    player.exp = {
-        expCurr: 0,
-        expMax: 100,
-        expCurrLvl: 0,
-        expMaxLvl: 100,
-        lvlGained: 0
-    };
-    player.bonusStats = {
-        hp: 0,
-        atk: 0,
-        def: 0,
-        atkSpd: 0,
-        vamp: 0,
-        critRate: 0,
-        critDmg: 0
-    };
-    player.skills = [];
-    player.inCombat = false;
-    dungeon.progress.floor = 1;
-    dungeon.progress.room = 1;
-    dungeon.statistics.kills = 0;
-    dungeon.status = {
-        exploring: false,
-        paused: true,
-        event: false,
-    };
-    dungeon.settings = {
-        enemyBaseLvl: 1,
-        enemyLvlGap: 5,
-        enemyBaseStats: 1,
-        enemyScaling: 1.1,
-    };
-    delete dungeon.enemyMultipliers;
-    delete player.allocated;
-    dungeon.backlog.length = 0;
-    dungeon.action = 0;
-    dungeon.statistics.runtime = 0;
-    combatBacklog.length = 0;
-    saveData();
-}
-
-// Export and Import Save Data
-const exportData = () => {
-    const exportedData = btoa(JSON.stringify(player));
-    return exportedData;
-}
-
-const importData = (importedData) => {
+    // Kiểm tra trùng tên qua Firestore (bạn đã có usernames collection)
     try {
-        let playerImport = JSON.parse(atob(importedData));
-        if (playerImport.inventory !== undefined) {
-            sfxOpen.play();
-            defaultModalElement.style.display = "none";
-            confirmationModalElement.style.display = "flex";
-            confirmationModalElement.innerHTML = `
-            <div class="content">
-                <p>Bạn có chắc chắn muốn nhập dữ liệu này không? Thao tác này sẽ xóa dữ liệu hiện tại và đặt lại tiến trình hầm ngục của bạn.</p>
-                <div class="button-container">
-                    <button id="import-btn">Đồng Ý</button>
-                    <button id="cancel-btn">Hủy Bỏ</button>
-                </div>
-            </div>`;
-            let confirm = document.querySelector("#import-btn");
-            let cancel = document.querySelector("#cancel-btn");
-            confirm.onclick = function () {
-                sfxConfirm.play();
-                player = playerImport;
-                saveData();
-                bgmDungeon.stop();
-                let dimDungeon = document.querySelector('#dungeon-main');
-                dimDungeon.style.filter = "brightness(100%)";
-                dimDungeon.style.display = "none";
-                menuModalElement.style.display = "none";
-                menuModalElement.innerHTML = "";
-                confirmationModalElement.style.display = "none";
-                confirmationModalElement.innerHTML = "";
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                runLoad("title-screen", "flex");
-                clearInterval(dungeonTimer);
-                clearInterval(playTimer);
-                progressReset();
-            }
-            cancel.onclick = function () {
-                sfxDecline.play();
-                confirmationModalElement.style.display = "none";
-                confirmationModalElement.innerHTML = "";
-                defaultModalElement.style.display = "flex";
-            }
-        } else {
-            sfxDeny.play();
-        }
+        await savePlayerData(currentUser.uid, {
+            player: { ...player, name },
+        });
     } catch (err) {
-        sfxDeny.play();
+        alert("Đã có người sử dụng tên này!");
+        return;
     }
+
+    player.name = name;
+
+    goToIntroSequence();
+};
+
+
+// ===============================
+// 11. INTRO: NHẤN ĐỂ KHÁM PHÁ HẦM NGỤC
+// ===============================
+
+function goToIntroSequence() {
+    document.querySelector("#character-creation").style.display = "none";
+    document.querySelector("#title-screen").style.display = "none";
+
+    const intro = document.querySelector("#intro-screen");
+    intro.style.display = "flex";
+
+    intro.onclick = () => {
+        intro.style.display = "none";
+        showStatIntro();
+    };
 }
 
-// Player Stat Allocation
-const allocationPopup = () => {
-    let allocation = {
-        hp: 5,
-        atk: 5,
-        def: 5,
-        atkSpd: 5
-    }
-    const updateStats = () => {
-        stats = {
-            hp: 50 * allocation.hp,
-            atk: 10 * allocation.atk,
-            def: 10 * allocation.def,
-            atkSpd: 0.4 + (0.02 * allocation.atkSpd)
-        }
-    }
-    updateStats();
-    let points = 20;
-    const loadContent = function () {
-        defaultModalElement.innerHTML = `
-        <div class="content" id="allocate-stats">
-            <div class="content-head">
-                <h3>Thống Kê</h3>
-                <p id="allocate-close"><i class="fa fa-xmark"></i></p>
-            </div>
-            <div class="row">
-                <p><i class="fas fa-heart"></i><span id="hpDisplay">HP: ${stats.hp}</span></p>
-                <div class="row">
-                    <button id="hpMin">-</button>
-                    <span id="hpAllo">${allocation.hp}</span>
-                    <button id="hpAdd">+</button>
-                </div>
-            </div>
-            <div class="row">
-                <p><i class="ra ra-sword"></i><span id="atkDisplay">ATK: ${stats.atk}</span></p>
-                <div class="row">
-                    <button id="atkMin">-</button>
-                    <span id="atkAllo">${allocation.atk}</span>
-                    <button id="atkAdd">+</button>
-                </div>
-            </div>
-            <div class="row">
-                <p><i class="ra ra-round-shield"></i><span id="defDisplay">DEF: ${stats.def}</span></p>
-                <div class="row">
-                    <button id="defMin">-</button>
-                    <span id="defAllo">${allocation.def}</span>
-                    <button id="defAdd">+</button>
-                </div>
-            </div>
-            <div class="row">
-                <p><i class="ra ra-plain-dagger"></i><span id="atkSpdDisplay">ATK.SPD: ${stats.atkSpd}</span></p>
-                <div class="row">
-                    <button id="atkSpdMin">-</button>
-                    <span id="atkSpdAllo">${allocation.atkSpd}</span>
-                    <button id="atkSpdAdd">+</button>
-                </div>
-            </div>
-            <div class="row">
-                <p id="alloPts">Stat Points: ${points}</p>
-                <button id="allocate-reset">Đặt Lại</button>
-            </div>
-            <div class="row">
-                <p>Passive</p>
-                <select id="select-skill">
-                    <option value="Remnant Razor">Remnant Razor</option>
-                    <option value="Titan's Will">Titan's Will</option>
-                    <option value="Devastator">Devastator</option>
-                    <option value="Blade Dance">Blade Dance</option>
-                    <option value="Paladin's Heart">Paladin's Heart</option>
-                    <option value="Aegis Thorns">Aegis Thorns</option>
-                </select>
-            </div>
-            <div class="row primary-panel pad">
-                <p id="skill-desc">Các đòn tấn công gây thêm 8% lượng máu hiện tại của kẻ địch khi đánh trúng.</p>
-            </div>
-            <button id="allocate-confirm">Tiến Hành</button>
-        </div>`;
-    }
-    defaultModalElement.style.display = "flex";
-    document.querySelector("#title-screen").style.filter = "brightness(50%)";
-    loadContent();
 
-    // Stat Allocation
-    const handleStatButtons = (e) => {
-        let rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
-        if (e.includes("Add")) {
-            let stat = e.split("Add")[0];
-            if (points > 0) {
-                sfxConfirm.play();
-                allocation[stat]++;
-                points--;
-                updateStats();
-                document.querySelector(`#${stat}Display`).innerHTML = `${stat.replace(/([A-Z])/g, ' $1').trim().replace(/ /g, '.').toUpperCase()}: ${stats[stat].toFixed(2).replace(rx, "$1")}`;
-                document.querySelector(`#${stat}Allo`).innerHTML = allocation[stat];
-                document.querySelector(`#alloPts`).innerHTML = `Stat Points: ${points}`;
-            } else {
-                sfxDeny.play();
-            }
-        } else if (e.includes("Min")) {
-            let stat = e.split("Min")[0];
-            if (allocation[stat] > 5) {
-                sfxConfirm.play();
-                allocation[stat]--;
-                points++;
-                updateStats();
-                document.querySelector(`#${stat}Display`).innerHTML = `${stat.replace(/([A-Z])/g, ' $1').trim().replace(/ /g, '.').toUpperCase()}: ${stats[stat].toFixed(2).replace(rx, "$1")}`;
-                document.querySelector(`#${stat}Allo`).innerHTML = allocation[stat];
-                document.querySelector(`#alloPts`).innerHTML = `Stat Points: ${points}`;
-            } else {
-                sfxDeny.play();
-            }
-        }
-    }
-    document.querySelector("#hpAdd").onclick = function () {
-        handleStatButtons("hpAdd")
-    };
-    document.querySelector("#hpMin").onclick = function () {
-        handleStatButtons("hpMin")
-    };
-    document.querySelector("#atkAdd").onclick = function () {
-        handleStatButtons("atkAdd")
-    };
-    document.querySelector("#atkMin").onclick = function () {
-        handleStatButtons("atkMin")
-    };
-    document.querySelector("#defAdd").onclick = function () {
-        handleStatButtons("defAdd")
-    };
-    document.querySelector("#defMin").onclick = function () {
-        handleStatButtons("defMin")
-    };
-    document.querySelector("#atkSpdAdd").onclick = function () {
-        handleStatButtons("atkSpdAdd")
-    };
-    document.querySelector("#atkSpdMin").onclick = function () {
-        handleStatButtons("atkSpdMin")
-    };
+// ===============================
+// 12. GIỚI THIỆU CHỈ SỐ → TIẾN HÀNH
+// ===============================
 
-    // Passive skills
-    let selectSkill = document.querySelector("#select-skill");
-    let skillDesc = document.querySelector("#skill-desc");
-    selectSkill.onclick = function () {
-        sfxConfirm.play();
-    }
-    selectSkill.onchange = function () {
-        if (selectSkill.value == "Remnant Razor") {
-            skillDesc.innerHTML = "Các đòn tấn công gây thêm 8% lượng máu hiện tại của kẻ địch khi đánh trúng.";
-        }
-        if (selectSkill.value == "Titan's Will") {
-            skillDesc.innerHTML = "Các đòn tấn công gây thêm 5% lượng máu tối đa của bạn khi đánh trúng.";
-        }
-        if (selectSkill.value == "Devastator") {
-            skillDesc.innerHTML = "Gây thêm 30% sát thương nhưng bạn mất 30% tốc độ đánh cơ bản.";
-        }
-        if (selectSkill.value == "Rampager") {
-            skillDesc.innerHTML = "Tăng 5 điểm tấn công sau mỗi đòn đánh. Điểm cộng dồn sẽ được đặt lại sau trận chiến.";
-        }
-        if (selectSkill.value == "Blade Dance") {
-            skillDesc.innerHTML = "Tăng tốc độ tấn công sau mỗi đòn đánh. Cộng dồn sẽ được đặt lại sau trận chiến.";
-        }
-        if (selectSkill.value == "Paladin's Heart") {
-            skillDesc.innerHTML = "Bạn sẽ nhận ít hơn 25% sát thương vĩnh viễn.";
-        }
-        if (selectSkill.value == "Aegis Thorns") {
-            skillDesc.innerHTML = "Kẻ địch phải chịu 15% sát thương mà chúng gây ra.";
-        }
-    }
+function showStatIntro() {
+    const statIntro = document.querySelector("#stat-intro");
+    statIntro.style.display = "flex";
 
-    // Operation Buttons
-    let confirm = document.querySelector("#allocate-confirm");
-    let reset = document.querySelector("#allocate-reset");
-    let close = document.querySelector("#allocate-close");
-    confirm.onclick = function () {
-        // Set allocated stats to player base stats
-        player.baseStats = {
-            hp: stats.hp,
-            atk: stats.atk,
-            def: stats.def,
-            pen: 0,
-            atkSpd: stats.atkSpd,
-            vamp: 0,
-            critRate: 0,
-            critDmg: 50
-        }
-
-        // Set player skill
-        objectValidation();
-        if (selectSkill.value == "Remnant Razor") {
-            player.skills.push("Remnant Razor");
-        }
-        if (selectSkill.value == "Titan's Will") {
-            player.skills.push("Titan's Will");
-        }
-        if (selectSkill.value == "Devastator") {
-            player.skills.push("Devastator");
-            player.baseStats.atkSpd = player.baseStats.atkSpd - ((30 * player.baseStats.atkSpd) / 100);
-        }
-        if (selectSkill.value == "Rampager") {
-            player.skills.push("Rampager");
-        }
-        if (selectSkill.value == "Blade Dance") {
-            player.skills.push("Blade Dance");
-        }
-        if (selectSkill.value == "Paladin's Heart") {
-            player.skills.push("Paladin's Heart");
-        }
-        if (selectSkill.value == "Aegis Thorns") {
-            player.skills.push("Aegis Thorns");
-        }
-
-        // Proceed to dungeon
-        player.allocated = true;
-        enterDungeon();
-        player.stats.hp = player.stats.hpMax;
-        playerLoadStats();
-        defaultModalElement.style.display = "none";
-        defaultModalElement.innerHTML = "";
-        document.querySelector("#title-screen").style.filter = "brightness(100%)";
-    }
-    reset.onclick = function () {
-        sfxDecline.play();
-        allocation = {
-            hp: 5,
-            atk: 5,
-            def: 5,
-            atkSpd: 5
-        };
-        points = 20;
-        updateStats();
-
-        // Display Reset
-        document.querySelector(`#hpDisplay`).innerHTML = `HP: ${stats.hp}`;
-        document.querySelector(`#atkDisplay`).innerHTML = `ATK: ${stats.atk}`;
-        document.querySelector(`#defDisplay`).innerHTML = `DEF: ${stats.def}`;
-        document.querySelector(`#atkSpdDisplay`).innerHTML = `ATK.SPD: ${stats.atkSpd}`;
-        document.querySelector(`#hpAllo`).innerHTML = allocation.hp;
-        document.querySelector(`#atkAllo`).innerHTML = allocation.atk;
-        document.querySelector(`#defAllo`).innerHTML = allocation.def;
-        document.querySelector(`#atkSpdAllo`).innerHTML = allocation.atkSpd;
-        document.querySelector(`#alloPts`).innerHTML = `Stat Points: ${points}`;
-    }
-    close.onclick = function () {
-        sfxDecline.play();
-        defaultModalElement.style.display = "none";
-        defaultModalElement.innerHTML = "";
-        document.querySelector("#title-screen").style.filter = "brightness(100%)";
-    }
+    document.querySelector("#stat-intro-btn").onclick = () => {
+        statIntro.style.display = "none";
+        saveData();
+        goToTitleScreen();
+    };
 }
 
-const objectValidation = () => {
-    if (player.skills == undefined) {
-        player.skills = [];
-    }
-    if (player.tempStats == undefined) {
-        player.tempStats = {};
-        player.tempStats.atk = 0;
-        player.tempStats.atkSpd = 0;
-    }
+
+// ===============================
+// 13. CẬP NHẬT GÓC QUAN SÁT COMBAT
+// ===============================
+
+function showCombatInfo() {
+    const ui = document.querySelector("#combat-info");
+    ui.querySelector(".hp").innerText = `${player.stats.hp} / ${player.stats.hpMax}`;
+    ui.querySelector(".atk").innerText = player.stats.atk;
+    ui.querySelector(".def").innerText = player.stats.def;
+    ui.querySelector(".floor").innerText = `Tầng ${dungeon.progress.floor}`;
+}
+
+
+// ===============================
+// 14. RESET PROGRESS SAU KHI CHẾT
+// ===============================
+
+function progressReset() {
+    player.stats.hp = player.stats.hpMax;
+    dungeon.progress = { floor: 1, room: 1 };
+
     saveData();
 }
+
+
+// ===============================
+// 15. MENU IN-GAME
+// ===============================
+
+document.querySelector("#menu-btn").onclick = () => {
+    menuModalElement.style.display = "flex";
+};
+
+document.querySelector("#menu-close").onclick = () => {
+    menuModalElement.style.display = "none";
+};
+
+
+// ===============================
+// 16. LEADERBOARD (TOP 3)
+// ===============================
+
+document.querySelector("#menu-leaderboard").onclick = async () => {
+    const lb = document.querySelector("#leaderboard-screen");
+    lb.style.display = "flex";
+
+    const goldTop = await getTopBy("player.gold");
+    const lvlTop = await getTopBy("player.lvl");
+    const floorTop = await getTopBy("dungeon.floorMax");
+
+    lb.querySelector("#lb-gold").innerHTML = goldTop
+        .map((e, i) => `<p>Top ${i + 1}: ${e.data.player.name} — ${e.data.player.gold} vàng</p>`)
+        .join("");
+
+    lb.querySelector("#lb-lvl").innerHTML = lvlTop
+        .map((e, i) => `<p>Top ${i + 1}: ${e.data.player.name} — cấp ${e.data.player.lvl}</p>`)
+        .join("");
+
+    lb.querySelector("#lb-floor").innerHTML = floorTop
+        .map((e, i) => `<p>Top ${i + 1}: ${e.data.player.name} — tầng ${e.data.dungeon.floorMax}</p>`)
+        .join("");
+};
+
+document.querySelector("#lb-close").onclick = () => {
+    document.querySelector("#leaderboard-screen").style.display = "none";
+};
+
+
+// ===============================
+// 17. CẬP NHẬT UI CHÍNH
+// ===============================
+
+function playerLoadStats() {
+    const ui = document.querySelector("#player-stats");
+    ui.querySelector(".name").innerText = player.name;
+    ui.querySelector(".lvl").innerText = player.lvl;
+
+    ui.querySelector(".hp").innerText = `${player.stats.hp} / ${player.stats.hpMax}`;
+    ui.querySelector(".atk").innerText = player.stats.atk;
+    ui.querySelector(".def").innerText = player.stats.def;
+}
+
+// ===============================
+// 18. HÀM TÍNH TOÁN CHỈ SỐ NHÂN VẬT
+// ===============================
+
+function recalcPlayerStats() {
+    const b = player.baseStats;
+    const bonus = player.bonusStats || {};
+    const eq = player.equippedStats || {};
+
+    player.stats.hpMax = (b.hp + (bonus.hp || 0) + (eq.hp || 0));
+    player.stats.atk = (b.atk + (bonus.atk || 0) + (eq.atk || 0));
+    player.stats.def = (b.def + (bonus.def || 0) + (eq.def || 0));
+    player.stats.pen = (b.pen + (bonus.pen || 0) + (eq.pen || 0));
+    player.stats.atkSpd = (b.atkSpd + (bonus.atkSpd || 0) + (eq.atkSpd || 0));
+    player.stats.vamp = (b.vamp + (bonus.vamp || 0) + (eq.vamp || 0));
+    player.stats.critRate = (b.critRate + (bonus.critRate || 0) + (eq.critRate || 0));
+    player.stats.critDmg = (b.critDmg + (bonus.critDmg || 0) + (eq.critDmg || 0));
+
+    if (player.stats.hp > player.stats.hpMax) {
+        player.stats.hp = player.stats.hpMax;
+    }
+}
+
+
+// ===============================
+// 19. KHỞI TẠO KẺ ĐỊCH
+// ===============================
+
+function generateEnemy() {
+    const floor = dungeon.progress.floor;
+    const settings = dungeon.settings;
+
+    const lvl = settings.enemyBaseLvl + Math.floor((floor - 1) / settings.enemyLvlGap);
+    const scale = Math.pow(settings.enemyScaling || 1.1, floor - 1);
+
+    enemy = {
+        lvl,
+        hp: 300 * scale,
+        hpMax: 300 * scale,
+        atk: 40 * scale,
+        def: 20 * scale,
+        exp: 20 * scale,
+        gold: 15 * scale
+    };
+}
+
+
+// ===============================
+// 20. LOAD DUNGEON BAN ĐẦU
+// ===============================
+
+function initialDungeonLoad() {
+    recalcPlayerStats();
+    generateEnemy();
+    updateDungeonUI();
+}
+
+
+// ===============================
+// 21. UI DUNGEON
+// ===============================
+
+function updateDungeonUI() {
+    const ui = document.querySelector("#dungeon-ui");
+
+    ui.querySelector(".player-hp").innerText =
+        `${player.stats.hp} / ${player.stats.hpMax}`;
+    ui.querySelector(".player-atk").innerText = player.stats.atk;
+    ui.querySelector(".player-def").innerText = player.stats.def;
+
+    ui.querySelector(".enemy-hp").innerText =
+        `${Math.floor(enemy.hp)} / ${Math.floor(enemy.hpMax)}`;
+    ui.querySelector(".enemy-lvl").innerText = `Lv ${enemy.lvl}`;
+
+    ui.querySelector(".floor").innerText = `Tầng ${dungeon.progress.floor}`;
+    ui.querySelector(".room").innerText = `Phòng ${dungeon.progress.room}`;
+}
+
+
+// ===============================
+// 22. COMBAT LOOP
+// ===============================
+
+let combatInterval = null;
+
+function startCombat(bgm) {
+    clearInterval(combatInterval);
+
+    bgm.play();
+    player.inCombat = true;
+
+    combatInterval = setInterval(() => {
+        playerAttack();
+        enemyAttack();
+
+        updateDungeonUI();
+
+        if (enemy.hp <= 0) {
+            clearInterval(combatInterval);
+            enemyDefeated();
+        }
+
+        if (player.stats.hp <= 0) {
+            clearInterval(combatInterval);
+            playerDead();
+        }
+
+    }, 1000 / player.stats.atkSpd);
+}
+
+function stopCombat() {
+    clearInterval(combatInterval);
+    player.inCombat = false;
+}
+
+
+// ===============================
+// 23. PLAYER ATTACK
+// ===============================
+
+function playerAttack() {
+    const damage = Math.max(5, player.stats.atk - enemy.def);
+    enemy.hp -= damage;
+
+    if (enemy.hp < 0) enemy.hp = 0;
+}
+
+
+// ===============================
+// 24. ENEMY ATTACK
+// ===============================
+
+function enemyAttack() {
+    const damage = Math.max(3, enemy.atk - player.stats.def);
+    player.stats.hp -= damage;
+
+    if (player.stats.hp < 0) player.stats.hp = 0;
+}
+
+
+// ===============================
+// 25. ENEMY DEFEATED
+// ===============================
+
+function enemyDefeated() {
+    player.kills = (player.kills || 0) + 1;
+    player.gold += enemy.gold;
+
+    gainExp(enemy.exp);
+    nextRoom();
+
+    saveData();
+}
+
+
+// ===============================
+// 26. PLAYER DEAD
+// ===============================
+
+function playerDead() {
+    player.deaths = (player.deaths || 0) + 1;
+
+    alert("Bạn đã chết! Quay về tầng 1.");
+    dungeon.progress = { floor: 1, room: 1 };
+    player.stats.hp = player.stats.hpMax;
+
+    saveData();
+    initialDungeonLoad();
+    updateDungeonUI();
+}
+
+
+// ===============================
+// 27. EXP + LEVEL UP
+// ===============================
+
+function gainExp(amount) {
+    player.exp.expCurr += amount;
+
+    while (player.exp.expCurr >= player.exp.expMax) {
+        player.exp.expCurr -= player.exp.expMax;
+        player.lvl++;
+        player.exp.expMax = Math.floor(player.exp.expMax * 1.2);
+
+        levelUpBonus();
+    }
+}
+
+function levelUpBonus() {
+    player.baseStats.hp += 40;
+    player.baseStats.atk += 10;
+    player.baseStats.def += 5;
+
+    recalcPlayerStats();
+}
+
+// ===============================
+// 28. NEXT ROOM / NEXT FLOOR
+// ===============================
+
+function nextRoom() {
+    dungeon.progress.room++;
+
+    // Nếu vượt quá 10 phòng → sang tầng mới
+    if (dungeon.progress.room > 10) {
+        dungeon.progress.floor++;
+        dungeon.progress.room = 1;
+
+        if (dungeon.progress.floor > (dungeon.floorMax || 1)) {
+            dungeon.floorMax = dungeon.progress.floor;
+        }
+    }
+
+    generateEnemy();
+    updateDungeonUI();
+}
+
+
+// ===============================
+// 29. TIẾN VỀ TRƯỚC / CHẠY TRỐN
+// ===============================
+
+document.querySelector("#btn-forward").onclick = () => {
+    if (!player.inCombat) {
+        startCombat(bgmBattleMain);
+    }
+};
+
+document.querySelector("#btn-run").onclick = () => {
+    if (!player.inCombat) return;
+
+    stopCombat();
+    bgmBattleMain.pause();
+    bgmDungeon.play();
+
+    // Người chơi chạy → mất gold
+    player.gold = Math.max(0, player.gold - 10);
+
+    updateDungeonUI();
+    saveData();
+};
+
+
+// ===============================
+// 30. MỞ THỐNG KÊ NHÂN VẬT
+// ===============================
+
+document.querySelector("#btn-stats").onclick = () => {
+    const box = document.querySelector("#stats-box");
+    box.style.display = "flex";
+
+    box.querySelector(".name").innerText = player.name;
+    box.querySelector(".lvl").innerText = player.lvl;
+
+    box.querySelector(".hp").innerText =
+        `${player.stats.hpMax}`;
+    box.querySelector(".atk").innerText = player.stats.atk;
+    box.querySelector(".def").innerText = player.stats.def;
+    box.querySelector(".spd").innerText = player.stats.atkSpd.toFixed(2);
+    box.querySelector(".crit").innerText = player.stats.critRate + "%";
+
+    // EXP BAR
+    const bar = box.querySelector(".exp-bar");
+    const percent = (player.exp.expCurr / player.exp.expMax) * 100;
+    bar.style.width = percent + "%";
+};
+
+document.querySelector("#stats-close").onclick = () => {
+    document.querySelector("#stats-box").style.display = "none";
+};
+
+
+// ===============================
+// 31. ÂM THANH
+// ===============================
+
+const bgmDungeon = new Audio("./assets/audio/bgm_dungeon.mp3");
+const bgmBattleMain = new Audio("./assets/audio/bgm_battle.mp3");
+const sfxConfirm = new Audio("./assets/audio/sfx_confirm.wav");
+
+bgmDungeon.loop = true;
+bgmBattleMain.loop = true;
+
+
+// ===============================
+// 32. CÀI ĐẶT ÂM LƯỢNG
+// ===============================
+
+function applyVolume() {
+    bgmDungeon.volume = volume.bgm * volume.master;
+    bgmBattleMain.volume = volume.bgm * volume.master;
+    sfxConfirm.volume = volume.sfx * volume.master;
+}
+
+document.querySelector("#volume-master").oninput = e => {
+    volume.master = e.target.value;
+    applyVolume();
+    saveData();
+};
+
+document.querySelector("#volume-bgm").oninput = e => {
+    volume.bgm = e.target.value;
+    applyVolume();
+    saveData();
+};
+
+document.querySelector("#volume-sfx").oninput = e => {
+    volume.sfx = e.target.value;
+    applyVolume();
+    saveData();
+};
+
+
+// ===============================
+// 33. INVENTORY (DÙNG FIREBASE)
+// ===============================
+
+function addToInventory(item) {
+    if (!player.inventory) {
+        player.inventory = { consumables: [], equipment: [] };
+    }
+
+    if (item.type === "consumable") {
+        player.inventory.consumables.push(item);
+    } else if (item.type === "equipment") {
+        player.inventory.equipment.push(item);
+    }
+
+    saveData();
+}
+
+function equipItem(item) {
+    if (!player.equipped) player.equipped = [];
+
+    player.equipped.push(item);
+
+    // Add stats
+    for (const k in item.stats) {
+        if (!player.equippedStats[k]) player.equippedStats[k] = 0;
+        player.equippedStats[k] += item.stats[k];
+    }
+
+    recalcPlayerStats();
+    saveData();
+}
+
+
+// ===============================
+// 34. MỞ BẢNG INVENTORY
+// ===============================
+
+document.querySelector("#btn-inventory").onclick = () => {
+    const box = document.querySelector("#inventory-box");
+    box.style.display = "flex";
+
+    const list = box.querySelector(".items");
+    list.innerHTML = "";
+
+    const eq = player.inventory?.equipment || [];
+    const co = player.inventory?.consumables || [];
+
+    [...eq, ...co].forEach(item => {
+        const el = document.createElement("div");
+        el.className = "inv-item";
+        el.innerHTML = `
+            <p>${item.name}</p>
+            <small>${item.type}</small>
+        `;
+        list.appendChild(el);
+    });
+};
+
+document.querySelector("#inventory-close").onclick = () => {
+    document.querySelector("#inventory-box").style.display = "none";
+};
+
+
+// ===============================
+// 35. SỬA LỖI HOẶC RESET DỮ LIỆU LẠI
+// ===============================
+
+function fullResetData() {
+    dungeon.progress = { floor: 1, room: 1 };
+    player.stats.hp = player.stats.hpMax;
+    enemy = null;
+    generateEnemy();
+    saveData();
+    updateDungeonUI();
+}
+
+
+// ===============================
+// 36. BUTTON TỰ ĐỘNG QUAY LẠI TITLE
+// ===============================
+
+document.querySelector("#title-return").onclick = () => {
+    if (player.inCombat) stopCombat();
+    bgmBattleMain.pause();
+    bgmDungeon.pause();
+
+    runLoad("title-screen", "flex");
+
+    document.querySelector("#dungeon-main").style.display = "none";
+};
+
+// ===========================================================
+// 37. OVERRIDE LOCAL SAVE → TẤT CẢ LƯU LÊN FIREBASE
+// ===========================================================
+
+async function saveData() {
+    if (!currentUser) return;
+    if (!currentGameData) currentGameData = {};
+
+    currentGameData.player = player;
+    currentGameData.dungeon = dungeon;
+
+    await savePlayerData(currentUser.uid, currentGameData);
+}
+
+
+// ===========================================================
+// 38. XÓA DỮ LIỆU USER → FIREBASE DELETE + RESET GAME
+// ===========================================================
+
+async function wipeAllGameData() {
+    if (!currentUser) return;
+
+    await deletePlayerData(currentUser.uid);
+
+    // Reset client
+    player = null;
+    dungeon = null;
+    enemy = null;
+
+    runLoad("auth-screen", "flex");
+    document.querySelector("#dungeon-main").style.display = "none";
+    document.querySelector("#title-screen").style.display = "none";
+}
+
+
+// ===========================================================
+// 39. MENU → NÚT “XÓA DỮ LIỆU”
+// ===========================================================
+
+document.addEventListener("click", (e) => {
+    if (e.target.id === "quit-run") {
+        sfxOpen.play();
+
+        defaultModalElement.style.display = "flex";
+        defaultModalElement.innerHTML = `
+            <div class="content">
+                <p>Bạn có chắc muốn <b>xóa toàn bộ dữ liệu</b> không?</p>
+                <div class="button-container">
+                    <button id="btn-delete-yes">Xóa</button>
+                    <button id="btn-delete-no">Hủy</button>
+                </div>
+            </div>
+        `;
+
+        document.querySelector("#btn-delete-yes").onclick = async () => {
+            await wipeAllGameData();
+        };
+
+        document.querySelector("#btn-delete-no").onclick = () => {
+            defaultModalElement.style.display = "none";
+        };
+    }
+});
+
+
+// ===========================================================
+// 40. NÚT “ĐĂNG XUẤT”
+// ===========================================================
+
+document.addEventListener("click", (e) => {
+    if (e.target.id === "export-import") {  // đã đổi thành "Đăng Xuất"
+        sfxConfirm.play();
+        signOut();
+    }
+});
+
+
+// ===========================================================
+// 41. LEADERBOARD — TOP 3 GOLD / LEVEL / FLOOR
+// ===========================================================
+
+async function openLeaderboard() {
+    const box = document.querySelector("#leaderboard-box");
+    box.style.display = "flex";
+
+    // Top 3 vàng
+    const topGold = await getTopBy("player.gold", 3);
+    const topLvl = await getTopBy("player.lvl", 3);
+    const topFloor = await getTopBy("dungeon.floorMax", 3);
+
+    box.querySelector(".gold-list").innerHTML = renderRank(topGold);
+    box.querySelector(".lvl-list").innerHTML = renderRank(topLvl);
+    box.querySelector(".floor-list").innerHTML = renderRank(topFloor);
+}
+
+function renderRank(arr) {
+    return arr
+        .map((u, i) => `
+            <div class="rank-item">
+                <span class="rank-num">#${i + 1}</span>
+                <span class="rank-name">${u.data.player.name}</span>
+                <span class="rank-val">${u.value}</span>
+            </div>
+        `)
+        .join("");
+}
+
+document.querySelector("#leaderboard-close").onclick = () => {
+    document.querySelector("#leaderboard-box").style.display = "none";
+};
+
+
+// ===========================================================
+// 42. NÚT MỞ LEADERBOARD TRONG MENU
+// ===========================================================
+
+document.addEventListener("click", (e) => {
+    if (e.target.id === "btn-leaderboard") {
+        openLeaderboard();
+    }
+});
+
+
+// ===========================================================
+// 43. KHỞI TẠO UI KHI LOAD FIREBASE DỮ LIỆU
+// ===========================================================
+
+function applyGameData() {
+    if (!currentGameData) return;
+
+    player = currentGameData.player;
+    dungeon = currentGameData.dungeon;
+
+    recalcPlayerStats();
+    updateDungeonUI();
+}
+
+
+// ===========================================================
+// 44. FIX KHI ĐANG COMBAT MÀ LOAD LẠI
+// ===========================================================
+
+function safeLoadCombat() {
+    if (player.inCombat && enemy) {
+        showCombatInfo();
+        startCombat(bgmBattleMain);
+    }
+}
+
+
+// ===========================================================
+// 45. STARTUP — ĐỢI AUTH READY RỒI CHẠY GAME
+// ===========================================================
+
+window.addEventListener("load", () => {
+    // Firebase listener (đã viết ở phần 1)
+    // sẽ tự gọi applyGameData() khi user đăng nhập
+});
