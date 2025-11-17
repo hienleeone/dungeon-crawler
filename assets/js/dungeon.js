@@ -72,7 +72,6 @@ const initialDungeonLoad = () => {
         event: false,
     };
     updateDungeonLog();
-    }
     loadDungeonProgress();
     dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
     dungeonAction.innerHTML = "Tạm Dừng...";
