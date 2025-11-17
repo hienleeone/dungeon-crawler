@@ -19,7 +19,6 @@ service cloud.firestore {
       // CREATE: Only owner can create their own player doc
       allow create: if isAuthenticated()
                      && isOwner(userId)
-                     && request.resource.data.keys().hasAll(['name', 'lvl', 'gold', 'dungeon', 'allocated'])
                      && request.resource.data.name is string
                      && request.resource.data.name.size() >= 3
                      && request.resource.data.name.size() <= 15
@@ -28,8 +27,7 @@ service cloud.firestore {
                      && request.resource.data.gold is number
                      && request.resource.data.gold == 0
                      && request.resource.data.allocated is bool
-                     && request.resource.data.allocated == false
-                     && request.resource.data.dungeon is map;
+                     && request.resource.data.allocated == false;
 
       // UPDATE: Client can update most fields, but CANNOT change gold/lvl/allocated
       // These critical fields can ONLY be updated by Cloud Functions (admin SDK)
