@@ -1,13 +1,12 @@
 // Firebase Configuration
 // QUAN TRỌNG: Thay thế các giá trị bên dưới bằng config từ Firebase Console của bạn
 const firebaseConfig = {
-    apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
-    authDomain: "soulmc-account.firebaseapp.com",
-    projectId: "soulmc-account",
-    storageBucket: "soulmc-account.firebasestorage.app",
-    messagingSenderId: "508725790521",
-    appId: "1:508725790521:web:a58b2f0608b028baaccae8",
-    measurementId: "G-NW033BL7PW"
+    apiKey: "AIzaSyAcw_6krS2s3-14T98SZSEhGQcNDdLME1w",
+    authDomain: "data-dc-soulmc.firebaseapp.com",
+    projectId: "data-dc-soulmc",
+    storageBucket: "data-dc-soulmc.firebasestorage.app",
+    messagingSenderId: "539439303064",
+    appId: "1:539439303064:web:b2038f2bfe81d95a6603ed"
 };
 
 // Khởi tạo Firebase
