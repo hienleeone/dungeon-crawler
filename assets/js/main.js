@@ -77,8 +77,11 @@ window.addEventListener("load", function () {
                                     } catch (e) {
                                         console.warn("loadPlayerDataFromFirebase not available yet:", e);
                                     }
-                                    // Hide character creation before showing title screen
-                                    document.querySelector("#character-creation").style.display = "none";
+                                    // Hide character creation and all modal overlays immediately
+                                    const charCreation = document.querySelector("#character-creation");
+                                    if (charCreation) charCreation.style.display = "none";
+                                    const defaultModal = document.querySelector("#defaultModal");
+                                    if (defaultModal) defaultModal.style.display = "none";
                                     // Show title screen; allocation happens when player clicks
                                     runLoad("title-screen", "flex");
                                 })
