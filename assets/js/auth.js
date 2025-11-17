@@ -28,12 +28,13 @@ const initializeFirebaseAuth = () => {
         });
         console.log("Firebase Auth initialized");
     } else {
-        console.warn("Firebase not ready, retrying...");
+        console.warn("Firebase not ready yet, retrying...");
         setTimeout(initializeFirebaseAuth, 500);
     }
 };
 
-setTimeout(initializeFirebaseAuth, 1000);
+// Start initialization after 3 seconds to ensure all CDN scripts load
+setTimeout(initializeFirebaseAuth, 3000);
 
 const showLoginScreen = () => {
     if (document.querySelector("#auth-screen")) {
@@ -58,8 +59,8 @@ const hideLoginScreen = () => {
 
 const registerUser = async (email, password, confirmPassword) => {
     let attempts = 0;
-    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 20) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 30) {
+        await new Promise(resolve => setTimeout(resolve, 200));
         attempts++;
     }
     
@@ -103,8 +104,8 @@ const registerUser = async (email, password, confirmPassword) => {
 
 const loginUser = async (email, password) => {
     let attempts = 0;
-    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 20) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 30) {
+        await new Promise(resolve => setTimeout(resolve, 200));
         attempts++;
     }
     
