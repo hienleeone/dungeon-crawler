@@ -12,146 +12,179 @@ const firebaseConfig = {
 };
 
 // =============================
-// Initialize Firebase (compat)
+// Init
 // =============================
 firebase.initializeApp(firebaseConfig);
-
-// =============================
-// Services (compat)
-// =============================
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ⚠️ KHỞI TẠO CLOUD FUNCTIONS ĐÚNG REGION
-// BẮT BUỘC dùng compat vì project dùng namespace API
-const functions = firebase.app().functions("asia-southeast1");
-
-// Expose global
 window.auth = auth;
 window.db = db;
-window.functions = functions;
-
-console.log("🔥 Firebase initialized (compat)");
 
 // =============================
-// CHECKSUM
+// DEFAULT PLAYER STRUCTURE
 // =============================
-const generateChecksum = (data) => {
-    const str = JSON.stringify({
-        gold: data.gold,
-        lvl: data.lvl,
-        stats: data.stats ? {
-            atk: data.stats.atk,
-            def: data.stats.def,
-            hp: data.stats.hp,
-            hpMax: data.stats.hpMax
-        } : null
-    });
+function buildDefaultPlayer(uid, name) {
+    return {
+        uid,
+        name,
+        gold: 0,
+        lvl: 1,
+        blessing: 1,
+        allocated: false,
 
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0;
-    }
-    return hash;
-};
+        stats: {
+            atk: 10,
+            def: 5,
+            hp: 100,
+            hpMax: 100,
+            atkSpd: 1,
+            critRate: 5,
+            critDmg: 150,
+            vamp: 0
+        },
 
-const verifyChecksum = (data, checksum) => {
-    return generateChecksum(data) === checksum;
-};
+        baseStats: {
+            hp: 100,
+            atk: 10,
+            def: 5,
+            atkSpd: 1,
+            vamp: 0,
+            critRate: 5,
+            critDmg: 50
+        },
+
+        bonusStats: {
+            hp: 0,
+            atk: 0,
+            def: 0,
+            atkSpd: 0,
+            vamp: 0,
+            critRate: 0,
+            critDmg: 0
+        },
+
+        equippedStats: {
+            hp: 0,
+            atk: 0,
+            def: 0,
+            atkSpd: 0,
+            vamp: 0,
+            critRate: 0,
+            critDmg: 0
+        },
+
+        tempStats: {
+            atk: 0,
+            atkSpd: 0
+        },
+
+        skills: [],
+        inventory: {
+            equipment: []
+        },
+
+        exp: {
+            expCurr: 0,
+            expMax: 100,
+            expCurrLvl: 0,
+            expMaxLvl: 100,
+            lvlGained: 0
+        },
+
+        playtime: 0,
+        inCombat: false,
+
+        dungeon: {
+            progress: { floor: 1, room: 1 },
+            status: { exploring: false, paused: false, event: false },
+            statistics: {
+                kills: 0,
+                deaths: 0,
+                runtime: 0
+            },
+            backlog: [],
+            action: 0,
+            settings: {
+                enemyBaseLvl: 1,
+                enemyLvlGap: 5,
+                enemyBaseStats: 1,
+                enemyScaling: 1.1
+            }
+        },
+
+        volumeSettings: {
+            master: 0.5,
+            bgm: 0.25,
+            sfx: 0.5
+        },
+
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+}
 
 // =============================
-// SECURITY VALIDATION
+// SANITIZER
 // =============================
-const validateBeforeSave = (p) => {
+function sanitizePlayerData(p) {
     if (!p) return null;
-
-    if (p.gold > 1e9) p.gold = 1e9;
-    if (p.gold < 0) p.gold = 0;
-
-    if (p.lvl > 1000) p.lvl = 1000;
-    if (p.lvl < 1) p.lvl = 1;
-
-    if (p.stats) {
-        if (p.stats.atk > 999999) p.stats.atk = 999999;
-        if (p.stats.def > 999999) p.stats.def = 999999;
-        if (p.stats.hpMax > 99999999) p.stats.hpMax = 99999999;
-        if (p.stats.hp > p.stats.hpMax) p.stats.hp = p.stats.hpMax;
-        if (p.stats.critRate > 100) p.stats.critRate = 100;
-        if (p.stats.critDmg > 1000) p.stats.critDmg = 1000;
-    }
-
+    p.gold = Math.min(Math.max(p.gold ?? 0, 0), 1e9);
+    p.lvl = Math.min(Math.max(p.lvl ?? 1, 1), 1000);
     return p;
-};
+}
 
 // =============================
-// FIREBASE AUTH SHORTCUTS
+// CREATE PLAYER
 // =============================
-const firebaseLogin = (email, password) =>
-    auth.signInWithEmailAndPassword(email, password);
+async function createPlayerData(playerName) {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Chưa đăng nhập");
 
-const firebaseRegister = (email, password) =>
-    auth.createUserWithEmailAndPassword(email, password);
+    const ref = db.collection("players").doc(user.uid);
+    const snap = await ref.get();
 
-const firebaseLogout = () => auth.signOut();
+    if (snap.exists) return snap.data();
 
-const getCurrentUser = () => auth.currentUser;
+    const player = buildDefaultPlayer(user.uid, playerName);
+    const sanitized = sanitizePlayerData(player);
 
-// =============================
-// CHECK PLAYER NAME EXISTS
-// =============================
-const checkPlayerNameExists = async (name) => {
-    const snap = await db
-        .collection("players")
-        .where("name", "==", name)
-        .limit(1)
-        .get();
-
-    return !snap.empty;
-};
+    await ref.set(sanitized, { merge: true });
+    return sanitized;
+}
 
 // =============================
-// CLOUD FUNCTIONS
+// GET PLAYER
 // =============================
-const createPlayerData = async (playerName) => {
-    const fn = window.functions.httpsCallable("createPlayer");
-    const res = await fn({ name: playerName });
-    return res.data.player;
-};
-
-const updatePlayerData = async (uid, data) => {
-    const clean = validateBeforeSave(data);
-    const fn = window.functions.httpsCallable("serverUpdatePlayer");
-    return await fn({ player: clean });
-};
-
-// =============================
-// FIRESTORE PLAYER GET
-// =============================
-const getPlayerData = async (uid) => {
+async function getPlayerData(uid) {
     const doc = await db.collection("players").doc(uid).get();
     return doc.exists ? doc.data() : null;
-};
+}
 
 // =============================
-// AUTO-SAVE
+// UPDATE PLAYER
 // =============================
-let autoSaveInterval = null;
+async function updatePlayerData(uid, data) {
+    const sanitized = sanitizePlayerData(data);
+    return db.collection("players").doc(uid).set(sanitized, { merge: true });
+}
 
-const startAutoSave = (uid, getPlayer) => {
+// =============================
+// AUTO SAVE
+// =============================
+let autoSaveInterval;
+
+function startAutoSave(uid, getLocalPlayer) {
     autoSaveInterval = setInterval(async () => {
-        const data = getPlayer();
-        if (!data || !getCurrentUser()) return;
-
-        const safe = validateBeforeSave(data);
-        try {
-            await updatePlayerData(uid, safe);
-        } catch (e) {
-            console.error("Auto-save failed:", e);
-        }
+        const p = getLocalPlayer();
+        if (!p) return;
+        await updatePlayerData(uid, p);
+        console.log("Auto-saved");
     }, 30000);
-};
+}
 
-const stopAutoSave = () => {
+function stopAutoSave() {
     if (autoSaveInterval) clearInterval(autoSaveInterval);
-};
+}
+
+// =============================
+console.log("🔥 Firebase ready (NO CLOUD FUNCTIONS)");

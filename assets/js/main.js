@@ -25,90 +25,60 @@ window.addEventListener("load", function () {
         e.preventDefault();
     }
 
-    // Submit Name
-    const nameForm = document.querySelector("#name-submit");
-    console.log('[main] attaching name-submit listener, form=', nameForm);
-    if (nameForm) {
-        nameForm.addEventListener("submit", function (e) {
-            console.log('[main] name-submit event fired');
-            e.preventDefault();
-            
-            // also log click on the submit button if present
-            try {
-                const submitBtn = nameForm.querySelector('button[type=submit]');
-                if (submitBtn) {
-                    submitBtn.addEventListener('click', () => console.log('[main] name-submit button clicked'));
-                }
-            } catch (err) {
-                console.warn('[main] error attaching click logger to submit button', err);
-            }
+// Submit Name
+const nameForm = document.querySelector("#name-form");
+if (nameForm) {
+    nameForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
 
-            
-            e.preventDefault();
-            let playerName = document.querySelector("#name-input").value;
+        let playerName = document.querySelector("#name-input").value;
 
+        // Validate special characters
         var format = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
         if (format.test(playerName)) {
             document.querySelector("#alert").innerHTML = "Tên của bạn không được chứa ký tự đặc biệt!";
-        } else {
-            if (playerName.length < 3 || playerName.length > 15) {
-                document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
-            } else {
-                // Check if player name exists
-                checkPlayerNameExists(playerName).then((exists) => {
-                    if (exists) {
-                        document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
-                    } else {
-                        // Create player with allocated stats
-                        const defaultPlayer = createDefaultPlayerData(playerName);
-                        player = defaultPlayer;
-                        
-                        // Save to Firebase (use auth.currentUser as fallback)
-                        const authUser = currentUser || getCurrentUser();
-                        console.log("[main] name-submit -> authUser:", authUser && authUser.uid, authUser && authUser.email);
-                        if (authUser) {
-                            createPlayerData(authUser.uid, playerName, defaultPlayer)
-                                .then((doc) => {
-                                    console.log("[main] createPlayerData succeeded for uid:", authUser.uid);
-                                    document.querySelector("#alert").innerHTML = "";
-                                    // Load the player document we just created to ensure canonical structure
-                                    try {
-                                        console.log('[main] calling loadPlayerDataFromFirebase for uid', authUser.uid);
-                                        loadPlayerDataFromFirebase(authUser.uid);
-                                    } catch (e) {
-                                        console.warn("loadPlayerDataFromFirebase not available yet:", e);
-                                    }
-                                    // Debug: explicitly hide character creation and any modal
-                                    console.log('[main] hiding #character-creation and showing title-screen');
-                                    const charCreation = document.querySelector("#character-creation");
-                                    if (charCreation) charCreation.style.display = "none";
-                                    const defaultModal = document.querySelector("#defaultModal");
-                                    if (defaultModal) defaultModal.style.display = "none";
-                                    // Show title screen explicitly
-                                    const titleScreen = document.querySelector("#title-screen");
-                                    if (titleScreen) {
-                                        console.log('[main] setting #title-screen style.display = flex');
-                                        titleScreen.style.display = "flex";
-                                    }
-                                })
-                                .catch((error) => {
-                                    console.error("Error creating player:", error);
-                                    document.querySelector("#alert").innerHTML = "Lỗi tạo người chơi!";
-                                });
-                        } else {
-                            document.querySelector("#alert").innerHTML = "Bạn cần đăng nhập trước!";
-                        }
-                    }
-                }).catch((error) => {
-                    console.error("Error checking name:", error);
-                    document.querySelector("#alert").innerHTML = "Lỗi kiểm tra tên!";
-                });
-            }
+            return;
         }
-        });
-    } else {
-        console.warn('[main] #name-submit form not found on page');
-    }
+
+        if (playerName.length < 3 || playerName.length > 15) {
+            document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
+            return;
+        }
+
+        // Check name exists
+        const exists = await checkPlayerNameExists(playerName);
+        if (exists) {
+            document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
+            return;
+        }
+
+        // Must login
+        const user = getCurrentUser();
+        if (!user) {
+            document.querySelector("#alert").innerHTML = "Bạn cần đăng nhập trước!";
+            return;
+        }
+
+        try {
+            // Chỉ gửi tên
+            const created = await createPlayerData(playerName);
+
+            console.log("Player created successfully:", created);
+            player = created; 
+
+            document.querySelector("#character-creation").style.display = "none";
+            document.querySelector("#title-screen").style.display = "flex";
+            document.querySelector("#alert").innerHTML = "";
+
+        } catch (err) {
+            console.error("Error creating player:", err);
+            document.querySelector("#alert").innerHTML = "Lỗi tạo người chơi!";
+        }
+    });
+
+} else {
+    console.warn('[main] #name-form not found!');
+}
     
 
     // Unequip all items
