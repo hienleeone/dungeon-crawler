@@ -90,6 +90,16 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ===== LEADERBOARDS =====
+    match /leaderboards/{type} {
+      allow read: if true;
+      
+      match /rankings/{userId} {
+        allow read: if true;
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
     // ===== Deny all other access =====
     match /{document=**} {
       allow read, write: if false;

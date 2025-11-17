@@ -20,14 +20,59 @@
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="icon" type="image/png" href="./assets/icon/favicon.ico">
     <script src="./assets/js/howler.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
     <title>SoulMC Network - Dungeon Crawler</title>
 </head>
 
 <body>
     <main>
 
+        <!-- ===== Login Screen ===== -->
+        <section id="login-screen" class="game-container">
+            <div>
+                <i class="fa-solid fa-dungeon fa-5x"></i>
+                <h1>soulmc.vn</h1>
+                <h1>Dungeon Crawler</h1>
+            </div>
+            <form id="login-form">
+                <h2>Đăng Nhập</h2>
+                <input type="email" id="login-email" placeholder="Email" autocomplete="email" required>
+                <input type="password" id="login-password" placeholder="Mật khẩu" autocomplete="current-password" required>
+                <p id="login-alert" class="alert-message"></p>
+                <div class="auth-buttons">
+                    <button type="submit" class="btn-primary">Đăng Nhập</button>
+                    <button type="button" id="show-register" class="btn-secondary">Đăng Ký</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ===== Register Screen ===== -->
+        <section id="register-screen" class="game-container" style="display:none;">
+            <div>
+                <i class="fa-solid fa-dungeon fa-5x"></i>
+                <h1>soulmc.vn</h1>
+                <h1>Dungeon Crawler</h1>
+            </div>
+            <form id="register-form">
+                <h2>Đăng Ký</h2>
+                <input type="email" id="register-email" placeholder="Email" autocomplete="email" required>
+                <input type="password" id="register-password" placeholder="Mật khẩu" autocomplete="new-password" required>
+                <input type="password" id="register-password-confirm" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required>
+                <p id="register-alert" class="alert-message"></p>
+                <div class="auth-buttons">
+                    <button type="submit" class="btn-primary">Đồng Ý</button>
+                    <button type="button" id="show-login" class="btn-secondary">Quay Lại</button>
+                </div>
+            </form>
+        </section>
+
         <!-- ===== Title Screen ===== -->
-        <section id="title-screen" class="game-container">
+        <section id="title-screen" class="game-container" style="display:none;">
             <div>
                 <i class="fa-solid fa-dungeon fa-5x"></i>
                 <h1>soulmc.vn</h1>
@@ -166,6 +211,9 @@
     </main>
 
     <!-- ===== Scripts ===== -->
+    <script src="./assets/js/firebase-config.js"></script>
+    <script src="./assets/js/firebase-db.js"></script>
+    <script src="./assets/js/auth.js"></script>
     <script src="./assets/js/utility.js"></script>
     <script src="./assets/js/elements.js"></script>
     <script src="./assets/js/music.js"></script>

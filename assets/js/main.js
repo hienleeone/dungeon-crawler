@@ -159,16 +159,18 @@ window.addEventListener("load", function () {
             </div>
             <button id="player-menu"><i class="fas fa-user"></i>${player.name}</button>
             <button id="stats">Chỉ Số Chính</button>
+            <button id="leaderboard-btn">Xếp Hạng</button>
             <button id="volume-btn">Âm Thanh</button>
-            <button id="export-import">Mã Dữ Liệu</button>
-            <button id="quit-run">Xóa Hầm Ngục</button>
+            <button id="logout-btn">Đăng Xuất</button>
+            <button id="delete-data">Xóa Dữ Liệu</button>
         </div>`;
 
         let close = document.querySelector('#close-menu');
         let playerMenu = document.querySelector('#player-menu');
         let runMenu = document.querySelector('#stats');
-        let quitRun = document.querySelector('#quit-run');
-        let exportImport = document.querySelector('#export-import');
+        let deleteData = document.querySelector('#delete-data');
+        let logoutBtn = document.querySelector('#logout-btn');
+        let leaderboardBtn = document.querySelector('#leaderboard-btn');
         let volumeSettings = document.querySelector('#volume-btn');
 
         // Player profile click function
@@ -228,24 +230,29 @@ window.addEventListener("load", function () {
             };
         };
 
-        // Quit the current run
-        quitRun.onclick = function () {
+        // Delete all player data
+        deleteData.onclick = function () {
             sfxOpen.play();
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Bạn có muốn xóa hầm ngục này?</p>
+                <p>Bạn có muốn xóa toàn bộ dữ liệu?</p>
+                <p style="color: red; font-size: 0.9rem;">Hành động này không thể hoàn tác!</p>
                 <div class="button-container">
-                    <button id="quit-run">Đồng Ý</button>
-                    <button id="cancel-quit">Hủy Bỏ</button>
+                    <button id="confirm-delete">Đồng Ý</button>
+                    <button id="cancel-delete">Hủy Bỏ</button>
                 </div>
             </div>`;
-            let quit = document.querySelector('#quit-run');
-            let cancel = document.querySelector('#cancel-quit');
-            quit.onclick = function () {
+            let confirmDelete = document.querySelector('#confirm-delete');
+            let cancel = document.querySelector('#cancel-delete');
+            confirmDelete.onclick = async function () {
                 sfxConfirm.play();
-                // Clear out everything, send the player back to meny and clear progress.
+                // Delete all data from Firebase
+                if (currentUser) {
+                    await deletePlayerData(currentUser.uid);
+                }
+                // Clear out everything, send the player back to character creation
                 bgmDungeon.stop();
                 let dimDungeon = document.querySelector('#dungeon-main');
                 dimDungeon.style.filter = "brightness(100%)";
@@ -254,10 +261,10 @@ window.addEventListener("load", function () {
                 menuModalElement.innerHTML = "";
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
-                runLoad("title-screen", "flex");
                 clearInterval(dungeonTimer);
                 clearInterval(playTimer);
                 progressReset();
+                runLoad("character-creation", "flex");
             };
             cancel.onclick = function () {
                 sfxDecline.play();
@@ -265,6 +272,105 @@ window.addEventListener("load", function () {
                 defaultModalElement.innerHTML = "";
                 menuModalElement.style.display = "flex";
             };
+        };
+
+        // Logout button
+        logoutBtn.onclick = function () {
+            sfxOpen.play();
+            menuModalElement.style.display = "none";
+            defaultModalElement.style.display = "flex";
+            defaultModalElement.innerHTML = `
+            <div class="content">
+                <p>Bạn có muốn đăng xuất?</p>
+                <div class="button-container">
+                    <button id="confirm-logout">Đồng Ý</button>
+                    <button id="cancel-logout">Hủy Bỏ</button>
+                </div>
+            </div>`;
+            let confirmLogout = document.querySelector('#confirm-logout');
+            let cancel = document.querySelector('#cancel-logout');
+            confirmLogout.onclick = async function () {
+                sfxConfirm.play();
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                menuModalElement.style.display = "none";
+                menuModalElement.innerHTML = "";
+                await logout();
+            };
+            cancel.onclick = function () {
+                sfxDecline.play();
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                menuModalElement.style.display = "flex";
+            };
+        };
+
+        // Leaderboard button
+        leaderboardBtn.onclick = async function () {
+            sfxOpen.play();
+            menuModalElement.style.display = "none";
+            defaultModalElement.style.display = "flex";
+            defaultModalElement.innerHTML = `
+            <div class="content" id="leaderboard-tab">
+                <div class="content-head">
+                    <h3>Xếp Hạng</h3>
+                    <p id="leaderboard-close"><i class="fa fa-xmark"></i></p>
+                </div>
+                <div id="leaderboard-content">
+                    <p>Đang tải...</p>
+                </div>
+            </div>`;
+            
+            let leaderboardTab = document.querySelector('#leaderboard-tab');
+            leaderboardTab.style.width = "20rem";
+            let leaderboardClose = document.querySelector('#leaderboard-close');
+            leaderboardClose.onclick = function () {
+                sfxDecline.play();
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                menuModalElement.style.display = "flex";
+            };
+            
+            // Load leaderboards
+            const goldRankings = await getTopRankings('gold', 3);
+            const levelRankings = await getTopRankings('level', 3);
+            const floorRankings = await getTopRankings('floor', 3);
+            
+            let leaderboardHTML = '<div class="leaderboard-section">';
+            
+            // Gold rankings
+            leaderboardHTML += '<h4><i class="fas fa-coins" style="color: #FFD700;"></i> Top Vàng</h4>';
+            if (goldRankings.length > 0) {
+                goldRankings.forEach((rank, index) => {
+                    leaderboardHTML += `<p>${index + 1}. ${rank.name}: ${nFormatter(rank.value)}</p>`;
+                });
+            } else {
+                leaderboardHTML += '<p>Chưa có dữ liệu</p>';
+            }
+            
+            // Level rankings
+            leaderboardHTML += '<h4 style="margin-top: 1rem;"><i class="fas fa-star" style="color: #FFD700;"></i> Top Level</h4>';
+            if (levelRankings.length > 0) {
+                levelRankings.forEach((rank, index) => {
+                    leaderboardHTML += `<p>${index + 1}. ${rank.name}: Lv.${rank.value}</p>`;
+                });
+            } else {
+                leaderboardHTML += '<p>Chưa có dữ liệu</p>';
+            }
+            
+            // Floor rankings
+            leaderboardHTML += '<h4 style="margin-top: 1rem;"><i class="fa-solid fa-dungeon" style="color: #FFD700;"></i> Top Tầng</h4>';
+            if (floorRankings.length > 0) {
+                floorRankings.forEach((rank, index) => {
+                    leaderboardHTML += `<p>${index + 1}. ${rank.name}: Tầng ${rank.value}</p>`;
+                });
+            } else {
+                leaderboardHTML += '<p>Chưa có dữ liệu</p>';
+            }
+            
+            leaderboardHTML += '</div>';
+            
+            document.querySelector('#leaderboard-content').innerHTML = leaderboardHTML;
         };
 
         // Opens the volume settings
@@ -328,50 +434,6 @@ window.addEventListener("load", function () {
                 setVolume();
                 bgmDungeon.play();
                 saveData();
-            };
-        };
-
-        // Export/Import Save Data
-        exportImport.onclick = function () {
-            sfxOpen.play();
-            let exportedData = exportData();
-            menuModalElement.style.display = "none";
-            defaultModalElement.style.display = "flex";
-            defaultModalElement.innerHTML = `
-            <div class="content" id="ei-tab">
-                <div class="content-head">
-                    <h3>Mã Dữ Liệu</h3>
-                    <p id="ei-close"><i class="fa fa-xmark"></i></p>
-                </div>
-                <h4>Xuất Dữ Liệu</h4>
-                <input type="text" id="export-input" autocomplete="off" value="${exportedData}" readonly>
-                <button id="copy-export">Sao Chép</button>
-                <h4>Nhập Dữ Liệu</h4>
-                <input type="text" id="import-input" autocomplete="off">
-                <button id="data-import">Đồng Ý</button>
-            </div>`;
-            let eiTab = document.querySelector('#ei-tab');
-            eiTab.style.width = "15rem";
-            let eiClose = document.querySelector('#ei-close');
-            let copyExport = document.querySelector('#copy-export')
-            let dataImport = document.querySelector('#data-import');
-            let importInput = document.querySelector('#import-input');
-            copyExport.onclick = function () {
-                sfxConfirm.play();
-                let copyText = document.querySelector('#export-input');
-                copyText.select();
-                copyText.setSelectionRange(0, 99999);
-                navigator.clipboard.writeText(copyText.value);
-                copyExport.innerHTML = "Copied!";
-            }
-            dataImport.onclick = function () {
-                importData(importInput.value);
-            };
-            eiClose.onclick = function () {
-                sfxDecline.play();
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                menuModalElement.style.display = "flex";
             };
         };
 
