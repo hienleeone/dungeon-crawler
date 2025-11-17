@@ -13,13 +13,15 @@ const firebaseConfig = {
 
 // Wait for Firebase SDK to load, then initialize
 const initFirebaseConfig = () => {
-    if (typeof firebase !== 'undefined') {
+    if (typeof firebase !== 'undefined' && firebase.initializeApp) {
         try {
-            firebase.initializeApp(firebaseConfig);
-            window.db = firebase.firestore();
+            // Check if already initialized
+            if (!firebase.apps || firebase.apps.length === 0) {
+                firebase.initializeApp(firebaseConfig);
+            }
             console.log("Firebase initialized successfully");
         } catch (error) {
-            console.error("Firebase already initialized or error:", error);
+            console.log("Firebase config: Already initialized or loaded");
         }
     } else {
         setTimeout(initFirebaseConfig, 100);
