@@ -6,30 +6,35 @@
 
 let currentUser = null;
 
+// Helper function to get Firestore
+const getDb = () => {
+    if (typeof firebase !== 'undefined' && firebase.firestore) {
+        return firebase.firestore();
+    }
+    return null;
+};
+
 // Wait for Firebase to load before initializing
 const initializeFirebaseAuth = () => {
     if (typeof firebase !== 'undefined' && firebase.auth && firebase.firestore) {
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
-                // Load player data from Firebase
                 loadPlayerDataFromFirebase(user.uid);
             } else {
                 currentUser = null;
                 showLoginScreen();
             }
         });
-        console.log("Firebase Auth initialized successfully");
+        console.log("Firebase Auth initialized");
     } else {
-        console.warn("Firebase not ready, retrying in 500ms...");
+        console.warn("Firebase not ready, retrying...");
         setTimeout(initializeFirebaseAuth, 500);
     }
 };
 
-// Start initialization after 2 seconds to ensure CDN scripts load
-setTimeout(initializeFirebaseAuth, 2000);
+setTimeout(initializeFirebaseAuth, 1000);
 
-// Show Login Screen
 const showLoginScreen = () => {
     if (document.querySelector("#auth-screen")) {
         document.querySelector("#auth-screen").style.display = "flex";
@@ -45,18 +50,15 @@ const showLoginScreen = () => {
     }
 };
 
-// Show Game Screens
 const hideLoginScreen = () => {
     if (document.querySelector("#auth-screen")) {
         document.querySelector("#auth-screen").style.display = "none";
     }
 };
 
-// Register User
 const registerUser = async (email, password, confirmPassword) => {
-    // Wait for Firebase to load if not ready
     let attempts = 0;
-    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 10) {
+    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 20) {
         await new Promise(resolve => setTimeout(resolve, 300));
         attempts++;
     }
@@ -80,14 +82,16 @@ const registerUser = async (email, password, confirmPassword) => {
         const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
         currentUser = result.user;
         
-        // Create user document in Firestore
-        await firebase.firestore().collection('gamePlayers').doc(result.user.uid).set({
-            email: email,
-            createdAt: new Date(),
-            lastUpdated: new Date(),
-            playerName: null,
-            allocated: false
-        });
+        const db = getDb();
+        if (db) {
+            await db.collection('gamePlayers').doc(result.user.uid).set({
+                email: email,
+                createdAt: new Date(),
+                lastUpdated: new Date(),
+                playerName: null,
+                allocated: false
+            });
+        }
 
         hideLoginScreen();
         return true;
@@ -97,11 +101,9 @@ const registerUser = async (email, password, confirmPassword) => {
     }
 };
 
-// Login User
 const loginUser = async (email, password) => {
-    // Wait for Firebase to load if not ready
     let attempts = 0;
-    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 10) {
+    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 20) {
         await new Promise(resolve => setTimeout(resolve, 300));
         attempts++;
     }
@@ -122,7 +124,6 @@ const loginUser = async (email, password) => {
     }
 };
 
-// Logout User
 const logoutUser = async () => {
     try {
         await firebase.auth().signOut();
@@ -133,25 +134,24 @@ const logoutUser = async () => {
     }
 };
 
-// Show Auth Error
 const showAuthError = (message) => {
     const alertElements = document.querySelectorAll("#auth-alert");
     alertElements.forEach(el => {
-        if (el && el.offsetParent !== null) { // Only update visible form
+        if (el && el.offsetParent !== null) {
             el.innerHTML = message;
         }
     });
 };
 
-// Check if player name exists
 const checkPlayerNameExists = async (playerName) => {
-    if (typeof firebase === 'undefined' || !firebase.firestore) {
+    const db = getDb();
+    if (!db) {
         console.error("Firebase not loaded");
         return false;
     }
 
     try {
-        const snapshot = await firebase.firestore()
+        const snapshot = await db
             .collection('playernames')
             .where('name', '==', playerName)
             .get();
@@ -163,9 +163,9 @@ const checkPlayerNameExists = async (playerName) => {
     }
 };
 
-// Save player name to Firestore
 const savePlayerNameToFirebase = async (playerName) => {
-    if (typeof firebase === 'undefined' || !firebase.firestore) {
+    const db = getDb();
+    if (!db) {
         console.error("Firebase not loaded");
         return false;
     }
@@ -176,22 +176,19 @@ const savePlayerNameToFirebase = async (playerName) => {
             return false;
         }
 
-        // Check if name exists
         const exists = await checkPlayerNameExists(playerName);
         if (exists) {
             document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
             return false;
         }
 
-        // Save to playernames collection
-        await firebase.firestore().collection('playernames').doc(currentUser.uid).set({
+        await db.collection('playernames').doc(currentUser.uid).set({
             uid: currentUser.uid,
             name: playerName,
             createdAt: new Date()
         });
 
-        // Update gamePlayers document
-        await firebase.firestore().collection('gamePlayers').doc(currentUser.uid).update({
+        await db.collection('gamePlayers').doc(currentUser.uid).update({
             playerName: playerName,
             lastUpdated: new Date()
         });
@@ -203,42 +200,37 @@ const savePlayerNameToFirebase = async (playerName) => {
     }
 };
 
-// Load player data from Firebase
 const loadPlayerDataFromFirebase = async (uid) => {
-    if (typeof firebase === 'undefined' || !firebase.firestore) {
+    const db = getDb();
+    if (!db) {
         console.error("Firebase not loaded");
         document.querySelector("#character-creation").style.display = "flex";
         return;
     }
 
     try {
-        const doc = await firebase.firestore().collection('gamePlayers').doc(uid).get();
+        const doc = await db.collection('gamePlayers').doc(uid).get();
         
         if (doc.exists) {
             const data = doc.data();
             
             if (data.playerName && data.allocated && data.gameData) {
-                // Player exists and has completed setup, continue game
                 player = data.gameData;
                 dungeon = data.dungeonData || dungeon;
                 enemy = data.enemyData || enemy;
                 
-                // Update localStorage as well
                 localStorage.setItem("playerData", JSON.stringify(player));
                 localStorage.setItem("dungeonData", JSON.stringify(dungeon));
                 if (enemy) localStorage.setItem("enemyData", JSON.stringify(enemy));
                 
                 enterDungeon();
             } else if (data.playerName && !data.allocated) {
-                // Player exists but needs to allocate stats
                 document.querySelector("#title-screen").style.display = "flex";
                 allocationPopup();
             } else {
-                // New player, show character creation
                 document.querySelector("#character-creation").style.display = "flex";
             }
         } else {
-            // New player, show character creation
             document.querySelector("#character-creation").style.display = "flex";
         }
     } catch (error) {
@@ -247,24 +239,25 @@ const loadPlayerDataFromFirebase = async (uid) => {
     }
 };
 
-// Save all game data to Firebase
 const saveGameDataToFirebase = async () => {
-    if (!currentUser || !player || typeof firebase === 'undefined' || !firebase.firestore) {
+    if (!currentUser || !player) {
+        return;
+    }
+
+    const db = getDb();
+    if (!db) {
         return;
     }
 
     try {
-        // Only save data from memory (player, dungeon, enemy)
-        // This ensures data cannot be tampered with via localStorage
-        await firebase.firestore().collection('gamePlayers').doc(currentUser.uid).update({
+        await db.collection('gamePlayers').doc(currentUser.uid).update({
             gameData: player,
             dungeonData: dungeon,
             enemyData: enemy || null,
             lastUpdated: new Date()
         });
 
-        // Update gameStatistics for leaderboard
-        await firebase.firestore().collection('gameStatistics').doc(currentUser.uid).set({
+        await db.collection('gameStatistics').doc(currentUser.uid).set({
             uid: currentUser.uid,
             playerName: player.name,
             level: player.lvl,
@@ -278,12 +271,14 @@ const saveGameDataToFirebase = async () => {
     }
 };
 
-// Update allocated stats
 const updatePlayerAllocated = async () => {
-    if (!currentUser || typeof firebase === 'undefined' || !firebase.firestore) return;
+    if (!currentUser) return;
+
+    const db = getDb();
+    if (!db) return;
 
     try {
-        await firebase.firestore().collection('gamePlayers').doc(currentUser.uid).update({
+        await db.collection('gamePlayers').doc(currentUser.uid).update({
             allocated: true,
             lastUpdated: new Date()
         });
@@ -292,27 +287,22 @@ const updatePlayerAllocated = async () => {
     }
 };
 
-// Delete all player data
 const deletePlayerDataFromFirebase = async () => {
-    if (!currentUser || typeof firebase === 'undefined' || !firebase.firestore) return;
+    if (!currentUser) return;
+
+    const db = getDb();
+    if (!db) return;
 
     try {
-        // Delete game data
-        await firebase.firestore().collection('gamePlayers').doc(currentUser.uid).delete();
+        await db.collection('gamePlayers').doc(currentUser.uid).delete();
+        await db.collection('playernames').doc(currentUser.uid).delete();
+        await db.collection('gameStatistics').doc(currentUser.uid).delete();
         
-        // Delete from playernames
-        await firebase.firestore().collection('playernames').doc(currentUser.uid).delete();
-        
-        // Delete from statistics
-        await firebase.firestore().collection('gameStatistics').doc(currentUser.uid).delete();
-        
-        // Reset local variables
         player = null;
         dungeon = null;
         enemy = null;
         localStorage.clear();
 
-        // Sign out user
         await logoutUser();
 
     } catch (error) {
@@ -320,27 +310,27 @@ const deletePlayerDataFromFirebase = async () => {
     }
 };
 
-// Get leaderboards
 const getLeaderboards = async () => {
-    if (typeof firebase === 'undefined' || !firebase.firestore) {
+    const db = getDb();
+    if (!db) {
         console.error("Firebase not loaded");
         return { gold: [], level: [], floor: [] };
     }
 
     try {
-        const goldTop = await firebase.firestore()
+        const goldTop = await db
             .collection('gameStatistics')
             .orderBy('gold', 'desc')
             .limit(3)
             .get();
 
-        const levelTop = await firebase.firestore()
+        const levelTop = await db
             .collection('gameStatistics')
             .orderBy('level', 'desc')
             .limit(3)
             .get();
 
-        const floorTop = await firebase.firestore()
+        const floorTop = await db
             .collection('gameStatistics')
             .orderBy('currentFloor', 'desc')
             .limit(3)

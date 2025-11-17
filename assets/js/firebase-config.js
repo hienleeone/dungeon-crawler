@@ -11,8 +11,20 @@ const firebaseConfig = {
     measurementId: "G-NW033BL7PW"
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+// Wait for Firebase SDK to load, then initialize
+const initFirebaseConfig = () => {
+    if (typeof firebase !== 'undefined') {
+        try {
+            firebase.initializeApp(firebaseConfig);
+            window.db = firebase.firestore();
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.error("Firebase already initialized or error:", error);
+        }
+    } else {
+        setTimeout(initFirebaseConfig, 100);
+    }
+};
 
-// Get Firestore reference
-const db = firebase.firestore();
+// Start initialization
+initFirebaseConfig();
