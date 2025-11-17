@@ -1,10 +1,14 @@
 window.addEventListener("load", function () {
+    console.log('[main] window.load fired, player=', player);
     // Wait for player to be loaded from Firebase in auth.js
-    if (player === null) {
-        return; // auth.js will handle showing character creation
-    } else {
+    // If player already loaded, show title screen. If not, auth.js will display
+    // the appropriate screen later. Do NOT return here — we must attach
+    // event listeners even when `player` is null so form handlers work.
+    if (player !== null) {
         let target = document.querySelector("#title-screen");
         target.style.display = "flex";
+    } else {
+        document.querySelector("#title-screen").style.display = "none";
     }
 
     // Title Screen Validation
@@ -22,7 +26,25 @@ window.addEventListener("load", function () {
     }
 
     // Submit Name
-    document.querySelector("#name-submit").addEventListener("submit", function (e) {
+    const nameForm = document.querySelector("#name-submit");
+    console.log('[main] attaching name-submit listener, form=', nameForm);
+    if (nameForm) {
+        nameForm.addEventListener("submit", function (e) {
+            console.log('[main] name-submit event fired');
+            e.preventDefault();
+            
+            // also log click on the submit button if present
+            try {
+                const submitBtn = nameForm.querySelector('button[type=submit]');
+                if (submitBtn) {
+                    submitBtn.addEventListener('click', () => console.log('[main] name-submit button clicked'));
+                }
+            } catch (err) {
+                console.warn('[main] error attaching click logger to submit button', err);
+            }
+
+            
+            let playerName = document.querySelector("#name-input").value;
         e.preventDefault();
         let playerName = document.querySelector("#name-input").value;
 
@@ -73,7 +95,10 @@ window.addEventListener("load", function () {
                 });
             }
         }
-    });
+        });
+    } else {
+        console.warn('[main] #name-submit form not found on page');
+    }
     
 
     // Unequip all items
