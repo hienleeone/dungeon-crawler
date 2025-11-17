@@ -1,4 +1,12 @@
-let player = JSON.parse(localStorage.getItem("playerData"));
+// Initialize from Firebase or localStorage (fallback)
+let player = null;
+if (typeof currentUser !== 'undefined' && currentUser) {
+    // Will be loaded from Firebase in auth.js via loadPlayerDataFromFirebase
+    // Fallback to localStorage for development
+    player = JSON.parse(localStorage.getItem("playerData"));
+} else {
+    player = JSON.parse(localStorage.getItem("playerData"));
+}
 if (player) { player.gold = Number(player.gold) || 0; }
 let inventoryOpen = false;
 let leveled = false;

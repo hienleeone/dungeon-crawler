@@ -20,11 +20,58 @@
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="icon" type="image/png" href="./assets/icon/favicon.ico">
     <script src="./assets/js/howler.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js"></script>
+    <script src="./assets/js/firebase-config.js"></script>
+    
     <title>SoulMC Network - Dungeon Crawler</title>
 </head>
 
 <body>
     <main>
+
+        <!-- ===== Authentication Screen ===== -->
+        <section id="auth-screen" class="game-container">
+            <div>
+                <i class="fa-solid fa-dungeon fa-5x"></i>
+                <h1>soulmc.vn</h1>
+                <h1>Dungeon Crawler</h1>
+            </div>
+            
+            <div id="auth-forms">
+                <!-- Login Form -->
+                <div id="login-form">
+                    <h2>Đăng Nhập</h2>
+                    <form id="login-submit">
+                        <input type="email" id="login-email" placeholder="Gmail" autocomplete="off" required>
+                        <input type="password" id="login-password" placeholder="Mật Khẩu" autocomplete="off" required>
+                        <p id="auth-alert" style="color: #ff6b6b; font-size: 0.9rem; text-align: center;"></p>
+                        <button type="submit">Đăng Nhập</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 10px; font-size: 0.9rem;">
+                        Chưa có tài khoản? <button id="to-register-btn" style="background: none; border: none; color: #ffd500; cursor: pointer; text-decoration: underline; font-size: 0.9rem;">Đăng Ký</button>
+                    </p>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" style="display: none;">
+                    <h2>Đăng Ký</h2>
+                    <form id="register-submit">
+                        <input type="email" id="register-email" placeholder="Gmail" autocomplete="off" required>
+                        <input type="password" id="register-password" placeholder="Mật Khẩu" autocomplete="off" required>
+                        <input type="password" id="register-confirm-password" placeholder="Nhập Lại Mật Khẩu" autocomplete="off" required>
+                        <p id="auth-alert" style="color: #ff6b6b; font-size: 0.9rem; text-align: center;"></p>
+                        <button type="submit">Đồng Ý</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 10px; font-size: 0.9rem;">
+                        Đã có tài khoản? <button id="to-login-btn" style="background: none; border: none; color: #ffd500; cursor: pointer; text-decoration: underline; font-size: 0.9rem;">Đăng Nhập</button>
+                    </p>
+                </div>
+            </div>
+        </section>
 
         <!-- ===== Title Screen ===== -->
         <section id="title-screen" class="game-container">
@@ -33,7 +80,7 @@
                 <h1>soulmc.vn</h1>
                 <h1>Dungeon Crawler</h1>
             </div>
-            <p>Nhấn để khám phá hầm ngục!</p>
+            <p>Nhấn để khám phá nhầm ngục!</p>
         </section>
 
         <!-- ===== Character Creation ===== -->
@@ -163,36 +210,6 @@
             </div>
         </div>
 
-<!-- Auth Screen (add near other modals) -->
-<div class="modal-container" id="authModal" style="display:none;">
-  <div class="content auth-content">
-    <div class="content-head">
-      <h3>Đăng Nhập</h3>
-      <p id="auth-close"><i class="fa fa-xmark"></i></p>
-    </div>
-
-    <div id="login-box">
-      <input id="auth-email" type="email" placeholder="Gmail" autocomplete="off">
-      <input id="auth-password" type="password" placeholder="Mật khẩu">
-      <div style="display:flex; gap:.5rem; margin-top:.5rem;">
-        <button id="btn-login">Đăng Nhập</button>
-        <button id="btn-show-register" style="font-size:0.9rem;">Đăng Ký</button>
-      </div>
-    </div>
-
-    <div id="register-box" style="display:none; margin-top:0.5rem;">
-      <input id="reg-email" type="email" placeholder="Gmail" autocomplete="off">
-      <input id="reg-password" type="password" placeholder="Mật khẩu">
-      <input id="reg-password2" type="password" placeholder="Nhập lại mật khẩu">
-      <input id="reg-username" type="text" placeholder="Tên hiển thị (3-15 ký tự)">
-      <div style="display:flex; gap:.5rem; margin-top:.5rem;">
-        <button id="btn-register">Đồng Ý</button>
-        <button id="btn-cancel-register">Hủy</button>
-      </div>
-    </div>
-  </div>
-</div>
-
     </main>
 
     <!-- ===== Scripts ===== -->
@@ -204,7 +221,8 @@
     <script src="./assets/js/combat.js"></script>
     <script src="./assets/js/dungeon.js"></script>
     <script src="./assets/js/enemy.js"></script>
-    <script type="module" src="./assets/js/firebase.js"></script>
+    <script src="./assets/js/auth.js"></script>
+    <script src="./assets/js/leaderboard.js"></script>
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
 
