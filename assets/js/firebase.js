@@ -233,30 +233,35 @@ const createPlayerData = async (...args) => {
   }
 
   try {
-    // Ensure firebase.functions() is available (must be initialized in firebase.js)
-    if (typeof functions === 'undefined') {
-      throw new Error('Firebase Functions is not initialized. Add "const functions = firebase.functions();" after init.');
+    if (typeof window.functions === 'undefined') {
+      throw new Error('Firebase Functions not initialized. Make sure firebase-functions-compat is loaded and you set const functions = firebase.app().functions("<region>");');
     }
 
-    // Call Cloud Function createPlayer and pass optional full playerData if available
-    const createFn = functions.httpsCallable("createPlayer");
+    // Use httpsCallable to call server createPlayer (onCall)
+    const createFn = window.functions.httpsCallable("createPlayer");
+
+    // server only needs name; do not send authoritative player fields you don't trust
     const payload = { name: playerName };
-    if (playerData) payload.playerData = playerData; // server may use this to seed fields
+    // optionally include playerData if server expects it:
+    if (playerData) payload.playerData = playerData;
 
     const res = await createFn(payload);
 
-    // res.data should include created player object (server should return it)
+    // res.data expected { status: "ok", player }
     if (res && res.data && res.data.player) {
-      console.log("Player created server-side:", res.data);
+      console.log("Player created server-side:", res.data.player);
       return res.data.player;
     } else {
-      // fallback: return the raw response data
-      console.warn("createPlayerData: Cloud Function returned unexpected payload", res);
+      console.warn("createPlayerData: unexpected response", res);
       return res.data || null;
     }
-
   } catch (err) {
     console.error("Lỗi tạo người chơi server-side:", err);
+    // Surface Firebase HttpsError code if exists
+    if (err && err.code) {
+      // e.g. 'already-exists', 'unauthenticated'
+      console.warn("Function error code:", err.code);
+    }
     throw err;
   }
 };
@@ -294,29 +299,37 @@ const getPlayerData = (userId) => {
 /**
  * Update player data in Firestore with validation
  */
-const updatePlayerData = (userId, playerData) => {
-    // Validate trước khi lưu
-    const validatedData = validateBeforeSave(playerData);
-    
-    if (!validatedData) {
-        console.error("❌ Invalid player data - cannot update");
-        return Promise.reject(new Error("Invalid player data"));
+const updatePlayerData = async (userId, playerData) => {
+  // Validate trước khi gửi
+  const validatedData = validateBeforeSave(playerData);
+
+  if (!validatedData) {
+    console.error("Invalid player data - cannot update");
+    return Promise.reject(new Error("Invalid player data"));
+  }
+
+  try {
+    if (typeof window.functions === 'undefined') {
+      throw new Error('Firebase Functions not initialized. Make sure functions variable is set.');
     }
 
-    const updateData = {
-        ...validatedData,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        checksum: generateChecksum(validatedData)
-    };
+    const updateFn = window.functions.httpsCallable("serverUpdatePlayer");
 
-    return db.collection("players").doc(userId).update(updateData)
-        .then(() => {
-            console.log("✅ Cập nhật dữ liệu người chơi thành công");
-        })
-        .catch((error) => {
-            console.error("❌ Lỗi cập nhật dữ liệu:", error);
-            throw error;
-        });
+    // Build minimal payload server expects (here server expects { player: newData })
+    const payload = { player: validatedData };
+
+    const res = await updateFn(payload);
+    if (res && res.data && res.data.status === "ok") {
+      console.log("✅ serverUpdatePlayer succeeded");
+      return res.data;
+    } else {
+      console.warn("serverUpdatePlayer: unexpected response", res);
+      return res.data || null;
+    }
+  } catch (err) {
+    console.error("❌ Lỗi cập nhật dữ liệu (server):", err);
+    throw err;
+  }
 };
 
 /**
@@ -413,21 +426,23 @@ let autoSaveInterval;
  * Setup auto-save function with validation
  */
 const startAutoSave = (userId, getPlayerDataFunc) => {
-    // Auto-save every 30 seconds
-    autoSaveInterval = setInterval(() => {
-        const currentPlayer = getPlayerDataFunc();
-        if (currentPlayer && getCurrentUser()) {
-            // Validate trước khi lưu
-            if (window.validatePlayerData && !window.validatePlayerData()) {
-                console.error('❌ Validation failed, skipping auto-save');
-                return;
-            }
-            
-            updatePlayerData(userId, currentPlayer).catch((error) => {
-                console.error("❌ Lỗi auto-save:", error);
-            });
-        }
-    }, 30000);
+  autoSaveInterval = setInterval(async () => {
+    const currentPlayer = getPlayerDataFunc();
+    if (currentPlayer && getCurrentUser()) {
+      // Validate
+      const validated = validateBeforeSave(currentPlayer);
+      if (!validated) {
+        console.error('Validation failed, skipping auto-save');
+        return;
+      }
+      try {
+        await updatePlayerData(userId, validated);
+        console.log('Auto-save OK');
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+      }
+    }
+  }, 30000);
 };
 
 const stopAutoSave = () => {
@@ -437,4 +452,4 @@ const stopAutoSave = () => {
 };
 
 console.log("🔥 Firebase initialized with security features");
-const functions = firebase.app().functions("asia-southeast1");
+const functions = firebase.functions();
