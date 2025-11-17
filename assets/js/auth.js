@@ -283,18 +283,18 @@ function loadPlayerDataFromFirebase(userId) {
  */
 function initializeGame() {
     console.log('[auth] initializeGame called, player=', player);
-    // Check if player has allocated stats
-    if (player && player.allocated) {
-        // Show title screen (Nhấn để khám phá hầm ngục)
+    // If a player object exists, show the title screen first.
+    // Allocation will happen when the player clicks the title screen.
+    if (player) {
         document.querySelector("#login-screen").style.display = "none";
         document.querySelector("#register-screen").style.display = "none";
         document.querySelector("#character-creation").style.display = "none";
         document.querySelector("#title-screen").style.display = "flex";
-        
+
         // Load dungeon data
         getDungeonData();
     } else {
-        // Show character creation (Bạn tên gì?)
+        // No player found, show character creation
         showCharacterCreation();
     }
     
