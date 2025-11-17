@@ -23,30 +23,38 @@ service cloud.firestore {
                      && request.resource.data.name.size() >= 3
                      && request.resource.data.name.size() <= 15;
 
-      // UPDATE: Allow most updates, but limit gold/lvl changes to prevent extreme cheating
+      // UPDATE: Allow updates with some anti-cheat measures
       allow update: if isAuthenticated()
                      && isOwner(userId)
                      && (
-                        // If gold is being updated, limit increase to 1M per save
-                        !('gold' in request.resource.data)
+                        // If document doesn't exist yet (first save), allow anything
+                        !exists(/databases/$(database)/documents/players/$(userId))
                         || (
-                          request.resource.data.gold >= 0 
-                          && request.resource.data.gold <= resource.data.gold + 1000000
-                        )
-                     )
-                     && (
-                        // If lvl is being updated, limit increase to 10 per save and max 1000
-                        !('lvl' in request.resource.data)
-                        || (
-                          request.resource.data.lvl >= resource.data.lvl
-                          && request.resource.data.lvl <= resource.data.lvl + 10
-                          && request.resource.data.lvl <= 1000
+                          // If gold is being updated, limit increase to 1M per save
+                          (!('gold' in request.resource.data)
+                          || (
+                            request.resource.data.gold >= 0 
+                            && request.resource.data.gold <= resource.data.gold + 1000000
+                          ))
+                          && 
+                          // If lvl is being updated, limit increase to 10 per save and max 1000
+                          (!('lvl' in request.resource.data)
+                          || (
+                            request.resource.data.lvl >= resource.data.lvl
+                            && request.resource.data.lvl <= resource.data.lvl + 10
+                            && request.resource.data.lvl <= 1000
+                          ))
                         )
                      );
 
       // DELETE: Only owner can delete
       allow delete: if isAuthenticated()
                      && isOwner(userId);
+      
+      // Dungeon subcollection
+      match /dungeon/{dungeonId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
     }
 
     // ===== Volume Settings (subcollection) =====

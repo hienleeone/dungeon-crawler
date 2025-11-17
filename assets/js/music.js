@@ -10,36 +10,37 @@ if (JSON.parse(localStorage.getItem("volumeData")) == undefined) {
     volume = JSON.parse(localStorage.getItem("volumeData"));
 }
 
-// Create dummy sound objects with safe play function
-const createDummySound = () => ({
+// Safe wrapper for undefined sounds
+const safeSoundWrapper = {
     play: () => {},
     stop: () => {},
     pause: () => {},
-    volume: () => {}
-});
+    volume: () => {},
+    fade: () => {}
+};
 
 // BGM
-let bgmDungeon = createDummySound();
-let bgmBattleMain = createDummySound();
-let bgmBattleBoss = createDummySound();
-let bgmBattleGuardian = createDummySound();
+let bgmDungeon = Object.create(safeSoundWrapper);
+let bgmBattleMain = Object.create(safeSoundWrapper);
+let bgmBattleBoss = Object.create(safeSoundWrapper);
+let bgmBattleGuardian = Object.create(safeSoundWrapper);
 
 // SFX
-let sfxEncounter = createDummySound();
-let sfxEnemyDeath = createDummySound();
-let sfxAttack = createDummySound();
-let sfxLvlUp = createDummySound();
-let sfxConfirm = createDummySound();
-let sfxDecline = createDummySound();
-let sfxDeny = createDummySound();
-let sfxEquip = createDummySound();
-let sfxUnequip = createDummySound();
-let sfxOpen = createDummySound();
-let sfxPause = createDummySound();
-let sfxUnpause = createDummySound();
-let sfxSell = createDummySound();
-let sfxItem = createDummySound();
-let sfxBuff = createDummySound();
+let sfxEncounter = Object.create(safeSoundWrapper);
+let sfxEnemyDeath = Object.create(safeSoundWrapper);
+let sfxAttack = Object.create(safeSoundWrapper);
+let sfxLvlUp = Object.create(safeSoundWrapper);
+let sfxConfirm = Object.create(safeSoundWrapper);
+let sfxDecline = Object.create(safeSoundWrapper);
+let sfxDeny = Object.create(safeSoundWrapper);
+let sfxEquip = Object.create(safeSoundWrapper);
+let sfxUnequip = Object.create(safeSoundWrapper);
+let sfxOpen = Object.create(safeSoundWrapper);
+let sfxPause = Object.create(safeSoundWrapper);
+let sfxUnpause = Object.create(safeSoundWrapper);
+let sfxSell = Object.create(safeSoundWrapper);
+let sfxItem = Object.create(safeSoundWrapper);
+let sfxBuff = Object.create(safeSoundWrapper);
 
 const setVolume = () => {
     // ===== BGM =====
@@ -144,7 +145,28 @@ const setVolume = () => {
     });
 }
 
+// Safe play function that won't crash if sound not loaded
+window.safePlay = function(sound) {
+    try {
+        if (sound && typeof sound.play === 'function') {
+            sound.play();
+        }
+    } catch (e) {
+        // Sound not loaded yet, ignore
+    }
+};
+
+window.safeStop = function(sound) {
+    try {
+        if (sound && typeof sound.stop === 'function') {
+            sound.stop();
+        }
+    } catch (e) {
+        // Sound not loaded yet, ignore
+    }
+};
+
 document.querySelector("#title-screen").addEventListener("click", function () {
     setVolume();
-    sfxOpen.play();
+    safePlay(sfxOpen);
 });
