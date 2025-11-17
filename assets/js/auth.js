@@ -37,6 +37,7 @@ window.addEventListener("load", function () {
                 } else {
                     alertElement.innerHTML = "Đăng nhập thất bại!";
                 }
+                console.error("Login error:", error);
             });
     });
 
@@ -81,6 +82,7 @@ window.addEventListener("load", function () {
                 } else {
                     alertElement.innerHTML = "Đăng ký thất bại!";
                 }
+                console.error("Register error:", error);
             });
     });
 
@@ -116,6 +118,10 @@ function showLoginScreen() {
     document.querySelector("#character-creation").style.display = "none";
     document.querySelector("#dungeon-main").style.display = "none";
     document.querySelector("#loading").style.display = "none";
+    
+    // Clear form
+    document.querySelector("#login-form").reset();
+    document.querySelector("#login-alert").innerHTML = "";
 }
 
 function showRegisterScreen() {
@@ -132,6 +138,10 @@ function showCharacterCreation() {
     document.querySelector("#character-creation").style.display = "flex";
     document.querySelector("#title-screen").style.display = "none";
     document.querySelector("#dungeon-main").style.display = "none";
+    
+    // Clear character creation form
+    document.querySelector("#name-submit").reset();
+    document.querySelector("#alert").innerHTML = "";
 }
 
 // ===== Firebase Player Data Functions =====
@@ -271,7 +281,7 @@ function loadPlayerDataFromFirebase(userId) {
 function initializeGame() {
     // Check if player has allocated stats
     if (player && player.allocated) {
-        // Show title screen
+        // Show title screen (Nhấn để khám phá hầm ngục)
         document.querySelector("#login-screen").style.display = "none";
         document.querySelector("#register-screen").style.display = "none";
         document.querySelector("#character-creation").style.display = "none";
@@ -280,7 +290,7 @@ function initializeGame() {
         // Load dungeon data
         getDungeonData();
     } else {
-        // Show character creation
+        // Show character creation (Bạn tên gì?)
         showCharacterCreation();
     }
     

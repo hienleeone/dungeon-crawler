@@ -37,12 +37,13 @@
                 <h1>Dungeon Crawler</h1>
             </div>
             <form id="login-form">
-                <h2>Đăng Nhập</h2>
                 <input type="email" id="login-email" placeholder="Gmail" autocomplete="off" required>
                 <input type="password" id="login-password" placeholder="Mật Khẩu" required>
                 <p id="login-alert"></p>
-                <button type="submit">Đăng Nhập</button>
-                <button type="button" id="register-btn" class="register-btn">Đăng Ký</button>
+                <div class="button-row">
+                    <button type="submit" id="login-btn">Đăng Nhập</button>
+                    <button type="button" id="register-btn" class="register-btn">Đăng Ký</button>
+                </div>
             </form>
         </section>
 
@@ -54,13 +55,14 @@
                 <h1>Dungeon Crawler</h1>
             </div>
             <form id="register-form">
-                <h2>Đăng Ký</h2>
                 <input type="email" id="register-email" placeholder="Gmail" autocomplete="off" required>
                 <input type="password" id="register-password" placeholder="Mật Khẩu" autocomplete="off" required>
                 <input type="password" id="register-password-confirm" placeholder="Nhập Lại Mật Khẩu" autocomplete="off" required>
                 <p id="register-alert"></p>
-                <button type="submit">Đồng Ý</button>
-                <button type="button" id="back-btn" class="register-btn">Quay Lại</button>
+                <div class="button-row">
+                    <button type="submit" id="register-submit-btn">Đồng Ý</button>
+                    <button type="button" id="back-btn" class="register-btn">Quay Lại</button>
+                </div>
             </form>
         </section>
 
