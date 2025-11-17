@@ -18,9 +18,6 @@ const db = firebase.firestore();
 
 // Global variables
 let currentUser = null;
-let player = null;
-let dungeon = null;
-let enemy = null;
 let volume = {
     master: 0.5,
     bgm: 0.5,
@@ -110,9 +107,13 @@ const createPlayerData = (userId, playerName, playerData) => {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
+    // Debug: log attempt to create player doc
+    console.log("[firebase] createPlayerData -> creating player doc for uid:", userId, "name:", playerName);
+    console.log("[firebase] createPlayerData -> payload keys:", Object.keys(playerDocData));
+
     return db.collection("players").doc(userId).set(playerDocData)
         .then(() => {
-            console.log("Tạo dữ liệu người chơi thành công");
+            console.log("Tạo dữ liệu người chơi thành công for uid:", userId);
             return playerDocData;
         })
         .catch((error) => {
