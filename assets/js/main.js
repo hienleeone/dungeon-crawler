@@ -392,7 +392,13 @@ const runLoad = (id, display) => {
     loader.style.display = "flex";
     setTimeout(async () => {
         loader.style.display = "none";
-        document.querySelector(`#${id}`).style.display = `${display}`;
+        // Hide other main screens to avoid showing multiple screens at once
+        const screens = ["login-screen", "register-screen", "title-screen", "character-creation", "dungeon-main", "loading"];
+        screens.forEach(s => {
+            try { const el = document.querySelector(`#${s}`); if (el) el.style.display = "none"; } catch(e){}
+        });
+        const target = document.querySelector(`#${id}`);
+        if (target) target.style.display = `${display}`;
     }, 1000);
 }
 
