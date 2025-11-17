@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===== Helper Functions =====
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // ===== Players Collection =====
+    match /players/{userId} {
+      // READ: Allow authenticated users to read (for leaderboard, profile view)
+      allow read: if isAuthenticated();
+
+      // CREATE: Only owner can create their own player doc
+      allow create: if isAuthenticated()
+                     && isOwner(userId)
+                     && request.resource.data.keys().hasAll(['name', 'lvl', 'gold', 'dungeon', 'allocated'])
+                     && request.resource.data.name is string
+                     && request.resource.data.name.size() >= 3
+                     && request.resource.data.name.size() <= 15
+                     && request.resource.data.lvl is number
+                     && request.resource.data.lvl == 1
+                     && request.resource.data.gold is number
+                     && request.resource.data.gold == 0
+                     && request.resource.data.allocated is bool
+                     && request.resource.data.allocated == false
+                     && request.resource.data.dungeon is map;
+
+      // UPDATE: Client can update most fields, but CANNOT change gold/lvl/allocated
+      // These critical fields can ONLY be updated by Cloud Functions (admin SDK)
+      allow update: if isAuthenticated()
+                     && isOwner(userId)
+                     && (
+                        // If gold is in request, it must equal current gold (no changes)
+                        !('gold' in request.resource.data) || request.resource.data.gold == resource.data.gold
+                     )
+                     && (
+                        // If lvl is in request, it must equal current lvl (no changes)
+                        !('lvl' in request.resource.data) || request.resource.data.lvl == resource.data.lvl
+                     )
+                     && (
+                        // If allocated is in request, it must equal current allocated (no changes)
+                        !('allocated' in request.resource.data) || request.resource.data.allocated == resource.data.allocated
+                     );
+
+      // DELETE: Only owner can delete
+      allow delete: if isAuthenticated()
+                     && isOwner(userId);
+    }
+
+    // ===== Volume Settings (subcollection) =====
+    match /players/{userId}/settings/{document=**} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // ===== USERS COLLECTION (for other web features) =====
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update, delete: if isAuthenticated() &&
+        (isOwner(userId) ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+
+      match /attendance/{attId} {
+        allow read, write: if isAuthenticated() &&
+          (isOwner(userId) ||
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      }
+    }
+
+    // ===== CHAT =====
+    match /chatMessages/{msgId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ===== REVIEWS =====
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if
+        request.resource.data.email is string &&
+        request.resource.data.ingame is string &&
+        request.resource.data.rating is int &&
+        request.resource.data.comment is string &&
+        request.resource.data.email.size() > 3 &&
+        request.resource.data.ingame.size() > 2 &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5;
+      allow update, delete: if false;
+    }
+
+    // ===== Deny all other access =====
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
