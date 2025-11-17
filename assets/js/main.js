@@ -77,6 +77,8 @@ window.addEventListener("load", function () {
                                     } catch (e) {
                                         console.warn("loadPlayerDataFromFirebase not available yet:", e);
                                     }
+                                    // Hide character creation before showing title screen
+                                    document.querySelector("#character-creation").style.display = "none";
                                     // Show title screen; allocation happens when player clicks
                                     runLoad("title-screen", "flex");
                                 })
