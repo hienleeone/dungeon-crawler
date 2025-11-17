@@ -62,14 +62,7 @@ window.addEventListener("load", function () {
             }
         }
     });
-                calculateStats();
-                player.stats.hp = player.stats.hpMax;
-                saveData();
-                document.querySelector("#character-creation").style.display = "none";
-                runLoad("title-screen", "flex");
-            }
-        }
-    });
+    
 
     // Unequip all items
     document.querySelector("#unequip-all").addEventListener("click", function () {

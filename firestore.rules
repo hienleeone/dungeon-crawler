@@ -3,45 +3,55 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // ===== Users Collection =====
+    // NOTE: Storing full player objects in /players documents means any rule that allows
+    // authenticated users to read for leaderboard will expose the whole document.
+    // PRODUCTION RECOMMENDATION: keep a separate public /publicPlayers collection
+    // with only the fields needed for leaderboard (name, gold, lvl, floor) and
+    // have server/cloud-functions sign/verify updates to that collection.
     match /players/{userId} {
-      // Allow users to read all player data (for leaderboard)
+      // Allow read by authenticated users (used here for simplicity/compatibility).
+      // This will expose full player data to any authenticated user.
       allow read: if request.auth != null;
-      
-      // Allow user to create their own player data
-      allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // Allow user to update/delete only their own data
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
-      
-      // Validate player data on creation
-      allow create: if request.resource.data.keys().hasAll(['name', 'lvl', 'gold', 'dungeon']) &&
-                       request.resource.data.name is string &&
-                       request.resource.data.lvl is number &&
-                       request.resource.data.gold is number &&
-                       request.resource.data.dungeon is map &&
-                       request.resource.data.name.size() > 2 &&
-                       request.resource.data.name.size() < 16 &&
-                       request.resource.data.lvl >= 1 &&
-                       request.resource.data.lvl <= 500 &&
-                       request.resource.data.gold >= 0;
-      
-      // Validate player data on update
-      allow update: if request.resource.data.keys().hasAll(['name', 'lvl', 'gold', 'dungeon']) &&
-                       request.resource.data.name is string &&
-                       request.resource.data.lvl is number &&
-                       request.resource.data.gold is number &&
-                       request.resource.data.dungeon is map &&
-                       request.resource.data.name.size() > 2 &&
-                       request.resource.data.name.size() < 16 &&
-                       request.resource.data.lvl >= 1 &&
-                       request.resource.data.lvl <= 500 &&
-                       request.resource.data.gold >= 0 &&
-                       // Prevent cheating: only allow reasonable increases
-                       // Player level can increase max 5 levels per update
-                       (request.resource.data.lvl - resource.data.lvl) <= 5 &&
-                       // Gold can increase but with reasonable limits (max 1M per update)
-                       (request.resource.data.gold - resource.data.gold) >= 0 &&
-                       (request.resource.data.gold - resource.data.gold) <= 1000000;
+
+      // Create: only the authenticated user may create their own player doc and it must
+      // contain the required fields with basic validation.
+      allow create: if request.auth != null
+                     && request.auth.uid == userId
+                     && request.resource.data.keys().hasAll(['name', 'lvl', 'gold', 'dungeon'])
+                     && request.resource.data.name is string
+                     && request.resource.data.name.size() > 2
+                     && request.resource.data.name.size() < 16
+                     && request.resource.data.lvl is number
+                     && request.resource.data.lvl >= 1
+                     && request.resource.data.lvl <= 500
+                     && request.resource.data.gold is number
+                     && request.resource.data.gold >= 0
+                     && request.resource.data.dungeon is map;
+
+      // Update: only the owner may update. We validate that critical numeric fields
+      // do not jump to unreasonable values while allowing decreases (e.g. spending gold).
+      allow update: if request.auth != null
+                     && request.auth.uid == userId
+                     && (
+                        // Basic type/size checks if those fields are present in the request
+                        (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() > 2 && request.resource.data.name.size() < 16))
+                        && (!('lvl' in request.resource.data) || (request.resource.data.lvl is number && request.resource.data.lvl >= 1 && request.resource.data.lvl <= 500))
+                        && (!('gold' in request.resource.data) || (request.resource.data.gold is number && request.resource.data.gold >= 0))
+                      )
+                     && (
+                        // Level change: allow decreases or modest increases (max +5 per request)
+                        (!('lvl' in request.resource.data) || resource.data.lvl is number
+                          && (request.resource.data.lvl <= resource.data.lvl || (request.resource.data.lvl - resource.data.lvl) <= 5))
+                     )
+                     && (
+                        // Gold change: allow decreases (spending) down to zero, or increases up to +1_000_000 per update
+                        (!('gold' in request.resource.data) || resource.data.gold is number
+                          && ((request.resource.data.gold <= resource.data.gold && request.resource.data.gold >= 0)
+                              || ((request.resource.data.gold - resource.data.gold) <= 1000000)))
+                     );
+
+      // Delete: only owner can delete their own player
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
     // ===== Volume Settings =====
