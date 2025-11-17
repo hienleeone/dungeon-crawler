@@ -97,19 +97,20 @@ window.addEventListener("load", function () {
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
                 
-                // Lưu và kiểm tra tên trùng
+                // Lưu - nếu tên trùng, Firebase Rules sẽ từ chối
                 try {
                     await savePlayerDataToFirebase();
                     document.querySelector("#character-creation").style.display = "none";
                     runLoad("title-screen", "flex");
                 } catch (error) {
-                    if (error.message.includes('Tên đã được sử dụng')) {
+                    console.error("Lỗi tạo nhân vật:", error);
+                    // Kiểm tra lỗi permission từ Firebase
+                    if (error.code === 'permission-denied' || error.message.includes('PERMISSION_DENIED')) {
                         document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
-                        player = null; // Reset player
                     } else {
                         document.querySelector("#alert").innerHTML = "Lỗi lưu dữ liệu. Vui lòng thử lại!";
-                        console.error("Lỗi:", error);
                     }
+                    player = null; // Reset player nếu lỗi
                 }
             }
         }

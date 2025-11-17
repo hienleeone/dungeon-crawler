@@ -231,15 +231,9 @@ const savePlayerDataToFirebase = async () => {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         
-        // Lưu tên vào collection playerNames để check trùng (KHÔNG merge)
-        // Nếu tên đã tồn tại, Firebase sẽ báo lỗi
+        // Lưu tên vào collection playerNames
         if (player.name) {
             const nameRef = db.collection('playerNames').doc(player.name);
-            // Dùng set với merge:false để bắt lỗi nếu tên đã tồn tại
-            const nameDoc = await nameRef.get();
-            if (nameDoc.exists && nameDoc.data().userId !== currentUser.uid) {
-                throw new Error('Tên đã được sử dụng bởi người khác!');
-            }
             batch.set(nameRef, {
                 name: player.name,
                 userId: currentUser.uid,
@@ -253,10 +247,7 @@ const savePlayerDataToFirebase = async () => {
         await updateLeaderboards();
     } catch (error) {
         console.error("Lỗi lưu dữ liệu:", error);
-        // Nếu lỗi do tên trùng, throw lại để xử lý ở nơi gọi
-        if (error.message.includes('Tên đã được sử dụng')) {
-            throw error;
-        }
+        throw error; // Throw lại để main.js xử lý
     }
 };
 
