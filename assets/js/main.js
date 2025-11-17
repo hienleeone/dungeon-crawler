@@ -67,7 +67,7 @@ window.addEventListener("load", function () {
                         const authUser = currentUser || getCurrentUser();
                         console.log("[main] name-submit -> authUser:", authUser && authUser.uid, authUser && authUser.email);
                         if (authUser) {
-                            await createPlayerData(authUser.uid, playerName, defaultPlayer);
+                            createPlayerData(authUser.uid, playerName, defaultPlayer)
                                 .then((doc) => {
                                     console.log("[main] createPlayerData succeeded for uid:", authUser.uid);
                                     document.querySelector("#alert").innerHTML = "";
