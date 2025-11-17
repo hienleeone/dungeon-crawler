@@ -1,5 +1,14 @@
-// Volume settings - initialized in firebase.js
-// volume object is already defined globally in firebase.js
+// Volume settings
+let volume;
+if (JSON.parse(localStorage.getItem("volumeData")) == undefined) {
+    volume = {
+        master: 100 / 100,
+        bgm: (80 / 100) / 2,
+        sfx: 100 / 100
+    }
+} else {
+    volume = JSON.parse(localStorage.getItem("volumeData"));
+}
 
 
 // BGM

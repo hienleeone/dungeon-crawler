@@ -40,38 +40,15 @@ dungeonActivity.addEventListener('click', function () {
 
 // Sets up the initial dungeon
 const initialDungeonLoad = () => {
-    // Dungeon data is loaded from Firebase or created in auth.js
-    if (!dungeon) {
-        dungeon = {
-            progress: {
-                floor: 1,
-                room: 1
-            },
-            statistics: {
-                kills: 0,
-                runtime: 0
-            },
-            status: {
-                exploring: false,
-                paused: true,
-                event: false,
-            },
-            settings: {
-                enemyBaseLvl: 1,
-                enemyLvlGap: 5,
-                enemyBaseStats: 1,
-                enemyScaling: 1.1,
-            },
-            backlog: [],
-            action: 0
+    if (localStorage.getItem("dungeonData") !== null) {
+        dungeon = JSON.parse(localStorage.getItem("dungeonData"));
+        dungeon.status = {
+            exploring: false,
+            paused: true,
+            event: false,
         };
+        updateDungeonLog();
     }
-    dungeon.status = {
-        exploring: false,
-        paused: true,
-        event: false,
-    };
-    updateDungeonLog();
     loadDungeonProgress();
     dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
     dungeonAction.innerHTML = "Tạm Dừng...";

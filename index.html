@@ -20,65 +20,24 @@
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="icon" type="image/png" href="./assets/icon/favicon.ico">
     <script src="./assets/js/howler.min.js"></script>
-    <!-- Use compat build so existing firebase.js (namespace API) works in browser -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     <title>SoulMC Network - Dungeon Crawler</title>
 </head>
 
 <body>
     <main>
 
-        <!-- ===== Login Screen ===== -->
-        <section id="login-screen" class="game-container">
-            <div>
-                <i class="fa-solid fa-dungeon fa-5x"></i>
-                <h1>soulmc.vn</h1>
-                <h1>Dungeon Crawler</h1>
-            </div>
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="Gmail" autocomplete="off" required>
-                <input type="password" id="login-password" placeholder="Mật Khẩu" required>
-                <p id="login-alert"></p>
-                <div class="button-row">
-                    <button type="submit" id="login-btn">Đăng Nhập</button>
-                    <button type="button" id="register-btn" class="register-btn">Đăng Ký</button>
-                </div>
-            </form>
-        </section>
-
-        <!-- ===== Register Screen ===== -->
-        <section id="register-screen" class="game-container" style="display: none;">
-            <div>
-                <i class="fa-solid fa-dungeon fa-5x"></i>
-                <h1>soulmc.vn</h1>
-                <h1>Dungeon Crawler</h1>
-            </div>
-            <form id="register-form">
-                <input type="email" id="register-email" placeholder="Gmail" autocomplete="off" required>
-                <input type="password" id="register-password" placeholder="Mật Khẩu" autocomplete="off" required>
-                <input type="password" id="register-password-confirm" placeholder="Nhập Lại Mật Khẩu" autocomplete="off" required>
-                <p id="register-alert"></p>
-                <div class="button-row">
-                    <button type="submit" id="register-submit-btn">Đồng Ý</button>
-                    <button type="button" id="back-btn" class="register-btn">Quay Lại</button>
-                </div>
-            </form>
-        </section>
-
         <!-- ===== Title Screen ===== -->
-        <section id="title-screen" class="game-container" style="display: none;">
+        <section id="title-screen" class="game-container">
             <div>
                 <i class="fa-solid fa-dungeon fa-5x"></i>
                 <h1>soulmc.vn</h1>
                 <h1>Dungeon Crawler</h1>
             </div>
-            <p>Nhấn để khám phá hầm ngục!</p>
+            <p>Nhấn để khám phá nhầm ngục!</p>
         </section>
 
         <!-- ===== Character Creation ===== -->
-        <section id="character-creation" class="game-container" style="display: none;">
+        <section id="character-creation" class="game-container">
             <form id="name-submit">
                 <h1>Bạn tên gì?</h1>
                 <input type="text" id="name-input" autocomplete="off">
@@ -166,7 +125,7 @@
                 </div>
 
                 <button id="menu-btn">Menu</button>
-                <button id="open-gacha" class="modal-btn" style="margin-top:8px; background:#ffd500; color:#000; font-weight:700; width:100%;">✨ Gacha</button>
+                    <button id="open-gacha" class="modal-btn" style="margin-top:8px; background:#ffd500; color:#000; font-weight:700; width:100%;">✨ Gacha</button>
             </div>
         </div>
 
@@ -207,10 +166,6 @@
     </main>
 
     <!-- ===== Scripts ===== -->
-    <!-- SECURITY - LOAD FIRST -->
-    <script src="./assets/js/security.js"></script>
-    
-    <script src="./assets/js/firebase.js"></script>
     <script src="./assets/js/utility.js"></script>
     <script src="./assets/js/elements.js"></script>
     <script src="./assets/js/music.js"></script>
@@ -219,8 +174,6 @@
     <script src="./assets/js/combat.js"></script>
     <script src="./assets/js/dungeon.js"></script>
     <script src="./assets/js/enemy.js"></script>
-    <script src="./assets/js/auth.js"></script>
-    <script src="./assets/js/leaderboard.js"></script>
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
 

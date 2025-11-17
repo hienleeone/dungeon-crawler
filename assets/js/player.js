@@ -1,6 +1,5 @@
-// Player data is initialized from Firebase in auth.js
-// These will be set by auth.js when loading
-let player = null;
+let player = JSON.parse(localStorage.getItem("playerData"));
+if (player) { player.gold = Number(player.gold) || 0; }
 let inventoryOpen = false;
 let leveled = false;
 const lvlupSelect = document.querySelector("#lvlupSelect");

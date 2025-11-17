@@ -1,90 +1,324 @@
-// combat.js (FULL - server-side authoritative)
-
-// DOM + flags
-const combatPanel = document.querySelector("#combatPanel");
+const combatPanel = document.querySelector("#combatPanel")
 let enemyDead = false;
 let playerDead = false;
 
-// Combat backlog (messages to show)
+// ========== Validation ==========
+const hpValidation = () => {
+    // Prioritizes player death before the enemy
+    if (player.stats.hp < 1) {
+        player.stats.hp = 0;
+        playerDead = true;
+        player.deaths++;
+        addCombatLog(`Bạn đã chết!`);
+        document.querySelector("#battleButton").addEventListener("click", function () {
+            sfxConfirm.play();
+            playerDead = false;
+
+            // Reset all the necessary stats and return to menu
+            let dimDungeon = document.querySelector('#dungeon-main');
+            dimDungeon.style.filter = "brightness(100%)";
+            dimDungeon.style.display = "none";
+            combatPanel.style.display = "none";
+            runLoad("title-screen", "flex");
+
+            clearInterval(dungeonTimer);
+            clearInterval(playTimer);
+            progressReset();
+        });
+        endCombat();
+    } else if (enemy.stats.hp < 1) {
+        // Gives out all the reward and show the claim button
+        enemy.stats.hp = 0;
+        enemyDead = true;
+        player.kills++;
+        dungeon.statistics.kills++;
+        addCombatLog(`${enemy.name} chết! (${new Date(combatSeconds * 1000).toISOString().substring(14, 19)})`);
+        addCombatLog(`Bạn đã kiếm được ${nFormatter(enemy.rewards.exp)} exp.`)
+        playerExpGain();
+        addCombatLog(`${enemy.name} rơi <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(enemy.rewards.gold)} vàng.`)
+        player.gold += enemy.rewards.gold;
+        playerLoadStats();
+        if (enemy.rewards.drop) {
+            createEquipmentPrint("combat");
+        }
+
+        // Recover 20% of players health
+        player.stats.hp += Math.round((player.stats.hpMax * 20) / 100);
+        playerLoadStats();
+
+        // Close the battle panel
+        document.querySelector("#battleButton").addEventListener("click", function () {
+            sfxConfirm.play();
+
+            // Clear combat backlog and transition to dungeon exploration
+            let dimDungeon = document.querySelector('#dungeon-main');
+            dimDungeon.style.filter = "brightness(100%)";
+            bgmDungeon.play();
+
+            dungeon.status.event = false;
+            combatPanel.style.display = "none";
+            enemyDead = false;
+            combatBacklog.length = 0;
+        });
+        endCombat();
+    }
+}
+
+// ========== Attack Functions ==========
+const playerAttack = () => {
+    if (!player.inCombat) {
+        return;
+    }
+    if (player.inCombat) {
+        sfxAttack.play();
+    }
+
+    // Calculates the damage and attacks the enemy
+    let crit;
+    let damage = player.stats.atk * (player.stats.atk / (player.stats.atk + enemy.stats.def));
+    // Randomizes the damage by 90% - 110%
+    let dmgRange = 0.9 + Math.random() * 0.2;
+    damage = damage * dmgRange;
+    // Check if the attack is a critical hit
+    if (Math.floor(Math.random() * 100) < player.stats.critRate) {
+        crit = true;
+        dmgtype = "crit damage";
+        damage = Math.round(damage * (1 + (player.stats.critDmg / 100)));
+    } else {
+        crit = false;
+        dmgtype = "damage";
+        damage = Math.round(damage);
+    }
+
+    // Skill effects
+    objectValidation();
+    if (player.skills.includes("Remnant Razor")) {
+        // Attacks deal extra 8% of enemies' current health on hit
+        damage += Math.round((8 * enemy.stats.hp) / 100);
+    }
+    if (player.skills.includes("Titan's Will")) {
+        // Attacks deal extra 5% of your maximum health on hit
+        damage += Math.round((5 * player.stats.hpMax) / 100);
+    }
+    if (player.skills.includes("Devastator")) {
+        // Deal 30% more damage but you lose 30% base attack speed
+        damage = Math.round(damage + ((30 * damage) / 100));
+    }
+    if (player.skills.includes("Rampager")) {
+        // Increase base attack by 5 after each hit. Stack resets after battle.
+        player.baseStats.atk += 5;
+        objectValidation();
+        player.tempStats.atk += 5;
+        saveData();
+    }
+    if (player.skills.includes("Blade Dance")) {
+        // Gain increased attack speed after each hit. Stack resets after battle
+        player.baseStats.atkSpd += 0.01;
+        objectValidation();
+        player.tempStats.atkSpd += 0.01;
+        saveData();
+    }
+
+    // Lifesteal formula
+    let lifesteal = Math.round(damage * (player.stats.vamp / 100));
+
+    // Apply the calculations to combat
+    enemy.stats.hp -= damage;
+    player.stats.hp += lifesteal;
+    addCombatLog(`${player.name} gây ${nFormatter(damage)} ${dmgtype} lên ${enemy.name}.`);
+    hpValidation();
+    playerLoadStats();
+    enemyLoadStats();
+
+    // Damage effect
+    let enemySprite = document.querySelector("#enemy-sprite");
+    enemySprite.classList.add("animation-shake");
+    setTimeout(() => {
+        enemySprite.classList.remove("animation-shake");
+    }, 200);
+
+    // Damage numbers
+    const dmgContainer = document.querySelector("#dmg-container");
+    const dmgNumber = document.createElement("p");
+    dmgNumber.classList.add("dmg-numbers");
+    if (crit) {
+        dmgNumber.style.color = "gold";
+        dmgNumber.innerHTML = nFormatter(damage) + "!";
+    } else {
+        dmgNumber.innerHTML = nFormatter(damage);
+    }
+    dmgContainer.appendChild(dmgNumber);
+    setTimeout(() => {
+        dmgContainer.removeChild(dmgContainer.lastElementChild);
+    }, 370);
+
+    // Attack Timer
+    if (player.inCombat) {
+        setTimeout(() => {
+            if (player.inCombat) {
+                playerAttack();
+            }
+        }, (1000 / player.stats.atkSpd));
+    }
+}
+
+const enemyAttack = () => {
+    if (!player.inCombat) {
+        return;
+    }
+    if (player.inCombat) {
+        sfxAttack.play();
+    }
+
+    // Calculates the damage and attacks the player
+    let damage = enemy.stats.atk * (enemy.stats.atk / (enemy.stats.atk + player.stats.def));
+    let lifesteal = Math.round(enemy.stats.atk * (enemy.stats.vamp / 100));
+    // Randomizes the damage by 90% - 110%
+    let dmgRange = 0.9 + Math.random() * 0.2;
+    damage = damage * dmgRange;
+    // Check if the attack is a critical hit
+    if (Math.floor(Math.random() * 100) < enemy.stats.critRate) {
+        dmgtype = "crit damage";
+        damage = Math.round(damage * (1 + (enemy.stats.critDmg / 100)));
+    } else {
+        dmgtype = "damage";
+        damage = Math.round(damage);
+    }
+
+    // Skill effects
+    if (player.skills.includes("Paladin's Heart")) {
+        // You receive 25% less damage
+        damage = Math.round(damage - ((25 * damage) / 100));
+    }
+
+    // Apply the calculations
+    player.stats.hp -= damage;
+    // Aegis Thorns skill
+    objectValidation();
+    if (player.skills.includes("Aegis Thorns")) {
+        // Enemies receive 15% of the damage they dealt
+        enemy.stats.hp -= Math.round((15 * damage) / 100);
+    }
+    enemy.stats.hp += lifesteal;
+    addCombatLog(`${enemy.name} gây ${nFormatter(damage)} ${dmgtype} lên ${player.name}.`);
+    hpValidation();
+    playerLoadStats();
+    enemyLoadStats();
+
+    // Damage effect
+    let playerPanel = document.querySelector('#playerPanel');
+    playerPanel.classList.add("animation-shake");
+    setTimeout(() => {
+        playerPanel.classList.remove("animation-shake");
+    }, 200);
+
+    // Attack Timer
+    if (player.inCombat) {
+        setTimeout(() => {
+            if (player.inCombat) {
+                enemyAttack();
+            }
+        }, (1000 / enemy.stats.atkSpd));
+    }
+}
+
+// ========== Combat Backlog ==========
 const combatBacklog = [];
 
-// Combat timing (for display only)
-let combatSeconds = 0;
-let combatTimer = null;
-
-// ---------------- Helper: add log & update ----------------
+// Add a log to the combat backlog
 const addCombatLog = (message) => {
-  combatBacklog.push(message);
-  updateCombatLog();
-};
+    combatBacklog.push(message);
+    updateCombatLog();
+}
 
+// Displays every combat activity
 const updateCombatLog = () => {
-  let combatLogBox = document.getElementById("combatLogBox");
-  if (!combatLogBox) return;
-  combatLogBox.innerHTML = "";
+    let combatLogBox = document.getElementById("combatLogBox");
+    combatLogBox.innerHTML = "";
 
-  for (let message of combatBacklog) {
-    let logElement = document.createElement("p");
-    logElement.innerHTML = message;
-    combatLogBox.appendChild(logElement);
-  }
+    for (let message of combatBacklog) {
+        let logElement = document.createElement("p");
+        logElement.innerHTML = message;
+        combatLogBox.appendChild(logElement);
+    }
 
-  if (enemyDead) {
-    let button = document.createElement("div");
-    button.className = "decision-panel";
-    button.innerHTML = `<button id="battleButton">Nhận</button>`;
-    combatLogBox.appendChild(button);
-  }
+    if (enemyDead) {
+        let button = document.createElement("div");
+        button.className = "decision-panel";
+        button.innerHTML = `<button id="battleButton">Nhận</button>`;
+        combatLogBox.appendChild(button);
+    }
 
-  if (playerDead) {
-    let button = document.createElement("div");
-    button.className = "decision-panel";
-    button.innerHTML = `<button id="battleButton">Quay Lại</button>`;
-    combatLogBox.appendChild(button);
-  }
+    if (playerDead) {
+        let button = document.createElement("div");
+        button.className = "decision-panel";
+        button.innerHTML = `<button id="battleButton">Quay Lại</button>`;
+        combatLogBox.appendChild(button);
+    }
 
-  combatLogBox.scrollTop = combatLogBox.scrollHeight;
+    combatLogBox.scrollTop = combatLogBox.scrollHeight;
+}
 
-  // Hook battleButton only once (guard)
-  const btn = document.getElementById("battleButton");
-  if (btn) {
-    btn.onclick = () => {
-      sfxConfirm && sfxConfirm.play();
-      if (playerDead) {
-        // Return to title / reset (same as original behavior)
-        playerDead = false;
-        let dimDungeon = document.querySelector('#dungeon-main');
-        if (dimDungeon) {
-          dimDungeon.style.filter = "brightness(100%)";
-          dimDungeon.style.display = "none";
-        }
-        combatPanel.style.display = "none";
-        runLoad && runLoad("title-screen", "flex");
-        clearInterval(dungeonTimer);
-        clearInterval(playTimer);
-        progressReset && progressReset();
-      } else if (enemyDead) {
-        // Close fight and return to dungeon exploration
-        let dimDungeon = document.querySelector('#dungeon-main');
-        if (dimDungeon) {
-          dimDungeon.style.filter = "brightness(100%)";
-        }
-        bgmDungeon && bgmDungeon.play();
-        dungeon.status.event = false;
-        combatPanel.style.display = "none";
-        enemyDead = false;
-        combatBacklog.length = 0;
-      }
-    };
-  }
-};
+// Combat Timer
+let combatSeconds = 0;
 
-// ---------------- UI helpers ----------------
+const startCombat = (battleMusic) => {
+    bgmDungeon.pause();
+    sfxEncounter.play();
+    battleMusic.play();
+    player.inCombat = true;
+
+    // Starts the timer for player and enemy attacks along with combat timer
+    setTimeout(playerAttack, (1000 / player.stats.atkSpd));
+    setTimeout(enemyAttack, (1000 / enemy.stats.atkSpd));
+    let dimDungeon = document.querySelector('#dungeon-main');
+    dimDungeon.style.filter = "brightness(50%)";
+
+    playerLoadStats();
+    enemyLoadStats();
+
+    dungeon.status.event = true;
+    combatPanel.style.display = "flex";
+
+    combatTimer = setInterval(combatCounter, 1000);
+}
+
+const endCombat = () => {
+    bgmBattleMain.stop();
+    bgmBattleGuardian.stop();
+    bgmBattleBoss.stop();
+    sfxCombatEnd.play();
+    player.inCombat = false;
+    // Skill validation
+    if (player.skills.includes("Rampager")) {
+        // Remove Rampager attack buff
+        objectValidation();
+        player.baseStats.atk -= player.tempStats.atk;
+        player.tempStats.atk = 0;
+        saveData();
+    }
+    if (player.skills.includes("Blade Dance")) {
+        // Remove Blade Dance attack speed buff
+        objectValidation();
+        player.baseStats.atkSpd -= player.tempStats.atkSpd;
+        player.tempStats.atkSpd = 0;
+        saveData();
+    }
+
+    // Stops every timer in combat
+    clearInterval(combatTimer);
+    combatSeconds = 0;
+}
+
+const combatCounter = () => {
+    combatSeconds++;
+}
+
 const showCombatInfo = () => {
-  document.querySelector('#combatPanel').innerHTML = `
+    document.querySelector('#combatPanel').innerHTML = `
     <div class="content">
         <div class="battle-info-panel center" id="enemyPanel">
-            <p id="enemy-title">${enemy.name} Lv.${enemy.lvl}</p>
+            <p>${enemy.name} Lv.${enemy.lvl}</p>
             <div class="battle-bar empty-bar hp bb-hp">
                 <div class="battle-bar dmg bb-hp" id="enemy-hp-dmg"></div>
                 <div class="battle-bar current bb-hp" id="enemy-hp-battle">
@@ -110,198 +344,5 @@ const showCombatInfo = () => {
             <div id="combatLogBox"></div>
         </div>
     </div>
-  `;
-};
-
-// ---------------- Combat timer (display only) ----------------
-const combatCounter = () => {
-  combatSeconds++;
-};
-
-// ---------------- No-op local combat functions ----------------
-// We keep these no-op to avoid other parts of the app calling them accidentally.
-// All real combat resolution is done server-side by resolveCombat callable.
-const playerAttack = () => { /* disabled - server authoritative */ };
-const enemyAttack = () => { /* disabled - server authoritative */ };
-
-// ---------------- Server call helper ----------------
-async function callResolveCombat(enemyId) {
-  try {
-    // Prepare client summary: small, non-authoritative
-    const clientSummary = {
-      lvl: player.lvl,
-      // optional: lightweight hash/checksum if you implement verification on server
-      statsHash: (typeof generateChecksum === 'function') ? generateChecksum(player) : null,
-      ts: Date.now()
-    };
-
-    // functions must be defined in firebase.js: const functions = firebase.functions();
-    if (typeof functions === 'undefined') {
-      throw new Error('Firebase functions not initialized (missing const functions = firebase.functions())');
-    }
-
-    const resolveFn = functions.httpsCallable('resolveCombat');
-    const res = await resolveFn({ enemyId, clientSummary });
-    return res.data; // expected structure documented in server functions
-  } catch (err) {
-    console.error('resolveCombat error', err);
-    throw err;
-  }
+    `;
 }
-
-// ---------------- Apply server result ----------------
-function applyCombatResult(result) {
-  if (!result) {
-    addCombatLog('Không nhận được kết quả từ server.');
-    endCombat();
-    return;
-  }
-
-  // If server returns an authoritative player object, merge it.
-  if (result.player && typeof result.player === 'object') {
-    // Replace or merge safe fields from server
-    // IMPORTANT: server is single source of truth for game-critical fields
-    Object.assign(player, result.player);
-    // If server returns nested stats object, make sure to update correctly
-    if (result.player.stats) {
-      player.stats = result.player.stats;
-    }
-    if (result.player.inventory) {
-      player.inventory = result.player.inventory;
-    }
-  } else {
-    // Fallback: update minimal fields returned
-    if (typeof result.gold === 'number') player.gold = result.gold;
-    if (typeof result.lvl === 'number') player.lvl = result.lvl;
-    if (typeof result.xp === 'number') player.xp = result.xp;
-  }
-
-  // If server returns combatLog (array of strings), display them progressively
-  if (Array.isArray(result.combatLog) && result.combatLog.length > 0) {
-    // optional: animate logs with small delay for drama
-    (async () => {
-      for (let line of result.combatLog) {
-        addCombatLog(line);
-        // small delay to mimic pacing (200ms)
-        await new Promise(r => setTimeout(r, 200));
-      }
-      finalizeAfterCombat(result);
-    })();
-  } else {
-    // no combatLog provided: show short summary and finalize
-    if (result.victory) addCombatLog(`Bạn đã đánh bại ${enemy.name}!`);
-    else addCombatLog(`Bạn đã thua trước ${enemy.name}...`);
-
-    addCombatLog(`Bạn nhận được ${nFormatter(result.goldGain || 0)} vàng và ${nFormatter(result.xpGain || 0)} exp.`);
-    finalizeAfterCombat(result);
-  }
-}
-
-// Final UI/state updates and closing steps after server result displayed
-function finalizeAfterCombat(result) {
-  // Drops
-  if (Array.isArray(result.drops) && result.drops.length > 0) {
-    player.inventory = player.inventory || { equipment: [] };
-    for (let it of result.drops) {
-      player.inventory.equipment.push(it);
-      addCombatLog(`${enemy.name} rơi ${it.name} (${it.rarity}).`);
-    }
-  }
-
-  // Set enemy hp to 0 on client UI (server determined death)
-  enemy.stats.hp = 0;
-
-  // Optional: if server returned new player.stats.hp, we already merged above.
-  // If not, don't modify HP beyond what server told us.
-
-  // Update UI
-  playerLoadStats && playerLoadStats();
-  enemyLoadStats && enemyLoadStats();
-
-  // Show accept / return button
-  enemyDead = !!result.victory;
-  playerDead = !result.victory && !!result.playerDead; // if server informs death
-
-  updateCombatLog();
-
-  // End combat (stops timers, cleans up buffs)
-  endCombat();
-}
-
-// ---------------- Start combat (client triggers server) ----------------
-const startCombat = async (battleMusic) => {
-  // UI changes (same as before)
-  bgmDungeon && bgmDungeon.pause();
-  sfxEncounter && sfxEncounter.play();
-  battleMusic && battleMusic.play();
-  player.inCombat = true;
-
-  let dimDungeon = document.querySelector('#dungeon-main');
-  if (dimDungeon) dimDungeon.style.filter = "brightness(50%)";
-
-  playerLoadStats && playerLoadStats();
-  enemyLoadStats && enemyLoadStats();
-
-  dungeon.status.event = true;
-  combatPanel.style.display = "flex";
-
-  showCombatInfo();
-
-  // Start display timer only (not used for resolution)
-  combatSeconds = 0;
-  combatTimer = setInterval(combatCounter, 1000);
-
-  // Call server to resolve combat and get authoritative result
-  try {
-    const result = await callResolveCombat(enemy.id);
-    applyCombatResult(result);
-  } catch (err) {
-    console.error('Lỗi khi gọi server combat:', err);
-    addCombatLog('Lỗi kết nối tới server. Vui lòng thử lại.');
-    // fallback: close combat gracefully
-    setTimeout(() => {
-      combatPanel.style.display = "none";
-      dungeon.status.event = false;
-      player.inCombat = false;
-    }, 2000);
-  }
-};
-
-// ---------------- End combat cleanup ----------------
-const endCombat = () => {
-  try {
-    bgmBattleMain && bgmBattleMain.stop();
-    bgmBattleGuardian && bgmBattleGuardian.stop();
-    bgmBattleBoss && bgmBattleBoss.stop();
-  } catch (e) { /* ignore */ }
-
-  sfxCombatEnd && sfxCombatEnd.play();
-  player.inCombat = false;
-
-  // Remove temporary buffs (client-only). IMPORTANT: do NOT call saveData()
-  // because saveData may attempt to write game-critical fields. We only adjust local temp stats.
-  if (player.skills && player.skills.includes("Rampager")) {
-    objectValidation && objectValidation();
-    player.baseStats.atk -= (player.tempStats ? player.tempStats.atk : 0) || 0;
-    if (player.tempStats) player.tempStats.atk = 0;
-  }
-  if (player.skills && player.skills.includes("Blade Dance")) {
-    objectValidation && objectValidation();
-    player.baseStats.atkSpd -= (player.tempStats ? player.tempStats.atkSpd : 0) || 0;
-    if (player.tempStats) player.tempStats.atkSpd = 0;
-  }
-
-  // Stops every timer in combat
-  if (combatTimer) {
-    clearInterval(combatTimer);
-    combatTimer = null;
-  }
-  combatSeconds = 0;
-};
-
-// ---------------- Small utility: safe show on load ----------------
-try {
-  // expose for debugging if needed (will not expose sensitive save functions)
-  window.startCombatServer = startCombat;
-  window.callResolveCombat = callResolveCombat;
-} catch (e) { /* ignore */ }
