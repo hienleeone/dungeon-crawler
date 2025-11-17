@@ -525,7 +525,7 @@ button:focus {
 
 /* Character Creation */
 #character-creation {
-    display: none;
+    display: none !important;
     justify-content: center;
     align-items: center;
     text-align: center;

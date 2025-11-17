@@ -77,9 +77,12 @@ window.addEventListener("load", function () {
                                     } catch (e) {
                                         console.warn("loadPlayerDataFromFirebase not available yet:", e);
                                     }
-                                    // Hide character creation and all modal overlays immediately
+                                    // Hide character creation completely
                                     const charCreation = document.querySelector("#character-creation");
-                                    if (charCreation) charCreation.style.display = "none";
+                                    if (charCreation) {
+                                        charCreation.style.display = "none !important";
+                                        charCreation.innerHTML = ""; // Clear form to prevent re-display
+                                    }
                                     const defaultModal = document.querySelector("#defaultModal");
                                     if (defaultModal) defaultModal.style.display = "none";
                                     // Show title screen; allocation happens when player clicks
@@ -398,10 +401,16 @@ const runLoad = (id, display) => {
     setTimeout(async () => {
         loader.style.display = "none";
         // Hide other main screens to avoid showing multiple screens at once
-        const screens = ["login-screen", "register-screen", "title-screen", "character-creation", "dungeon-main", "loading"];
+        const screens = ["login-screen", "register-screen", "title-screen", "dungeon-main", "loading"];
         screens.forEach(s => {
             try { const el = document.querySelector(`#${s}`); if (el) el.style.display = "none"; } catch(e){}
         });
+        // Always ensure character-creation is hidden (not in loop since it needs special handling)
+        const charCreation = document.querySelector("#character-creation");
+        if (charCreation) {
+            charCreation.style.display = "none !important";
+            charCreation.innerHTML = "";
+        }
         const target = document.querySelector(`#${id}`);
         if (target) target.style.display = `${display}`;
     }, 1000);
