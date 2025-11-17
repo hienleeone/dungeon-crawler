@@ -106,6 +106,23 @@ const firebaseLogout = () =>
 
 const getCurrentUser = () => auth.currentUser;
 
+// =============================
+// CHECK IF PLAYER NAME EXISTS
+// =============================
+const checkPlayerNameExists = async (playerName) => {
+    try {
+        const snap = await db.collection("players")
+            .where("name", "==", playerName)
+            .get();
+
+        return !snap.empty; // true = đã tồn tại
+    } catch (err) {
+        console.error("❌ checkPlayerNameExists error:", err);
+        return false;
+    }
+};
+
+window.checkPlayerNameExists = checkPlayerNameExists;
 
 // =============================
 // CREATE PLAYER (Cloud Function)
