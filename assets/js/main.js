@@ -258,6 +258,12 @@ window.addEventListener("load", function () {
             let cancel = document.querySelector('#cancel-quit');
             quit.onclick = async function () {
                 sfxConfirm.play();
+                
+                // Stop auto-save
+                if (autoSaveInterval) {
+                    clearInterval(autoSaveInterval);
+                }
+                
                 // Stop all music and clear UI
                 bgmDungeon.stop();
                 let dimDungeon = document.querySelector('#dungeon-main');
@@ -369,6 +375,15 @@ window.addEventListener("load", function () {
             let cancel = document.querySelector('#cancel-logout');
             confirm.onclick = async function () {
                 sfxConfirm.play();
+                
+                // Stop auto-save
+                if (autoSaveInterval) {
+                    clearInterval(autoSaveInterval);
+                }
+                
+                // Save data before logout
+                await saveDataImmediate();
+                
                 bgmDungeon.stop();
                 let dimDungeon = document.querySelector('#dungeon-main');
                 dimDungeon.style.filter = "brightness(100%)";
@@ -412,26 +427,75 @@ const runLoad = (id, display) => {
 
 // Start the game
 const enterDungeon = () => {
+    if (!player) return;
+    
     sfxConfirm.play();
     document.querySelector("#title-screen").style.display = "none";
     runLoad("dungeon-main", "flex");
-    if (player.inCombat) {
-        enemy = JSON.parse(localStorage.getItem("enemyData"));
+    
+    if (player.inCombat && enemy) {
         showCombatInfo();
         startCombat(bgmBattleMain);
     } else {
         bgmDungeon.play();
     }
-    if (player.stats.hp == 0) {
+    
+    if (player.stats && player.stats.hp == 0) {
         progressReset();
     }
-    initialDungeonLoad();
-    playerLoadStats();
+    
+    if (typeof initialDungeonLoad === 'function') {
+        initialDungeonLoad();
+    }
+    
+    if (typeof playerLoadStats === 'function') {
+        playerLoadStats();
+    }
+    
+    // Start auto-save
+    startAutoSave();
 }
+
+// Debounce timer for saving
+let saveTimer = null;
+let autoSaveInterval = null;
+
+// Auto-save every 30 seconds
+const startAutoSave = () => {
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+    }
+    autoSaveInterval = setInterval(async () => {
+        if (currentUser && player) {
+            await savePlayerDataToFirestore();
+            console.log("Auto-saved to Firestore");
+        }
+    }, 30000); // 30 seconds
+};
 
 // Save all the data to Firestore (replaces localStorage)
 const saveData = async () => {
-    await savePlayerDataToFirestore();
+    // Clear existing timer
+    if (saveTimer) {
+        clearTimeout(saveTimer);
+    }
+    
+    // Set new timer to save after 2 seconds of no calls
+    saveTimer = setTimeout(async () => {
+        if (currentUser && player) {
+            await savePlayerDataToFirestore();
+        }
+    }, 2000);
+}
+
+// Immediate save (for important actions like logout, delete)
+const saveDataImmediate = async () => {
+    if (saveTimer) {
+        clearTimeout(saveTimer);
+    }
+    if (currentUser && player) {
+        await savePlayerDataToFirestore();
+    }
 }
 
 // Calculate every player stat

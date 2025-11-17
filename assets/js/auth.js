@@ -1,28 +1,37 @@
 // Authentication Module
 let isAuthReady = false;
 
-// Check authentication state
-auth.onAuthStateChanged(async (user) => {
-    currentUser = user;
-    
-    if (user) {
-        console.log("User logged in:", user.email);
-        // Load player data from Firestore
-        await loadPlayerDataFromFirestore(user.uid);
-        isAuthReady = true;
+// Wait for DOM to be ready before setting up auth
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAuth);
+} else {
+    initAuth();
+}
+
+function initAuth() {
+    // Check authentication state
+    auth.onAuthStateChanged(async (user) => {
+        currentUser = user;
         
-        // Check if player has character created
-        if (player === null || !player.name) {
-            showScreen("character-creation");
+        if (user) {
+            console.log("User logged in:", user.email);
+            // Load player data from Firestore
+            await loadPlayerDataFromFirestore(user.uid);
+            isAuthReady = true;
+            
+            // Check if player has character created
+            if (player === null || !player.name) {
+                showScreen("character-creation");
+            } else {
+                showScreen("title-screen");
+            }
         } else {
-            showScreen("title-screen");
+            console.log("No user logged in");
+            isAuthReady = true;
+            showScreen("auth-screen");
         }
-    } else {
-        console.log("No user logged in");
-        isAuthReady = true;
-        showScreen("auth-screen");
-    }
-});
+    });
+}
 
 // Show specific screen
 const showScreen = (screenId) => {
