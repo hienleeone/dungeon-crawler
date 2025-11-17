@@ -1,83 +1,10 @@
 window.addEventListener("load", function () {
-    // Handle authentication form switching
-    const toRegisterBtn = document.querySelector("#to-register-btn");
-    const toLoginBtn = document.querySelector("#to-login-btn");
-    const loginForm = document.querySelector("#login-form");
-    const registerForm = document.querySelector("#register-form");
-
-    if (toRegisterBtn) {
-        toRegisterBtn.addEventListener("click", function (e) {
-            e.preventDefault();
-            loginForm.style.display = "none";
-            registerForm.style.display = "block";
-            document.querySelector("#auth-alert").innerHTML = "";
-        });
-    }
-
-    if (toLoginBtn) {
-        toLoginBtn.addEventListener("click", function (e) {
-            e.preventDefault();
-            registerForm.style.display = "none";
-            loginForm.style.display = "block";
-            document.querySelector("#auth-alert").innerHTML = "";
-        });
-    }
-
-    // Handle login form submission
-    const loginSubmit = document.querySelector("#login-submit");
-    if (loginSubmit) {
-        loginSubmit.addEventListener("submit", async function (e) {
-            e.preventDefault();
-            const email = document.querySelector("#login-email").value;
-            const password = document.querySelector("#login-password").value;
-
-            const success = await loginUser(email, password);
-            if (!success) {
-                // Error is handled in loginUser function
-            } else {
-                // Load game data
-                if (player === null) {
-                    document.querySelector("#character-creation").style.display = "flex";
-                } else if (!player.allocated) {
-                    allocationPopup();
-                } else {
-                    enterDungeon();
-                }
-            }
-        });
-    }
-
-    // Handle register form submission
-    const registerSubmit = document.querySelector("#register-submit");
-    if (registerSubmit) {
-        registerSubmit.addEventListener("submit", async function (e) {
-            e.preventDefault();
-            const email = document.querySelector("#register-email").value;
-            const password = document.querySelector("#register-password").value;
-            const confirmPassword = document.querySelector("#register-confirm-password").value;
-
-            const success = await registerUser(email, password, confirmPassword);
-            if (success) {
-                // Reset forms
-                loginSubmit.reset();
-                registerSubmit.reset();
-                document.querySelector("#auth-alert").innerHTML = "";
-                // Show character creation
-                document.querySelector("#character-creation").style.display = "flex";
-            }
-        });
-    }
-
-    // Check authentication state
-    if (currentUser) {
-        if (player === null) {
-            document.querySelector("#character-creation").style.display = "flex";
-        } else {
-            let target = document.querySelector("#title-screen");
-            target.style.display = "flex";
-        }
+    // Wait for player to be loaded from Firebase in auth.js
+    if (player === null) {
+        return; // auth.js will handle showing character creation
     } else {
-        document.querySelector("#auth-screen").style.display = "flex";
+        let target = document.querySelector("#title-screen");
+        target.style.display = "flex";
     }
 
     // Title Screen Validation
@@ -95,7 +22,7 @@ window.addEventListener("load", function () {
     }
 
     // Submit Name
-    document.querySelector("#name-submit").addEventListener("submit", async function (e) {
+    document.querySelector("#name-submit").addEventListener("submit", function (e) {
         e.preventDefault();
         let playerName = document.querySelector("#name-input").value;
 
@@ -106,87 +33,37 @@ window.addEventListener("load", function () {
             if (playerName.length < 3 || playerName.length > 15) {
                 document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
             } else {
-                // Check if player name exists on Firebase
-                const exists = await checkPlayerNameExists(playerName);
-                if (exists) {
-                    document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
-                    return;
-                }
-
-                player = {
-                    name: playerName,
-                    lvl: 1,
-                    stats: {
-                        hp: null,
-                        hpMax: null,
-                        atk: null,
-                        def: null,
-                        pen: null,
-                        atkSpd: null,
-                        vamp: null,
-                        critRate: null,
-                        critDmg: null
-                    },
-                    baseStats: {
-                        hp: 500,
-                        atk: 100,
-                        def: 50,
-                        pen: 0,
-                        atkSpd: 0.6,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 50
-                    },
-                    equippedStats: {
-                        hp: 0,
-                        atk: 0,
-                        def: 0,
-                        pen: 0,
-                        atkSpd: 0,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 0,
-                        hpPct: 0,
-                        atkPct: 0,
-                        defPct: 0,
-                        penPct: 0,
-                    },
-                    bonusStats: {
-                        hp: 0,
-                        atk: 0,
-                        def: 0,
-                        atkSpd: 0,
-                        vamp: 0,
-                        critRate: 0,
-                        critDmg: 0
-                    },
-                    exp: {
-                        expCurr: 0,
-                        expMax: 100,
-                        expCurrLvl: 0,
-                        expMaxLvl: 100,
-                        lvlGained: 0
-                    },
-                    inventory: {
-                        consumables: [],
-                        equipment: []
-                    },
-                    equipped: [],
-                    gold: 0,
-                    playtime: 0,
-                    kills: 0,
-                    deaths: 0,
-                    inCombat: false
-                };
+                // Check if player name exists
+                checkPlayerNameExists(playerName).then((exists) => {
+                    if (exists) {
+                        document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
+                    } else {
+                        // Create player with allocated stats
+                        const defaultPlayer = createDefaultPlayerData(playerName);
+                        player = defaultPlayer;
+                        
+                        // Save to Firebase
+                        if (currentUser) {
+                            createPlayerData(currentUser.uid, playerName, defaultPlayer)
+                                .then(() => {
+                                    document.querySelector("#alert").innerHTML = "";
+                                    allocationPopup();
+                                })
+                                .catch((error) => {
+                                    console.error("Error creating player:", error);
+                                    document.querySelector("#alert").innerHTML = "Lỗi tạo người chơi!";
+                                });
+                        }
+                    }
+                }).catch((error) => {
+                    console.error("Error checking name:", error);
+                    document.querySelector("#alert").innerHTML = "Lỗi kiểm tra tên!";
+                });
+            }
+        }
+    });
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
-                
-                // Save player name to Firebase
-                const nameSaved = await savePlayerNameToFirebase(playerName);
-                if (!nameSaved) {
-                    return;
-                }
-
                 saveData();
                 document.querySelector("#character-creation").style.display = "none";
                 runLoad("title-screen", "flex");
@@ -246,18 +123,16 @@ window.addEventListener("load", function () {
             </div>
             <button id="player-menu"><i class="fas fa-user"></i>${player.name}</button>
             <button id="stats">Chỉ Số Chính</button>
-            <button id="leaderboard-btn">Xếp Hạng</button>
             <button id="volume-btn">Âm Thanh</button>
-            <button id="logout-btn">Đăng Xuất</button>
-            <button id="delete-data-btn">Xóa Dữ Liệu</button>
+            <button id="export-import">Mã Dữ Liệu</button>
+            <button id="quit-run">Xóa Hầm Ngục</button>
         </div>`;
 
         let close = document.querySelector('#close-menu');
         let playerMenu = document.querySelector('#player-menu');
         let runMenu = document.querySelector('#stats');
-        let leaderboardBtn = document.querySelector('#leaderboard-btn');
-        let logoutBtn = document.querySelector('#logout-btn');
-        let deleteDataBtn = document.querySelector('#delete-data-btn');
+        let quitRun = document.querySelector('#quit-run');
+        let exportImport = document.querySelector('#export-import');
         let volumeSettings = document.querySelector('#volume-btn');
 
         // Player profile click function
@@ -420,87 +295,43 @@ window.addEventListener("load", function () {
             };
         };
 
-        // Leaderboard button click function
-        leaderboardBtn.onclick = function () {
-            showLeaderboard();
-        };
-
-        // Logout button
-        logoutBtn.onclick = function () {
+        // Export/Import Save Data
+        exportImport.onclick = function () {
             sfxOpen.play();
+            let exportedData = exportData();
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
-            <div class="content">
-                <p>Bạn có muốn đăng xuất?</p>
-                <div class="button-container">
-                    <button id="logout-confirm">Đồng Ý</button>
-                    <button id="logout-cancel">Hủy Bỏ</button>
+            <div class="content" id="ei-tab">
+                <div class="content-head">
+                    <h3>Mã Dữ Liệu</h3>
+                    <p id="ei-close"><i class="fa fa-xmark"></i></p>
                 </div>
+                <h4>Xuất Dữ Liệu</h4>
+                <input type="text" id="export-input" autocomplete="off" value="${exportedData}" readonly>
+                <button id="copy-export">Sao Chép</button>
+                <h4>Nhập Dữ Liệu</h4>
+                <input type="text" id="import-input" autocomplete="off">
+                <button id="data-import">Đồng Ý</button>
             </div>`;
-            let logout = document.querySelector('#logout-confirm');
-            let cancel = document.querySelector('#logout-cancel');
-            logout.onclick = async function () {
+            let eiTab = document.querySelector('#ei-tab');
+            eiTab.style.width = "15rem";
+            let eiClose = document.querySelector('#ei-close');
+            let copyExport = document.querySelector('#copy-export')
+            let dataImport = document.querySelector('#data-import');
+            let importInput = document.querySelector('#import-input');
+            copyExport.onclick = function () {
                 sfxConfirm.play();
-                // Save data before logging out
-                await saveGameDataToFirebase();
-                bgmDungeon.stop();
-                let dimDungeon = document.querySelector('#dungeon-main');
-                dimDungeon.style.filter = "brightness(100%)";
-                dimDungeon.style.display = "none";
-                menuModalElement.style.display = "none";
-                menuModalElement.innerHTML = "";
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                await logoutUser();
+                let copyText = document.querySelector('#export-input');
+                copyText.select();
+                copyText.setSelectionRange(0, 99999);
+                navigator.clipboard.writeText(copyText.value);
+                copyExport.innerHTML = "Copied!";
+            }
+            dataImport.onclick = function () {
+                importData(importInput.value);
             };
-            cancel.onclick = function () {
-                sfxDecline.play();
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                menuModalElement.style.display = "flex";
-            };
-        };
-
-        // Delete data button
-        deleteDataBtn.onclick = function () {
-            sfxOpen.play();
-            menuModalElement.style.display = "none";
-            defaultModalElement.style.display = "flex";
-            defaultModalElement.innerHTML = `
-            <div class="content">
-                <p>Bạn có muốn xóa tất cả dữ liệu và chơi lại từ đầu?</p>
-                <div class="button-container">
-                    <button id="delete-confirm">Đồng Ý</button>
-                    <button id="delete-cancel">Hủy Bỏ</button>
-                </div>
-            </div>`;
-            let deleteBtn = document.querySelector('#delete-confirm');
-            let cancel = document.querySelector('#delete-cancel');
-            deleteBtn.onclick = async function () {
-                sfxConfirm.play();
-                // Reset local player data
-                player = null;
-                dungeon = null;
-                enemy = null;
-                bgmDungeon.stop();
-                let dimDungeon = document.querySelector('#dungeon-main');
-                dimDungeon.style.filter = "brightness(100%)";
-                dimDungeon.style.display = "none";
-                menuModalElement.style.display = "none";
-                menuModalElement.innerHTML = "";
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                
-                // Delete from Firebase and reset
-                await deletePlayerDataFromFirebase();
-                
-                // Go to character creation
-                runLoad("character-creation", "flex");
-                clearInterval(dungeonTimer);
-                clearInterval(playTimer);
-            };
-            cancel.onclick = function () {
+            eiClose.onclick = function () {
                 sfxDecline.play();
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
@@ -535,7 +366,7 @@ const enterDungeon = () => {
     document.querySelector("#title-screen").style.display = "none";
     runLoad("dungeon-main", "flex");
     if (player.inCombat) {
-        enemy = JSON.parse(localStorage.getItem("enemyData"));
+        // Enemy data will be regenerated if needed
         showCombatInfo();
         startCombat(bgmBattleMain);
     } else {
@@ -548,19 +379,15 @@ const enterDungeon = () => {
     playerLoadStats();
 }
 
-// Save all the data into local storage AND Firebase
-const saveData = async () => {
-    const playerData = JSON.stringify(player);
-    const dungeonData = JSON.stringify(dungeon);
-    const enemyData = JSON.stringify(enemy);
-    const volumeData = JSON.stringify(volume);
-    localStorage.setItem("playerData", playerData);
-    localStorage.setItem("dungeonData", dungeonData);
-    localStorage.setItem("enemyData", enemyData);
-    localStorage.setItem("volumeData", volumeData);
-    
-    // Also save to Firebase
-    await saveGameDataToFirebase();
+// Save all the data to Firebase (auto-save will handle this)
+const saveData = () => {
+    if (currentUser && player) {
+        // Data is automatically saved via auto-save in firebase.js
+        // This function keeps compatibility with existing code
+        updatePlayerData(currentUser.uid, player).catch((error) => {
+            console.error("Error saving data:", error);
+        });
+    }
 }
 
 // Calculate every player stat
@@ -862,7 +689,7 @@ const allocationPopup = () => {
     let confirm = document.querySelector("#allocate-confirm");
     let reset = document.querySelector("#allocate-reset");
     let close = document.querySelector("#allocate-close");
-    confirm.onclick = async function () {
+    confirm.onclick = function () {
         // Set allocated stats to player base stats
         player.baseStats = {
             hp: stats.hp,
@@ -902,12 +729,6 @@ const allocationPopup = () => {
 
         // Proceed to dungeon
         player.allocated = true;
-        
-        // Update allocated status on Firebase
-        if (currentUser) {
-            await updatePlayerAllocated();
-        }
-        
         enterDungeon();
         player.stats.hp = player.stats.hpMax;
         playerLoadStats();
