@@ -152,6 +152,19 @@ const logoutUser = async () => {
         document.querySelector("#character-creation").style.display = "none";
         document.querySelector("#auth-screen").style.display = "flex";
         
+        // Hiển thị form đăng nhập, ẩn form đăng ký
+        document.querySelector("#login-form").style.display = "block";
+        document.querySelector("#register-form").style.display = "none";
+        
+        // Clear input và alert
+        document.querySelector("#login-email").value = "";
+        document.querySelector("#login-password").value = "";
+        document.querySelector("#login-alert").innerHTML = "";
+        document.querySelector("#register-email").value = "";
+        document.querySelector("#register-password").value = "";
+        document.querySelector("#register-password-confirm").value = "";
+        document.querySelector("#register-alert").innerHTML = "";
+        
         // Reset các modal
         if (typeof menuModalElement !== 'undefined') {
             menuModalElement.style.display = "none";
