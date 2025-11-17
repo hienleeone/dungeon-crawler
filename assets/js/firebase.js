@@ -424,3 +424,4 @@ const stopAutoSave = () => {
 };
 
 console.log("🔥 Firebase initialized with security features");
+const functions = firebase.functions();
