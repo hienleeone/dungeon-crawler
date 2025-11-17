@@ -44,9 +44,8 @@ window.addEventListener("load", function () {
             }
 
             
+            e.preventDefault();
             let playerName = document.querySelector("#name-input").value;
-        e.preventDefault();
-        let playerName = document.querySelector("#name-input").value;
 
         var format = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
         if (format.test(playerName)) {
