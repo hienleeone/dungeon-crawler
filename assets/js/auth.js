@@ -219,13 +219,11 @@ const savePlayerDataToFirebase = async () => {
     }
 
     try {
-        console.log("1. Bắt đầu lưu...");
+        console.log("Bắt đầu lưu...");
         
-        const batch = db.batch();
-        
-        // Lưu player data
+        // Lưu player data trực tiếp (không dùng batch để tránh timeout)
         const playerRef = db.collection('players').doc(currentUser.uid);
-        batch.set(playerRef, {
+        await playerRef.set({
             playerData: player,
             dungeonData: typeof dungeon !== 'undefined' ? dungeon : null,
             enemyData: typeof enemy !== 'undefined' ? enemy : null,
@@ -236,22 +234,20 @@ const savePlayerDataToFirebase = async () => {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         
-        console.log("2. Thêm player data vào batch");
+        console.log("Đã lưu player data");
         
-        // Lưu tên vào collection playerNames
+        // Lưu tên
         if (player.name) {
             const nameRef = db.collection('playerNames').doc(player.name);
-            batch.set(nameRef, {
+            await nameRef.set({
                 name: player.name,
                 userId: currentUser.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log("3. Thêm playerNames vào batch");
+            console.log("Đã lưu playerNames");
         }
         
-        console.log("4. Commit batch...");
-        await batch.commit();
-        console.log("5. Hoàn tất!");
+        console.log("Hoàn tất!");
     } catch (error) {
         console.error("Lỗi lưu dữ liệu:", error);
         throw error;
