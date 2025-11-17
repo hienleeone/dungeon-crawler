@@ -95,14 +95,21 @@ window.addEventListener("load", function () {
                     playtime: 0,
                     kills: 0,
                     deaths: 0,
-                    inCombat: false
+                    inCombat: false,
+                    allocated: false
                 };
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
-                await saveData();
+                
+                // Save to Firebase
+                if (currentUser) {
+                    await savePlayerToFirebase(currentUser.uid);
+                }
+                
                 document.querySelector("#character-creation").style.display = "none";
-                runLoad("title-screen", "flex");
-            }
+                
+                // Show allocation popup
+                allocationPopup();
             }
         }
     });
