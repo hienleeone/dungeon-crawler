@@ -77,14 +77,19 @@ window.addEventListener("load", function () {
                                     } catch (e) {
                                         console.warn("loadPlayerDataFromFirebase not available yet:", e);
                                     }
-                                    // Hide character creation and show title screen
+                                    // Hide character creation (use normal inline style) and hide any modal
                                     const charCreation = document.querySelector("#character-creation");
-                                    if (charCreation) charCreation.setAttribute("style", "display: none !important");
+                                    if (charCreation) charCreation.style.display = "none";
                                     const defaultModal = document.querySelector("#defaultModal");
                                     if (defaultModal) defaultModal.style.display = "none";
-                                    // Show title screen by removing the inline style attribute
+                                    // Show title screen immediately and initialize the game state
                                     const titleScreen = document.querySelector("#title-screen");
-                                    if (titleScreen) titleScreen.removeAttribute("style");
+                                    if (titleScreen) titleScreen.style.display = "flex";
+                                    try {
+                                        initializeGame();
+                                    } catch (e) {
+                                        console.warn("initializeGame not available yet:", e);
+                                    }
                                 })
                                 .catch((error) => {
                                     console.error("Error creating player:", error);
