@@ -72,10 +72,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const menuBtn = $("#menu-btn");
   const unequipAllBtn = $("#unequip-all");
 
-  // Elements used by other functions that expect them globally:
-  window.defaultModalElement = $("#default-modal") || document.createElement("div");
-  window.menuModalElement = $("#menu-modal") || document.createElement("div");
-
   // Prevent double-click zooming on mobile devices
   document.ondblclick = function (e) { e.preventDefault(); };
 
@@ -144,14 +140,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (charCreation) charCreation.style.display = "none";
 
       // ⭐ HIỆN MÀN HÌNH THỐNG KÊ NGAY SAU KHI TẠO NHÂN VẬT
-      setTimeout(() => {
-        allocationPopup();
-      }, 100);
-
+      // 1. Hiện title-screen để làm nền
       runLoad("title-screen", "flex");
 
-      // 🔥 GỌI THỐNG KÊ TẠI ĐÂY
-      allocationPopup();
+      // 2. Sau đó mới bật popup thống kê
+      setTimeout(() => {
+        allocationPopup();
+      }, 150);
+
       return;
     });
   } // end name form
@@ -251,29 +247,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Run menu / stats
       runMenu.onclick = function () {
         try { sfxOpen.play(); } catch (e) {}
-        let runTime = "00:00:00";
-        if (dungeon?.statistics?.runtime) runTime = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
         menuModalElement.style.display = "none";
         defaultModalElement.style.display = "flex";
-        defaultModalElement.innerHTML = `
-          <div class="content" id="run-tab">
-            <div class="content-head">
-              <h3>Chỉ Số</h3>
-              <p id="run-close"><i class="fa fa-xmark"></i></p>
-            </div>
-            <p>${(window.player?.name) || "Player"} Lv.${(window.player?.lvl) || 1}</p>
-            <p>Phước Lành Lvl.${window.player?.blessing || 1}</p>
-            <p>Lời Nguyền Lvl.${Math.round((dungeon.settings.enemyScaling - 1) * 10)}</p>
-            <p>Giết Được: ${nFormatter(dungeon.statistics.kills)}</p>
-            <p>Hoạt Động: ${runTime}</p>
-          </div>`;
-        const runClose = document.querySelector('#run-close');
-        runClose.onclick = function () {
-          try { sfxDecline.play(); } catch (e) {}
-          defaultModalElement.style.display = "none";
-          defaultModalElement.innerHTML = "";
-          menuModalElement.style.display = "flex";
-        };
+        allocationPopup();
       };
 
       // Quit run
@@ -424,6 +400,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Note: firebase.attachAuthListener should call window.startGameInit() when ready.
   // But calling it here is harmless if firebase already filled window.currentPlayerData.
   if (window.startGameInit) window.startGameInit();
+
+  // Elements used by other functions that expect them globally:
+  window.defaultModalElement = document.getElementById("default-modal");
+  window.menuModalElement = document.getElementById("menu-modal");
 
 }); // end DOMContentLoaded
 
