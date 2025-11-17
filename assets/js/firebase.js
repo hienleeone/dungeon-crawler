@@ -17,12 +17,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 // =============================
-// Services
+// SERVICES
 // =============================
 const auth = firebase.auth();
 const db = firebase.firestore();
-
-// ❗ CHỈ KHAI BÁO MỘT LẦN — KHÔNG LẶP LẠI
 const functions = firebase.app().functions("asia-southeast1");
 
 // EXPORT GLOBAL
@@ -48,19 +46,17 @@ const generateChecksum = (data) => {
 
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
-        const c = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + c;
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
         hash |= 0;
     }
     return hash;
 };
 
-const verifyChecksum = (data, checksum) =>
-    generateChecksum(data) === checksum;
+const verifyChecksum = (d, c) => generateChecksum(d) === c;
 
 
 // =============================
-// VALIDATE PLAYER
+// SECURITY VALIDATION
 // =============================
 const validateBeforeSave = (p) => {
     if (!p) return null;
@@ -83,11 +79,11 @@ const validateBeforeSave = (p) => {
 
 
 // =============================
-// CLOUD FUNCTIONS CALLS
+// CLOUD FUNCTIONS
 // =============================
-const createPlayerData = async (playerName) => {
+const createPlayerData = async (name) => {
     const fn = window.functions.httpsCallable("createPlayer");
-    const res = await fn({ name: playerName });
+    const res = await fn({ name });
     return res.data.player;
 };
 
@@ -99,6 +95,26 @@ const updatePlayerData = async (uid, data) => {
 
 
 // =============================
-// Firebase initialized
+// FIRESTORE
+// =============================
+const getPlayerData = (uid) =>
+    db.collection("players").doc(uid).get()
+        .then(doc => doc.exists ? doc.data() : null);
+
+
+// =============================
+// AUTH SHORTCUTS
+// =============================
+const firebaseLogin = (email, pass) =>
+    auth.signInWithEmailAndPassword(email, pass);
+
+const firebaseRegister = (email, pass) =>
+    auth.createUserWithEmailAndPassword(email, pass);
+
+const firebaseLogout = () => auth.signOut();
+
+const getCurrentUser = () => auth.currentUser;
+
+
 // =============================
 console.log("🔥 Firebase initialized");
