@@ -52,14 +52,19 @@ document.querySelector("#login-btn").addEventListener("click", async function ()
         alertElement.innerHTML = "";
         // onAuthStateChanged sẽ tự động xử lý sau khi đăng nhập thành công
     } catch (error) {
+        console.error("Login error:", error);
         if (error.code === 'auth/user-not-found') {
             alertElement.innerHTML = "Tài khoản không tồn tại!";
         } else if (error.code === 'auth/wrong-password') {
-            alertElement.innerHTML = "Mật khẩu không đúng!";
+            alertElement.innerHTML = "Sai mật khẩu!";
         } else if (error.code === 'auth/invalid-email') {
             alertElement.innerHTML = "Email không hợp lệ!";
+        } else if (error.code === 'auth/invalid-credential') {
+            alertElement.innerHTML = "Email hoặc mật khẩu không đúng!";
+        } else if (error.code === 'auth/too-many-requests') {
+            alertElement.innerHTML = "Quá nhiều lần thử. Vui lòng thử lại sau!";
         } else {
-            alertElement.innerHTML = "Lỗi: " + error.message;
+            alertElement.innerHTML = "Đăng nhập thất bại. Vui lòng kiểm tra lại!";
         }
     }
 });
@@ -99,14 +104,17 @@ document.querySelector("#register-btn").addEventListener("click", async function
         alertElement.innerHTML = "";
         // onAuthStateChanged sẽ tự động xử lý sau khi đăng ký thành công
     } catch (error) {
+        console.error("Register error:", error);
         if (error.code === 'auth/email-already-in-use') {
             alertElement.innerHTML = "Email đã được sử dụng!";
         } else if (error.code === 'auth/invalid-email') {
             alertElement.innerHTML = "Email không hợp lệ!";
         } else if (error.code === 'auth/weak-password') {
-            alertElement.innerHTML = "Mật khẩu quá yếu!";
+            alertElement.innerHTML = "Mật khẩu phải có ít nhất 6 ký tự!";
+        } else if (error.code === 'auth/operation-not-allowed') {
+            alertElement.innerHTML = "Đăng ký email/password chưa được bật!";
         } else {
-            alertElement.innerHTML = "Lỗi: " + error.message;
+            alertElement.innerHTML = "Đăng ký thất bại. Vui lòng thử lại!";
         }
     }
 });
