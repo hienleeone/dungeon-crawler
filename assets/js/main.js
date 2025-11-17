@@ -28,9 +28,7 @@ window.addEventListener("load", function () {
             if (playerName.length < 3 || playerName.length > 15) {
                 document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
             } else {
-                // TẠM THỜI BỎ KIỂM TRA TÊN TRÙNG - Firestore Rules sẽ validate
-                // Nếu tên thật sự trùng, sẽ bị lỗi khi lưu vào Firebase
-                
+                // Tạo player object
                 player = {
                     name: playerName,
                     lvl: 1,
@@ -98,9 +96,21 @@ window.addEventListener("load", function () {
                 };
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
-                await savePlayerDataToFirebase();
-                document.querySelector("#character-creation").style.display = "none";
-                runLoad("title-screen", "flex");
+                
+                // Lưu và kiểm tra tên trùng
+                try {
+                    await savePlayerDataToFirebase();
+                    document.querySelector("#character-creation").style.display = "none";
+                    runLoad("title-screen", "flex");
+                } catch (error) {
+                    if (error.message.includes('Tên đã được sử dụng')) {
+                        document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
+                        player = null; // Reset player
+                    } else {
+                        document.querySelector("#alert").innerHTML = "Lỗi lưu dữ liệu. Vui lòng thử lại!";
+                        console.error("Lỗi:", error);
+                    }
+                }
             }
         }
     });
