@@ -77,15 +77,14 @@ window.addEventListener("load", function () {
                                     } catch (e) {
                                         console.warn("loadPlayerDataFromFirebase not available yet:", e);
                                     }
-                                    // Hide character creation completely
+                                    // Hide character creation and show title screen
                                     const charCreation = document.querySelector("#character-creation");
-                                    if (charCreation) {
-                                        charCreation.style.display = "none !important";
-                                    }
+                                    if (charCreation) charCreation.setAttribute("style", "display: none !important");
                                     const defaultModal = document.querySelector("#defaultModal");
                                     if (defaultModal) defaultModal.style.display = "none";
-                                    // Show title screen immediately (player will be loaded from Firebase)
-                                    document.querySelector("#title-screen").style.display = "flex";
+                                    // Show title screen by removing the inline style attribute
+                                    const titleScreen = document.querySelector("#title-screen");
+                                    if (titleScreen) titleScreen.removeAttribute("style");
                                 })
                                 .catch((error) => {
                                     console.error("Error creating player:", error);
@@ -407,7 +406,7 @@ const runLoad = (id, display) => {
         // Always ensure character-creation is hidden (not in loop since it needs special handling)
         const charCreation = document.querySelector("#character-creation");
         if (charCreation) {
-            charCreation.style.display = "none !important";
+            charCreation.style.display = "none";
         }
         const target = document.querySelector(`#${id}`);
         if (target) target.style.display = `${display}`;
