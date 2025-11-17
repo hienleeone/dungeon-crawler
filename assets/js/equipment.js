@@ -251,7 +251,9 @@ const equipmentIcon = (equipment) => {
 const showItemInfo = (item, icon, type, i) => {
     sfxOpen.play();
 
-    dungeon.status.exploring = false;
+    if (dungeon && dungeon.status) {
+        dungeon.status.exploring = false;
+    }
     let itemInfo = document.querySelector("#equipmentInfo");
     let rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
     let dimContainer = document.querySelector(`#inventory`);
