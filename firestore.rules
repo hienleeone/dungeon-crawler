@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===== Users Collection =====
+    match /players/{userId} {
+      // Allow users to read all player data (for leaderboard)
+      allow read: if request.auth != null;
+      
+      // Allow user to create their own player data
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow user to update/delete only their own data
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      
+      // Validate player data on creation
+      allow create: if request.resource.data.keys().hasAll(['name', 'lvl', 'gold', 'dungeon']) &&
+                       request.resource.data.name is string &&
+                       request.resource.data.lvl is number &&
+                       request.resource.data.gold is number &&
+                       request.resource.data.dungeon is map &&
+                       request.resource.data.name.size() > 2 &&
+                       request.resource.data.name.size() < 16 &&
+                       request.resource.data.lvl >= 1 &&
+                       request.resource.data.lvl <= 500 &&
+                       request.resource.data.gold >= 0;
+      
+      // Validate player data on update
+      allow update: if request.resource.data.keys().hasAll(['name', 'lvl', 'gold', 'dungeon']) &&
+                       request.resource.data.name is string &&
+                       request.resource.data.lvl is number &&
+                       request.resource.data.gold is number &&
+                       request.resource.data.dungeon is map &&
+                       request.resource.data.name.size() > 2 &&
+                       request.resource.data.name.size() < 16 &&
+                       request.resource.data.lvl >= 1 &&
+                       request.resource.data.lvl <= 500 &&
+                       request.resource.data.gold >= 0 &&
+                       // Prevent cheating: only allow reasonable increases
+                       // Player level can increase max 5 levels per update
+                       (request.resource.data.lvl - resource.data.lvl) <= 5 &&
+                       // Gold can increase but with reasonable limits (max 1M per update)
+                       (request.resource.data.gold - resource.data.gold) >= 0 &&
+                       (request.resource.data.gold - resource.data.gold) <= 1000000;
+    }
+
+    // ===== Volume Settings =====
+    match /players/{userId}/settings/{document=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ===== Attendance (Optional for future) =====
+    match /players/{userId}/attendance/{attId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ===== Public Chat Messages =====
+    match /chatMessages/{msgId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.message is string &&
+                       request.resource.data.message.size() > 0 &&
+                       request.resource.data.message.size() < 500;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // ===== Reviews/Feedback =====
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.resource.data.email is string &&
+                       request.resource.data.ingame is string &&
+                       request.resource.data.rating is number &&
+                       request.resource.data.comment is string &&
+                       request.resource.data.email.size() > 3 &&
+                       request.resource.data.ingame.size() > 2 &&
+                       request.resource.data.rating >= 1 &&
+                       request.resource.data.rating <= 5 &&
+                       request.resource.data.comment.size() > 0 &&
+                       request.resource.data.comment.size() < 1000;
+      allow update, delete: if false;
+    }
+
+    // ===== Deny all other access =====
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

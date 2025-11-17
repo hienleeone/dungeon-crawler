@@ -1036,3 +1036,53 @@ header button i {
   position: relative;
   z-index: 10000;
 }
+
+/* ===== Leaderboard Styles ===== */
+.leaderboard-section {
+  margin: 15px 0;
+  border-top: 2px solid #666;
+  padding-top: 10px;
+}
+
+.leaderboard-section h4 {
+  color: #FFD700;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.leaderboard-item .rank {
+  font-weight: bold;
+  color: #FFD700;
+  min-width: 30px;
+}
+
+.leaderboard-item .name {
+  flex: 1;
+  margin: 0 10px;
+  color: #fff;
+  word-break: break-word;
+}
+
+.leaderboard-item .value {
+  color: #4CAF50;
+  font-weight: bold;
+  text-align: right;
+}
+

@@ -123,16 +123,18 @@ window.addEventListener("load", function () {
             </div>
             <button id="player-menu"><i class="fas fa-user"></i>${player.name}</button>
             <button id="stats">Chỉ Số Chính</button>
+            <button id="leaderboard-btn"><i class="ra ra-crown"></i>Xếp Hạng</button>
             <button id="volume-btn">Âm Thanh</button>
-            <button id="export-import">Mã Dữ Liệu</button>
-            <button id="quit-run">Xóa Hầm Ngục</button>
+            <button id="logout-btn">Đăng Xuất</button>
+            <button id="reset-data">Xóa Dữ Liệu</button>
         </div>`;
 
         let close = document.querySelector('#close-menu');
         let playerMenu = document.querySelector('#player-menu');
         let runMenu = document.querySelector('#stats');
-        let quitRun = document.querySelector('#quit-run');
-        let exportImport = document.querySelector('#export-import');
+        let leaderboardBtn = document.querySelector('#leaderboard-btn');
+        let resetData = document.querySelector('#reset-data');
+        let logoutBtn = document.querySelector('#logout-btn');
         let volumeSettings = document.querySelector('#volume-btn');
 
         // Player profile click function
@@ -192,24 +194,74 @@ window.addEventListener("load", function () {
             };
         };
 
-        // Quit the current run
-        quitRun.onclick = function () {
+        // Leaderboard click function
+        leaderboardBtn.onclick = function () {
+            showLeaderboard();
+        };
+
+        // Reset data
+        resetData.onclick = function () {
             sfxOpen.play();
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Bạn có muốn xóa hầm ngục này?</p>
+                <p>Bạn có muốn xóa toàn bộ dữ liệu và chơi lại từ đầu?</p>
                 <div class="button-container">
-                    <button id="quit-run">Đồng Ý</button>
-                    <button id="cancel-quit">Hủy Bỏ</button>
+                    <button id="confirm-reset">Đồng Ý</button>
+                    <button id="cancel-reset">Hủy Bỏ</button>
                 </div>
             </div>`;
-            let quit = document.querySelector('#quit-run');
-            let cancel = document.querySelector('#cancel-quit');
-            quit.onclick = function () {
+            let confirmReset = document.querySelector('#confirm-reset');
+            let cancelReset = document.querySelector('#cancel-reset');
+            confirmReset.onclick = function () {
                 sfxConfirm.play();
-                // Clear out everything, send the player back to meny and clear progress.
+                // Delete player data from Firebase
+                if (currentUser) {
+                    deletePlayerData(currentUser.uid).then(() => {
+                        bgmDungeon.stop();
+                        let dimDungeon = document.querySelector('#dungeon-main');
+                        dimDungeon.style.filter = "brightness(100%)";
+                        dimDungeon.style.display = "none";
+                        menuModalElement.style.display = "none";
+                        menuModalElement.innerHTML = "";
+                        defaultModalElement.style.display = "none";
+                        defaultModalElement.innerHTML = "";
+                        runLoad("character-creation", "flex");
+                        clearInterval(dungeonTimer);
+                        clearInterval(playTimer);
+                        player = null;
+                        dungeon = null;
+                    }).catch((error) => {
+                        console.error("Error deleting data:", error);
+                    });
+                }
+            };
+            cancelReset.onclick = function () {
+                sfxDecline.play();
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                menuModalElement.style.display = "flex";
+            };
+        };
+
+        // Logout
+        logoutBtn.onclick = function () {
+            sfxOpen.play();
+            menuModalElement.style.display = "none";
+            defaultModalElement.style.display = "flex";
+            defaultModalElement.innerHTML = `
+            <div class="content">
+                <p>Bạn có muốn đăng xuất?</p>
+                <div class="button-container">
+                    <button id="confirm-logout">Đồng Ý</button>
+                    <button id="cancel-logout">Hủy Bỏ</button>
+                </div>
+            </div>`;
+            let confirmLogout = document.querySelector('#confirm-logout');
+            let cancelLogout = document.querySelector('#cancel-logout');
+            confirmLogout.onclick = function () {
+                sfxConfirm.play();
                 bgmDungeon.stop();
                 let dimDungeon = document.querySelector('#dungeon-main');
                 dimDungeon.style.filter = "brightness(100%)";
@@ -218,12 +270,11 @@ window.addEventListener("load", function () {
                 menuModalElement.innerHTML = "";
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
-                runLoad("title-screen", "flex");
                 clearInterval(dungeonTimer);
                 clearInterval(playTimer);
-                progressReset();
+                logoutPlayer();
             };
-            cancel.onclick = function () {
+            cancelLogout.onclick = function () {
                 sfxDecline.play();
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
@@ -292,50 +343,6 @@ window.addEventListener("load", function () {
                 setVolume();
                 bgmDungeon.play();
                 saveData();
-            };
-        };
-
-        // Export/Import Save Data
-        exportImport.onclick = function () {
-            sfxOpen.play();
-            let exportedData = exportData();
-            menuModalElement.style.display = "none";
-            defaultModalElement.style.display = "flex";
-            defaultModalElement.innerHTML = `
-            <div class="content" id="ei-tab">
-                <div class="content-head">
-                    <h3>Mã Dữ Liệu</h3>
-                    <p id="ei-close"><i class="fa fa-xmark"></i></p>
-                </div>
-                <h4>Xuất Dữ Liệu</h4>
-                <input type="text" id="export-input" autocomplete="off" value="${exportedData}" readonly>
-                <button id="copy-export">Sao Chép</button>
-                <h4>Nhập Dữ Liệu</h4>
-                <input type="text" id="import-input" autocomplete="off">
-                <button id="data-import">Đồng Ý</button>
-            </div>`;
-            let eiTab = document.querySelector('#ei-tab');
-            eiTab.style.width = "15rem";
-            let eiClose = document.querySelector('#ei-close');
-            let copyExport = document.querySelector('#copy-export')
-            let dataImport = document.querySelector('#data-import');
-            let importInput = document.querySelector('#import-input');
-            copyExport.onclick = function () {
-                sfxConfirm.play();
-                let copyText = document.querySelector('#export-input');
-                copyText.select();
-                copyText.setSelectionRange(0, 99999);
-                navigator.clipboard.writeText(copyText.value);
-                copyExport.innerHTML = "Copied!";
-            }
-            dataImport.onclick = function () {
-                importData(importInput.value);
-            };
-            eiClose.onclick = function () {
-                sfxDecline.play();
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
-                menuModalElement.style.display = "flex";
             };
         };
 

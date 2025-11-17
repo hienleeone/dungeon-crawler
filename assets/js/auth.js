@@ -1,5 +1,4 @@
 // Authentication UI Handler
-let currentUser = null;
 
 window.addEventListener("load", function () {
     // Check authentication state

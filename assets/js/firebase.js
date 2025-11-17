@@ -16,6 +16,17 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Global variables
+let currentUser = null;
+let player = null;
+let dungeon = null;
+let enemy = null;
+let volume = {
+    master: 0.5,
+    bgm: 0.5,
+    sfx: 0.5
+};
+
 // ===== Authentication Functions =====
 
 /**
