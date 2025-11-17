@@ -112,6 +112,7 @@ window.addEventListener("load", function () {
 // ===== UI Functions =====
 
 function showLoginScreen() {
+    console.log('[auth] showLoginScreen called');
     document.querySelector("#login-screen").style.display = "flex";
     document.querySelector("#register-screen").style.display = "none";
     document.querySelector("#title-screen").style.display = "none";
@@ -125,6 +126,7 @@ function showLoginScreen() {
 }
 
 function showRegisterScreen() {
+    console.log('[auth] showRegisterScreen called');
     document.querySelector("#login-screen").style.display = "none";
     document.querySelector("#register-screen").style.display = "flex";
     // Clear register form
@@ -133,6 +135,7 @@ function showRegisterScreen() {
 }
 
 function showCharacterCreation() {
+    console.log('[auth] showCharacterCreation called');
     document.querySelector("#login-screen").style.display = "none";
     document.querySelector("#register-screen").style.display = "none";
     document.querySelector("#character-creation").style.display = "flex";
@@ -279,6 +282,7 @@ function loadPlayerDataFromFirebase(userId) {
  * Initialize game after successful login
  */
 function initializeGame() {
+    console.log('[auth] initializeGame called, player=', player);
     // Check if player has allocated stats
     if (player && player.allocated) {
         // Show title screen (Nhấn để khám phá hầm ngục)

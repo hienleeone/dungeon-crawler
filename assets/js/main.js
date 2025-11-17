@@ -73,22 +73,22 @@ window.addEventListener("load", function () {
                                     document.querySelector("#alert").innerHTML = "";
                                     // Load the player document we just created to ensure canonical structure
                                     try {
+                                        console.log('[main] calling loadPlayerDataFromFirebase for uid', authUser.uid);
                                         loadPlayerDataFromFirebase(authUser.uid);
                                     } catch (e) {
                                         console.warn("loadPlayerDataFromFirebase not available yet:", e);
                                     }
-                                    // Hide character creation (use normal inline style) and hide any modal
+                                    // Debug: explicitly hide character creation and any modal
+                                    console.log('[main] hiding #character-creation and showing title-screen');
                                     const charCreation = document.querySelector("#character-creation");
                                     if (charCreation) charCreation.style.display = "none";
                                     const defaultModal = document.querySelector("#defaultModal");
                                     if (defaultModal) defaultModal.style.display = "none";
-                                    // Show title screen immediately and initialize the game state
+                                    // Show title screen explicitly
                                     const titleScreen = document.querySelector("#title-screen");
-                                    if (titleScreen) titleScreen.style.display = "flex";
-                                    try {
-                                        initializeGame();
-                                    } catch (e) {
-                                        console.warn("initializeGame not available yet:", e);
+                                    if (titleScreen) {
+                                        console.log('[main] setting #title-screen style.display = flex');
+                                        titleScreen.style.display = "flex";
                                     }
                                 })
                                 .catch((error) => {
@@ -411,7 +411,7 @@ const runLoad = (id, display) => {
         // Always ensure character-creation is hidden (not in loop since it needs special handling)
         const charCreation = document.querySelector("#character-creation");
         if (charCreation) {
-            charCreation.style.display = "none";
+            charCreation.style.display = "none !important";
         }
         const target = document.querySelector(`#${id}`);
         if (target) target.style.display = `${display}`;
