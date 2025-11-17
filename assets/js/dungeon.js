@@ -130,6 +130,7 @@ const loadDungeonProgress = () => {
     if (dungeon.progress.room > dungeon.progress.roomLimit) {
         dungeon.progress.room = 1;
         dungeon.progress.floor++;
+        if (typeof markUnsaved === 'function') markUnsaved(); // Đánh dấu thay đổi khi lên tầng
     }
     floorCount.innerHTML = `Tầng ${dungeon.progress.floor}`;
     roomCount.innerHTML = `Phòng ${dungeon.progress.room}`;

@@ -37,6 +37,7 @@ const hpValidation = () => {
         playerExpGain();
         addCombatLog(`${enemy.name} rơi <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(enemy.rewards.gold)} vàng.`)
         player.gold += enemy.rewards.gold;
+        if (typeof markUnsaved === 'function') markUnsaved(); // Đánh dấu thay đổi
         playerLoadStats();
         if (enemy.rewards.drop) {
             createEquipmentPrint("combat");

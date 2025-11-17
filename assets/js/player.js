@@ -43,6 +43,9 @@ const playerLvlUp = () => {
     player.bonusStats.atkSpd += 0.15;
     player.bonusStats.critRate += 0.1;
     player.bonusStats.critDmg += 0.25;
+    
+    // Đánh dấu có thay đổi chưa lưu
+    if (typeof markUnsaved === 'function') markUnsaved();
 }
 
 // Refresh the player stats

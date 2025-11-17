@@ -175,6 +175,7 @@ window.addEventListener("load", function () {
             </div>
             <button id="player-menu"><i class="fas fa-user"></i>${player.name}</button>
             <button id="stats">Chỉ Số Chính</button>
+            <button id="save-game-btn" style="background:#28a745; color:#fff;"><i class="fas fa-save"></i> Lưu Game</button>
             <button id="leaderboard-btn">Xếp Hạng</button>
             <button id="volume-btn">Âm Thanh</button>
             <button id="logout-btn">Đăng Xuất</button>
@@ -186,6 +187,7 @@ window.addEventListener("load", function () {
         let runMenu = document.querySelector('#stats');
         let quitRun = document.querySelector('#quit-run');
         let leaderboardBtn = document.querySelector('#leaderboard-btn');
+        let saveGameBtn = document.querySelector('#save-game-btn');
         let logoutBtn = document.querySelector('#logout-btn');
         let volumeSettings = document.querySelector('#volume-btn');
 
@@ -314,6 +316,32 @@ window.addEventListener("load", function () {
         leaderboardBtn.onclick = function () {
             menuModalElement.style.display = "none";
             showLeaderboard();
+        };
+
+        // Lưu game
+        saveGameBtn.onclick = async function () {
+            sfxOpen.play();
+            saveGameBtn.disabled = true;
+            saveGameBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+            
+            try {
+                await savePlayerDataToFirebase();
+                saveGameBtn.innerHTML = '<i class="fas fa-check"></i> Đã lưu!';
+                saveGameBtn.style.background = '#28a745';
+                setTimeout(() => {
+                    saveGameBtn.innerHTML = '<i class="fas fa-save"></i> Lưu Game';
+                    saveGameBtn.disabled = false;
+                }, 2000);
+            } catch (error) {
+                console.error("Lỗi lưu game:", error);
+                saveGameBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Lỗi!';
+                saveGameBtn.style.background = '#dc3545';
+                setTimeout(() => {
+                    saveGameBtn.innerHTML = '<i class="fas fa-save"></i> Lưu Game';
+                    saveGameBtn.style.background = '#28a745';
+                    saveGameBtn.disabled = false;
+                }, 2000);
+            }
         };
 
         // Đăng xuất

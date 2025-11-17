@@ -211,6 +211,16 @@ const loadPlayerDataFromFirebase = async (userId) => {
     }
 };
 
+// Debounce để tránh gọi save quá nhiều lần
+let saveTimeout = null;
+let isSaving = false;
+let hasUnsavedChanges = false; // Track nếu có thay đổi chưa lưu
+
+// Đánh dấu có thay đổi chưa lưu
+const markUnsaved = () => {
+    hasUnsavedChanges = true;
+};
+
 // Lưu dữ liệu người chơi lên Firebase
 const savePlayerDataToFirebase = async () => {
     if (!currentUser) {
@@ -218,10 +228,17 @@ const savePlayerDataToFirebase = async () => {
         throw new Error("Chưa đăng nhập");
     }
 
+    // Prevent multiple simultaneous saves
+    if (isSaving) {
+        console.log("Đang lưu, bỏ qua request này");
+        return;
+    }
+
     try {
+        isSaving = true;
         console.log("Bắt đầu lưu...");
         
-        // Lưu player data trực tiếp (không dùng batch để tránh timeout)
+        // Lưu player data trực tiếp
         const playerRef = db.collection('players').doc(currentUser.uid);
         await playerRef.set({
             playerData: player,
@@ -236,21 +253,28 @@ const savePlayerDataToFirebase = async () => {
         
         console.log("Đã lưu player data");
         
-        // Lưu tên
+        // Chỉ lưu tên khi tạo mới (chưa có tên trong Firebase)
         if (player.name) {
             const nameRef = db.collection('playerNames').doc(player.name);
-            await nameRef.set({
-                name: player.name,
-                userId: currentUser.uid,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            console.log("Đã lưu playerNames");
+            const nameDoc = await nameRef.get();
+            
+            if (!nameDoc.exists || nameDoc.data().userId === currentUser.uid) {
+                await nameRef.set({
+                    name: player.name,
+                    userId: currentUser.uid,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log("Đã lưu playerNames");
+            }
         }
         
         console.log("Hoàn tất!");
+        hasUnsavedChanges = false; // Reset flag sau khi lưu thành công
     } catch (error) {
         console.error("Lỗi lưu dữ liệu:", error);
         throw error;
+    } finally {
+        isSaving = false;
     }
 };
 
@@ -399,6 +423,15 @@ const showLeaderboard = async () => {
             }
         };
     } catch (error) {
-        console.error("Lỗi hiển thị leaderboard:", error);
+        console.error("Lỗi load leaderboard:", error);
     }
 };
+
+// Cảnh báo khi thoát trang nếu chưa lưu
+window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedChanges && player && currentUser) {
+        e.preventDefault();
+        e.returnValue = 'Bạn chưa lưu tiến trình trò chơi. Bạn có chắc muốn thoát?';
+        return e.returnValue;
+    }
+});
