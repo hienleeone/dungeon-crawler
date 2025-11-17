@@ -236,14 +236,15 @@ window.addEventListener("load", function () {
             };
         };
 
-        // Quit the current run
+        // Delete all data (was "Quit the current run")
         quitRun.onclick = function () {
             sfxOpen.play();
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Bạn có muốn xóa hầm ngục này?</p>
+                <p>Bạn có muốn xóa toàn bộ dữ liệu và chơi lại từ đầu?</p>
+                <p style="color: #ff4444; font-size: 0.9rem;">Cảnh báo: Hành động này không thể hoàn tác!</p>
                 <div class="button-container">
                     <button id="quit-run">Đồng Ý</button>
                     <button id="cancel-quit">Hủy Bỏ</button>
@@ -251,9 +252,9 @@ window.addEventListener("load", function () {
             </div>`;
             let quit = document.querySelector('#quit-run');
             let cancel = document.querySelector('#cancel-quit');
-            quit.onclick = function () {
+            quit.onclick = async function () {
                 sfxConfirm.play();
-                // Clear out everything, send the player back to meny and clear progress.
+                // Stop all music and clear UI
                 bgmDungeon.stop();
                 let dimDungeon = document.querySelector('#dungeon-main');
                 dimDungeon.style.filter = "brightness(100%)";
@@ -262,10 +263,11 @@ window.addEventListener("load", function () {
                 menuModalElement.innerHTML = "";
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
-                runLoad("title-screen", "flex");
                 clearInterval(dungeonTimer);
                 clearInterval(playTimer);
-                progressReset();
+                
+                // Delete all data from Firestore
+                await deleteAllPlayerData();
             };
             cancel.onclick = function () {
                 sfxDecline.play();
@@ -339,43 +341,43 @@ window.addEventListener("load", function () {
             };
         };
 
-        // Export/Import Save Data
-        exportImport.onclick = function () {
+        // Show Leaderboard
+        leaderboardBtn.onclick = async function () {
             sfxOpen.play();
-            let exportedData = exportData();
+            menuModalElement.style.display = "none";
+            await showLeaderboard();
+        };
+
+        // Logout
+        logoutBtn.onclick = function () {
+            sfxOpen.play();
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
-            <div class="content" id="ei-tab">
-                <div class="content-head">
-                    <h3>Mã Dữ Liệu</h3>
-                    <p id="ei-close"><i class="fa fa-xmark"></i></p>
+            <div class="content">
+                <p>Bạn có chắc muốn đăng xuất?</p>
+                <div class="button-container">
+                    <button id="confirm-logout">Đồng Ý</button>
+                    <button id="cancel-logout">Hủy Bỏ</button>
                 </div>
-                <h4>Xuất Dữ Liệu</h4>
-                <input type="text" id="export-input" autocomplete="off" value="${exportedData}" readonly>
-                <button id="copy-export">Sao Chép</button>
-                <h4>Nhập Dữ Liệu</h4>
-                <input type="text" id="import-input" autocomplete="off">
-                <button id="data-import">Đồng Ý</button>
             </div>`;
-            let eiTab = document.querySelector('#ei-tab');
-            eiTab.style.width = "15rem";
-            let eiClose = document.querySelector('#ei-close');
-            let copyExport = document.querySelector('#copy-export')
-            let dataImport = document.querySelector('#data-import');
-            let importInput = document.querySelector('#import-input');
-            copyExport.onclick = function () {
+            let confirm = document.querySelector('#confirm-logout');
+            let cancel = document.querySelector('#cancel-logout');
+            confirm.onclick = async function () {
                 sfxConfirm.play();
-                let copyText = document.querySelector('#export-input');
-                copyText.select();
-                copyText.setSelectionRange(0, 99999);
-                navigator.clipboard.writeText(copyText.value);
-                copyExport.innerHTML = "Copied!";
-            }
-            dataImport.onclick = function () {
-                importData(importInput.value);
+                bgmDungeon.stop();
+                let dimDungeon = document.querySelector('#dungeon-main');
+                dimDungeon.style.filter = "brightness(100%)";
+                dimDungeon.style.display = "none";
+                menuModalElement.style.display = "none";
+                menuModalElement.innerHTML = "";
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                clearInterval(dungeonTimer);
+                clearInterval(playTimer);
+                await logoutUser();
             };
-            eiClose.onclick = function () {
+            cancel.onclick = function () {
                 sfxDecline.play();
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
@@ -423,16 +425,9 @@ const enterDungeon = () => {
     playerLoadStats();
 }
 
-// Save all the data into local storage
-const saveData = () => {
-    const playerData = JSON.stringify(player);
-    const dungeonData = JSON.stringify(dungeon);
-    const enemyData = JSON.stringify(enemy);
-    const volumeData = JSON.stringify(volume);
-    localStorage.setItem("playerData", playerData);
-    localStorage.setItem("dungeonData", dungeonData);
-    localStorage.setItem("enemyData", enemyData);
-    localStorage.setItem("volumeData", volumeData);
+// Save all the data to Firestore (replaces localStorage)
+const saveData = async () => {
+    await savePlayerDataToFirestore();
 }
 
 // Calculate every player stat

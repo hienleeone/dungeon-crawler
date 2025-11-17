@@ -40,8 +40,9 @@ dungeonActivity.addEventListener('click', function () {
 
 // Sets up the initial dungeon
 const initialDungeonLoad = () => {
-    if (localStorage.getItem("dungeonData") !== null) {
-        dungeon = JSON.parse(localStorage.getItem("dungeonData"));
+    // Dungeon data is now loaded from Firestore in auth.js
+    // Just need to set the status
+    if (dungeon) {
         dungeon.status = {
             exploring: false,
             paused: true,

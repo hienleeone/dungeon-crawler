@@ -1,14 +1,9 @@
-// Volume settings
-let volume;
-if (JSON.parse(localStorage.getItem("volumeData")) == undefined) {
-    volume = {
-        master: 100 / 100,
-        bgm: (80 / 100) / 2,
-        sfx: 100 / 100
-    }
-} else {
-    volume = JSON.parse(localStorage.getItem("volumeData"));
-}
+// Volume settings - will be loaded from Firestore
+let volume = {
+    master: 100 / 100,
+    bgm: (80 / 100) / 2,
+    sfx: 100 / 100
+};
 
 
 // BGM

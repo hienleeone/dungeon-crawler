@@ -263,7 +263,7 @@ const updateLeaderboards = async () => {
         }, { merge: true });
         
         // Update floor leaderboard
-        const maxFloor = dungeon && dungeon.floor ? dungeon.floor : 0;
+        const maxFloor = dungeon && dungeon.progress && dungeon.progress.floor ? dungeon.progress.floor : 0;
         await db.collection("dungeonLeaderboards").doc("floor").set({
             [userId]: {
                 name: player.name,
@@ -302,6 +302,7 @@ const getTopPlayers = async (category) => {
 // Show leaderboard modal
 const showLeaderboard = async () => {
     const leaderboardModal = document.getElementById("leaderboardModal");
+    const menuModal = document.getElementById("menuModal");
     const dimDungeon = document.querySelector('#dungeon-main');
     
     dimDungeon.style.filter = "brightness(50%)";
@@ -330,11 +331,17 @@ const showLeaderboard = async () => {
             <h4>🏰 Top Tầng</h4>
             ${topFloor.map((p, i) => `<p>${i + 1}. ${p.name}: Tầng ${p.value}</p>`).join('') || '<p>Chưa có dữ liệu</p>'}
         </div>
+        <button id="back-to-menu" style="margin-top: 15px;">Quay Lại Menu</button>
     </div>`;
     
     document.getElementById("close-leaderboard").onclick = () => {
         leaderboardModal.style.display = "none";
-        dimDungeon.style.filter = "brightness(100%)";
+        menuModal.style.display = "flex";
+    };
+    
+    document.getElementById("back-to-menu").onclick = () => {
+        leaderboardModal.style.display = "none";
+        menuModal.style.display = "flex";
     };
 };
 
