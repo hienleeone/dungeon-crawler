@@ -34,7 +34,23 @@ service cloud.firestore {
     match /players/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId
+        // Validate dữ liệu để chống hack
+        && request.resource.data.lvl is int
+        && request.resource.data.gold is number
+        && request.resource.data.lvl >= 1
+        && request.resource.data.lvl <= 1000
+        && request.resource.data.gold >= 0
+        && request.resource.data.gold <= 100000000
+        // Không cho phép tăng quá nhanh (so với dữ liệu cũ)
+        && (
+          !resource.data.keys().hasAll(['lvl', 'gold'])
+          || (
+            request.resource.data.lvl <= resource.data.lvl + 10
+            && request.resource.data.gold <= resource.data.gold + 1000000
+          )
+        );
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
     
     match /playerNames/{name} {
