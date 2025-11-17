@@ -101,7 +101,7 @@ const playerLoadStats = () => {
 const openInventory = () => {
     sfxOpen.play();
 
-    if (dungeon && dungeon.status) {
+    if (typeof dungeon !== 'undefined' && dungeon && dungeon.status) {
         dungeon.status.exploring = false;
     }
     inventoryOpen = true;
@@ -169,14 +169,14 @@ const closeInventory = () => {
     openInv.style.display = "none";
     dimDungeon.style.filter = "brightness(100%)";
     inventoryOpen = false;
-    if (dungeon && dungeon.status && !dungeon.status.paused) {
+    if (typeof dungeon !== 'undefined' && dungeon && dungeon.status && !dungeon.status.paused) {
         dungeon.status.exploring = true;
     }
 }
 
 // Continue exploring if inventory is not open and the game is not paused
 const continueExploring = () => {
-    if (!inventoryOpen && dungeon && dungeon.status && !dungeon.status.paused) {
+    if (!inventoryOpen && typeof dungeon !== 'undefined' && dungeon && dungeon.status && !dungeon.status.paused) {
         dungeon.status.exploring = true;
     }
 }

@@ -251,7 +251,7 @@ const equipmentIcon = (equipment) => {
 const showItemInfo = (item, icon, type, i) => {
     sfxOpen.play();
 
-    if (dungeon && dungeon.status) {
+    if (typeof dungeon !== 'undefined' && dungeon && dungeon.status) {
         dungeon.status.exploring = false;
     }
     let itemInfo = document.querySelector("#equipmentInfo");

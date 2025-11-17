@@ -117,7 +117,7 @@ window.addEventListener("load", function () {
     document.querySelector("#unequip-all").addEventListener("click", function () {
         sfxOpen.play();
 
-        if (dungeon && dungeon.status) {
+        if (typeof dungeon !== 'undefined' && dungeon && dungeon.status) {
             dungeon.status.exploring = false;
         }
         let dimTarget = document.querySelector('#inventory');
@@ -153,7 +153,7 @@ window.addEventListener("load", function () {
     document.querySelector("#menu-btn").addEventListener("click", function () {
         closeInventory();
 
-        if (dungeon && dungeon.status) {
+        if (typeof dungeon !== 'undefined' && dungeon && dungeon.status) {
             dungeon.status.exploring = false;
         }
         let dimDungeon = document.querySelector('#dungeon-main');

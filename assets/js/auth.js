@@ -184,6 +184,11 @@ const savePlayerDataToFirestore = async () => {
         return;
     }
     
+    if (!player) {
+        console.error("No player data to save");
+        return;
+    }
+    
     try {
         const userId = currentUser.uid;
         const docRef = db.collection("players").doc(userId);
@@ -191,13 +196,13 @@ const savePlayerDataToFirestore = async () => {
         // Save player data
         await docRef.set(player, { merge: true });
         
-        // Save dungeon data
-        if (dungeon) {
+        // Save dungeon data if it exists
+        if (typeof dungeon !== 'undefined' && dungeon) {
             await docRef.collection("dungeon").doc("current").set(dungeon);
         }
         
-        // Save volume settings
-        if (volume) {
+        // Save volume settings if it exists
+        if (typeof volume !== 'undefined' && volume) {
             await docRef.collection("settings").doc("volume").set(volume);
         }
         
@@ -271,15 +276,17 @@ const updateLeaderboards = async () => {
             }
         }, { merge: true });
         
-        // Update floor leaderboard
-        const maxFloor = dungeon && dungeon.progress && dungeon.progress.floor ? dungeon.progress.floor : 0;
-        await db.collection("dungeonLeaderboards").doc("floor").set({
-            [userId]: {
-                name: player.name,
-                value: maxFloor,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }
-        }, { merge: true });
+        // Update floor leaderboard (only if dungeon exists)
+        if (typeof dungeon !== 'undefined' && dungeon && dungeon.progress) {
+            const maxFloor = dungeon.progress.floor || 0;
+            await db.collection("dungeonLeaderboards").doc("floor").set({
+                [userId]: {
+                    name: player.name,
+                    value: maxFloor,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }
+            }, { merge: true });
+        }
         
     } catch (error) {
         console.error("Error updating leaderboards:", error);
