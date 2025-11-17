@@ -217,35 +217,18 @@ const checkPlayerNameExists = (playerName) => {
 /**
  * Create new player in Firestore with validation
  */
-const createPlayerData = (userId, playerName, playerData) => {
-    // Validate data trước khi tạo
-    const validatedData = validateBeforeSave(playerData);
-    
-    if (!validatedData) {
-        console.error("❌ Invalid player data - cannot create");
-        return Promise.reject(new Error("Invalid player data"));
+const createPlayerData = async (playerName) => {
+    try {
+        const createFn = functions.httpsCallable("createPlayer");
+        const res = await createFn({ name: playerName });
+
+        console.log("Player created server-side:", res.data);
+        return res.data.player;
+
+    } catch (err) {
+        console.error("Lỗi tạo người chơi server-side:", err);
+        throw err;
     }
-
-    const playerDocData = {
-        ...validatedData,
-        userId: userId,
-        name: playerName,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        checksum: generateChecksum(validatedData)
-    };
-
-    console.log("[firebase] createPlayerData -> creating player doc for uid:", userId, "name:", playerName);
-
-    return db.collection("players").doc(userId).set(playerDocData)
-        .then(() => {
-            console.log("✅ Tạo dữ liệu người chơi thành công for uid:", userId);
-            return playerDocData;
-        })
-        .catch((error) => {
-            console.error("❌ Lỗi tạo dữ liệu:", error);
-            throw error;
-        });
 };
 
 /**
