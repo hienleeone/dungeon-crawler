@@ -199,9 +199,11 @@ const savePlayerDataToFirebase = async () => {
     if (!currentUser) return;
 
     try {
-        const docRef = db.collection('players').doc(currentUser.uid);
+        const batch = db.batch();
         
-        await docRef.set({
+        // Lưu player data
+        const playerRef = db.collection('players').doc(currentUser.uid);
+        batch.set(playerRef, {
             playerData: player,
             dungeonData: typeof dungeon !== 'undefined' ? dungeon : null,
             enemyData: typeof enemy !== 'undefined' ? enemy : null,
@@ -211,6 +213,18 @@ const savePlayerDataToFirebase = async () => {
             floor: typeof dungeon !== 'undefined' ? dungeon.progress.floor : 1,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
+        
+        // Lưu tên vào collection playerNames để check trùng
+        if (player.name) {
+            const nameRef = db.collection('playerNames').doc(player.name);
+            batch.set(nameRef, {
+                name: player.name,
+                userId: currentUser.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        
+        await batch.commit();
 
         // Cập nhật leaderboards
         await updateLeaderboards();
@@ -266,12 +280,10 @@ const updateLeaderboards = async () => {
 // Kiểm tra tên người chơi có trùng không
 const checkPlayerNameExists = async (name) => {
     try {
-        const snapshot = await db.collection('players')
-            .where('name', '==', name)
-            .limit(1)
-            .get();
+        const docRef = db.collection('playerNames').doc(name);
+        const doc = await docRef.get();
         
-        return !snapshot.empty;
+        return doc.exists;
     } catch (error) {
         console.error("Lỗi kiểm tra tên:", error);
         return false;
