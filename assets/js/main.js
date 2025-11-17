@@ -97,7 +97,7 @@ window.addEventListener("load", function () {
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
                 
-                // Lưu - nếu tên trùng, Firebase Rules sẽ từ chối
+                // Lưu dữ liệu
                 try {
                     console.log("Đang lưu player:", player.name);
                     await savePlayerDataToFirebase();
@@ -108,15 +108,16 @@ window.addEventListener("load", function () {
                     console.error("Lỗi tạo nhân vật:", error);
                     console.error("Error code:", error.code);
                     console.error("Error message:", error.message);
-                    // Kiểm tra lỗi
-                    if (error.message === 'NAME_EXISTS') {
-                        document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
-                    } else if (error.code === 'permission-denied' || error.message.includes('PERMISSION_DENIED')) {
+                    
+                    // Hiển thị lỗi chi tiết để debug
+                    if (error.code === 'resource-exhausted' || error.message.includes('quota')) {
+                        document.querySelector("#alert").innerHTML = "Firebase quota exceeded. Vui lòng đợi 1 phút!";
+                    } else if (error.code === 'permission-denied') {
                         document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
                     } else {
                         document.querySelector("#alert").innerHTML = "Lỗi: " + (error.message || "Vui lòng thử lại!");
                     }
-                    player = null; // Reset player nếu lỗi
+                    player = null;
                 }
             }
         }
