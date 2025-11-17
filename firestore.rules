@@ -28,9 +28,29 @@ service cloud.firestore {
                      && request.resource.data.gold >= 0
                      && request.resource.data.dungeon is map;
 
-      // Update: DENY all direct updates from client
-      // Client must use Cloud Functions (addGold, addLevel, spendGold) instead
-      allow update: if false;
+      // Update: only the owner may update. We validate that critical numeric fields
+      // do not jump to unreasonable values. Gold & lvl can ONLY increase by limited amounts.
+      allow update: if request.auth != null
+                     && request.auth.uid == userId
+                     && (
+                        // Basic type/size checks if those fields are present in the request
+                        (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() > 2 && request.resource.data.name.size() < 16))
+                        && (!('lvl' in request.resource.data) || (request.resource.data.lvl is number && request.resource.data.lvl >= 1 && request.resource.data.lvl <= 500))
+                        && (!('gold' in request.resource.data) || (request.resource.data.gold is number && request.resource.data.gold >= 0))
+                      )
+                     && (
+                        // Level change: ONLY allow increases, max +5 per update (no decreases)
+                        (!('lvl' in request.resource.data) || (resource.data.lvl is number
+                          && request.resource.data.lvl > resource.data.lvl 
+                          && (request.resource.data.lvl - resource.data.lvl) <= 5))
+                     )
+                     && (
+                        // Gold change: ONLY allow increases, max +1_000_000 per update (no decreases, no cheating to 9999)
+                        (!('gold' in request.resource.data) || (resource.data.gold is number
+                          && request.resource.data.gold >= resource.data.gold
+                          && ((request.resource.data.gold - resource.data.gold) <= 1000000)))
+                     )
+                     );
 
       // Delete: only owner can delete their own player
       allow delete: if request.auth != null && request.auth.uid == userId;
