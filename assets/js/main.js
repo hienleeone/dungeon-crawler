@@ -103,6 +103,35 @@ window.addEventListener("load", function () {
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
                 
+                // Reset dungeon to default for new player
+                if (typeof dungeon !== 'undefined') {
+                    dungeon.rating = 500;
+                    dungeon.grade = "E";
+                    dungeon.progress = {
+                        floor: 1,
+                        room: 1,
+                        floorLimit: 100,
+                        roomLimit: 5,
+                    };
+                    dungeon.settings = {
+                        enemyBaseLvl: 1,
+                        enemyLvlGap: 5,
+                        enemyBaseStats: 1,
+                        enemyScaling: 1.1,
+                    };
+                    dungeon.status = {
+                        exploring: false,
+                        paused: true,
+                        event: false,
+                    };
+                    dungeon.statistics = {
+                        kills: 0,
+                        runtime: 0,
+                    };
+                    dungeon.backlog = [];
+                    dungeon.action = 0;
+                }
+                
                 // Register player name and save to Firestore
                 await registerPlayerName(playerName);
                 await savePlayerDataToFirestore();
@@ -214,6 +243,11 @@ window.addEventListener("load", function () {
         // Dungeon run click function
         runMenu.onclick = function () {
             sfxOpen.play();
+            
+            if (typeof dungeon === 'undefined' || !dungeon || !dungeon.statistics) {
+                return;
+            }
+            
             let runTime = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
@@ -223,8 +257,8 @@ window.addEventListener("load", function () {
                     <h3>Chỉ Số</h3>
                     <p id="run-close"><i class="fa fa-xmark"></i></p>
                 </div>
-                <p>${player.name} Lv.${player.lvl} (${player.skills})</p>
-                <p>Phước Lành Lvl.${player.blessing}</p>
+                <p>${player.name} Lv.${player.lvl} (${player.skills || ''})</p>
+                <p>Phước Lành Lvl.${player.blessing || 0}</p>
                 <p>Lời Nguyền Lvl.${Math.round((dungeon.settings.enemyScaling - 1) * 10)}</p>
                 <p>Giết Được: ${nFormatter(dungeon.statistics.kills)}</p>
                 <p>Hoạt Động: ${runTime}</p>

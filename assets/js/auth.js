@@ -70,8 +70,11 @@ document.getElementById("login-submit").addEventListener("submit", async (e) => 
             case "auth/too-many-requests":
                 alertElement.textContent = "Quá nhiều lần thử. Vui lòng thử lại sau!";
                 break;
+            case "auth/invalid-credential":
+                alertElement.textContent = "Email hoặc mật khẩu không đúng!";
+                break;
             default:
-                alertElement.textContent = "Đăng nhập thất bại: " + error.message;
+                alertElement.textContent = "Đăng nhập thất bại!";
         }
     }
 });
@@ -135,9 +138,21 @@ document.getElementById("show-login").addEventListener("click", () => {
 // Logout function
 const logoutUser = async () => {
     try {
+        // Clear all modals first
+        const modals = ['inventory', 'equipmentInfo', 'combatPanel', 'lvlupPanel', 'defaultModal', 'menuModal', 'confirmationModal', 'leaderboardModal', 'gachaModal'];
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                modal.innerHTML = '';
+            }
+        });
+        
         await auth.signOut();
         player = null;
-        dungeon = null;
+        if (typeof dungeon !== 'undefined') {
+            dungeon = null;
+        }
         enemy = null;
         console.log("User logged out");
     } catch (error) {
@@ -155,6 +170,11 @@ const loadPlayerDataFromFirestore = async (userId) => {
             player = doc.data();
             player.gold = Number(player.gold) || 0;
             console.log("Player data loaded from Firestore");
+            
+            // Recalculate stats after loading
+            if (typeof calculateStats === 'function') {
+                calculateStats();
+            }
             
             // Load dungeon data if exists
             const dungeonDoc = await docRef.collection("dungeon").doc("current").get();
@@ -366,6 +386,16 @@ const deleteAllPlayerData = async () => {
     if (!currentUser) return;
     
     try {
+        // Clear all modals first
+        const modals = ['inventory', 'equipmentInfo', 'combatPanel', 'lvlupPanel', 'defaultModal', 'menuModal', 'confirmationModal', 'leaderboardModal', 'gachaModal'];
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                modal.innerHTML = '';
+            }
+        });
+        
         const userId = currentUser.uid;
         const docRef = db.collection("players").doc(userId);
         
@@ -391,8 +421,38 @@ const deleteAllPlayerData = async () => {
         
         // Reset local data
         player = null;
-        dungeon = null;
         enemy = null;
+        
+        // Reset dungeon to default
+        if (typeof dungeon !== 'undefined') {
+            dungeon = {
+                rating: 500,
+                grade: "E",
+                progress: {
+                    floor: 1,
+                    room: 1,
+                    floorLimit: 100,
+                    roomLimit: 5,
+                },
+                settings: {
+                    enemyBaseLvl: 1,
+                    enemyLvlGap: 5,
+                    enemyBaseStats: 1,
+                    enemyScaling: 1.1,
+                },
+                status: {
+                    exploring: false,
+                    paused: true,
+                    event: false,
+                },
+                statistics: {
+                    kills: 0,
+                    runtime: 0,
+                },
+                backlog: [],
+                action: 0,
+            };
+        }
         
         console.log("All player data deleted");
         
