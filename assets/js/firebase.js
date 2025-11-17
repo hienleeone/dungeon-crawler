@@ -12,9 +12,17 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Get Firebase services
+// Initialize Auth & Firestore
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Initialize Cloud Functions (QUAN TRỌNG)
+const functions = firebase.app().functions("asia-southeast1");
+
+// Cho các file khác dùng
+window.auth = auth;
+window.db = db;
+window.functions = functions;
 
 // Global variables
 let currentUser = null;
