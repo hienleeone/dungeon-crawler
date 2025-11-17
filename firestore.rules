@@ -23,23 +23,27 @@ service cloud.firestore {
                      && request.resource.data.name.size() >= 3
                      && request.resource.data.name.size() <= 15;
 
-      // UPDATE: Client can update most fields, but CANNOT change gold/lvl
-      // allocated can change from false -> true only (for first-time allocation)
+      // UPDATE: Allow reasonable changes to prevent extreme cheating
       allow update: if isAuthenticated()
                      && isOwner(userId)
                      && (
-                        // Gold: must stay the same (only Cloud Functions can change)
-                        !('gold' in request.resource.data) || request.resource.data.gold == resource.data.gold
+                        // Gold: can only increase by max 1M per save (prevent console cheat)
+                        !('gold' in request.resource.data) 
+                        || request.resource.data.gold <= resource.data.gold + 1000000
                      )
                      && (
-                        // Lvl: must stay the same (only Cloud Functions can change)
-                        !('lvl' in request.resource.data) || request.resource.data.lvl == resource.data.lvl
+                        // Gold: cannot go negative
+                        !('gold' in request.resource.data) || request.resource.data.gold >= 0
                      )
                      && (
-                        // Allocated: can change from false -> true only (first allocation)
-                        !('allocated' in request.resource.data) 
-                        || request.resource.data.allocated == resource.data.allocated
-                        || (resource.data.allocated == false && request.resource.data.allocated == true)
+                        // Lvl: can only increase by max 10 per save
+                        !('lvl' in request.resource.data) 
+                        || request.resource.data.lvl <= resource.data.lvl + 10
+                     )
+                     && (
+                        // Lvl: cannot decrease or go above 1000
+                        !('lvl' in request.resource.data) 
+                        || (request.resource.data.lvl >= resource.data.lvl && request.resource.data.lvl <= 1000)
                      );
 
       // DELETE: Only owner can delete

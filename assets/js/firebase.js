@@ -15,7 +15,6 @@ firebase.initializeApp(firebaseConfig);
 // Get Firebase services
 const auth = firebase.auth();
 const db = firebase.firestore();
-const functions = firebase.functions();
 
 // Global variables
 let currentUser = null;
@@ -234,30 +233,44 @@ const createPlayerData = async (...args) => {
   }
 
   try {
-    // Ensure firebase.functions() is available (must be initialized in firebase.js)
-    if (typeof functions === 'undefined') {
-      throw new Error('Firebase Functions is not initialized. Add "const functions = firebase.functions();" after init.');
+    if (!currentUser) {
+      throw new Error("User not authenticated");
     }
 
-    // Call Cloud Function createPlayer and pass optional full playerData if available
-    const createFn = functions.httpsCallable("createPlayer");
-    const payload = { name: playerName };
-    if (playerData) payload.playerData = playerData; // server may use this to seed fields
+    // Create default player data
+    const newPlayerData = playerData || {
+      name: playerName,
+      lvl: 1,
+      gold: 0,
+      allocated: false,
+      stats: {
+        atk: 0,
+        def: 0,
+        hp: 100,
+        hpMax: 100,
+        vamp: 0,
+        critRate: 0,
+        critDmg: 0
+      },
+      inventory: {
+        equipment: [],
+        bag: []
+      },
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-    const res = await createFn(payload);
+    // Generate checksum
+    newPlayerData.checksum = generateChecksum(newPlayerData);
 
-    // res.data should include created player object (server should return it)
-    if (res && res.data && res.data.player) {
-      console.log("Player created server-side:", res.data);
-      return res.data.player;
-    } else {
-      // fallback: return the raw response data
-      console.warn("createPlayerData: Cloud Function returned unexpected payload", res);
-      return res.data || null;
-    }
+    // Save to Firestore
+    await db.collection("players").doc(currentUser.uid).set(newPlayerData);
+    
+    console.log("✅ Player created:", playerName);
+    return newPlayerData;
 
   } catch (err) {
-    console.error("Lỗi tạo người chơi server-side:", err);
+    console.error("Lỗi tạo người chơi:", err);
     throw err;
   }
 };
