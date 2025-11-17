@@ -1,17 +1,10 @@
 window.addEventListener("load", function () {
-    if (player === null) {
-        runLoad("character-creation", "flex");
-    } else {
-        let target = document.querySelector("#title-screen");
-        target.style.display = "flex";
-    }
-
-    // Title Screen Validation
+    // Auth will handle initial screen display
+    // Just set up the title screen click handler
     document.querySelector("#title-screen").addEventListener("click", function () {
-        const player = JSON.parse(localStorage.getItem("playerData"));
-        if (player.allocated) {
+        if (player && player.allocated) {
             enterDungeon();
-        } else {
+        } else if (player) {
             allocationPopup();
         }
     });
@@ -22,7 +15,7 @@ window.addEventListener("load", function () {
     }
 
     // Submit Name
-    document.querySelector("#name-submit").addEventListener("submit", function (e) {
+    document.querySelector("#name-submit").addEventListener("submit", async function (e) {
         e.preventDefault();
         let playerName = document.querySelector("#name-input").value;
 
@@ -33,6 +26,12 @@ window.addEventListener("load", function () {
             if (playerName.length < 3 || playerName.length > 15) {
                 document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
             } else {
+                // Check if name already exists
+                const nameExists = await checkPlayerNameExists(playerName);
+                if (nameExists) {
+                    document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
+                    return;
+                }
                 player = {
                     name: playerName,
                     lvl: 1,
@@ -100,9 +99,10 @@ window.addEventListener("load", function () {
                 };
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
-                saveData();
+                await saveData();
                 document.querySelector("#character-creation").style.display = "none";
                 runLoad("title-screen", "flex");
+            }
             }
         }
     });
@@ -459,7 +459,7 @@ const runLoad = (id, display) => {
 }
 
 // Start the game
-const enterDungeon = () => {
+const enterDungeon = async () => {
     sfxConfirm.play();
     document.querySelector("#title-screen").style.display = "none";
     runLoad("dungeon-main", "flex");
@@ -473,21 +473,11 @@ const enterDungeon = () => {
     if (player.stats.hp == 0) {
         progressReset();
     }
-    initialDungeonLoad();
+    await initialDungeonLoad();
     playerLoadStats();
 }
 
-// Save all the data into local storage
-const saveData = () => {
-    const playerData = JSON.stringify(player);
-    const dungeonData = JSON.stringify(dungeon);
-    const enemyData = JSON.stringify(enemy);
-    const volumeData = JSON.stringify(volume);
-    localStorage.setItem("playerData", playerData);
-    localStorage.setItem("dungeonData", dungeonData);
-    localStorage.setItem("enemyData", enemyData);
-    localStorage.setItem("volumeData", volumeData);
-}
+// saveData is now defined in firebase-db.js
 
 // Calculate every player stat
 const calculateStats = () => {

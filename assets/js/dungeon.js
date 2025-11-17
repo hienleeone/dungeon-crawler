@@ -39,9 +39,14 @@ dungeonActivity.addEventListener('click', function () {
 });
 
 // Sets up the initial dungeon
-const initialDungeonLoad = () => {
-    if (localStorage.getItem("dungeonData") !== null) {
-        dungeon = JSON.parse(localStorage.getItem("dungeonData"));
+const initialDungeonLoad = async () => {
+    // Try to load from Firebase first
+    let dungeonLoaded = false;
+    if (currentUser) {
+        dungeonLoaded = await loadDungeonFromFirebase(currentUser.uid);
+    }
+    
+    if (dungeonLoaded && dungeon) {
         dungeon.status = {
             exploring: false,
             paused: true,

@@ -1,44 +1,42 @@
 // Authentication Handler
 let isAuthReady = false;
 
-// Monitor authentication state
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        currentUser = user;
-        console.log("User logged in:", user.email);
-        
-        // Load player data from Firebase
-        const playerExists = await loadPlayerFromFirebase(user.uid);
-        
-        if (playerExists) {
-            // Player has data, go to title screen
-            isAuthReady = true;
-            document.querySelector("#login-screen").style.display = "none";
-            document.querySelector("#register-screen").style.display = "none";
+// Wait for DOM to be ready
+window.addEventListener("DOMContentLoaded", function() {
+    // Monitor authentication state
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            console.log("User logged in:", user.email);
             
-            if (player.allocated) {
-                runLoad("title-screen", "flex");
+            // Load player data from Firebase
+            const playerExists = await loadPlayerFromFirebase(user.uid);
+            
+            if (playerExists) {
+                // Player has data, go to title screen
+                isAuthReady = true;
+                document.querySelector("#login-screen").style.display = "none";
+                document.querySelector("#register-screen").style.display = "none";
+                document.querySelector("#title-screen").style.display = "flex";
             } else {
-                runLoad("title-screen", "flex");
+                // New player, go to character creation
+                isAuthReady = true;
+                document.querySelector("#login-screen").style.display = "none";
+                document.querySelector("#register-screen").style.display = "none";
+                document.querySelector("#character-creation").style.display = "flex";
             }
         } else {
-            // New player, go to character creation
+            currentUser = null;
             isAuthReady = true;
-            document.querySelector("#login-screen").style.display = "none";
+            console.log("User logged out");
+            // Show login screen
+            document.querySelector("#login-screen").style.display = "flex";
             document.querySelector("#register-screen").style.display = "none";
-            runLoad("character-creation", "flex");
+            document.querySelector("#title-screen").style.display = "none";
+            document.querySelector("#character-creation").style.display = "none";
+            document.querySelector("#dungeon-main").style.display = "none";
         }
-    } else {
-        currentUser = null;
-        isAuthReady = true;
-        console.log("User logged out");
-        // Show login screen
-        document.querySelector("#login-screen").style.display = "flex";
-        document.querySelector("#register-screen").style.display = "none";
-        document.querySelector("#title-screen").style.display = "none";
-        document.querySelector("#character-creation").style.display = "none";
-        document.querySelector("#dungeon-main").style.display = "none";
-    }
+    });
 });
 
 // Show register form

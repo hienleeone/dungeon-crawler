@@ -1,5 +1,5 @@
-let player = JSON.parse(localStorage.getItem("playerData"));
-if (player) { player.gold = Number(player.gold) || 0; }
+// Player will be loaded from Firebase via auth
+let player = null;
 let inventoryOpen = false;
 let leveled = false;
 const lvlupSelect = document.querySelector("#lvlupSelect");
