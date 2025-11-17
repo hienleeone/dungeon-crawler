@@ -215,56 +215,38 @@ const checkPlayerNameExists = (playerName) => {
 // ===== Player Data Functions =====
 
 /**
- * Create new player in Firestore with validation
+ * Create new player in Firestore
  */
 const createPlayerData = async (...args) => {
-  // Normalize args
+  // Normalize args: can receive (playerName) or (userId, playerName, playerData)
+  let userId = currentUser ? currentUser.uid : null;
   let playerName = null;
   let playerData = null;
 
   if (args.length === 1) {
     playerName = args[0];
   } else if (args.length >= 2) {
-    // main.js passes (userId, playerName, defaultPlayer)
+    userId = args[0];
     playerName = args[1];
     playerData = args[2] || null;
-  } else {
-    throw new Error("createPlayerData: invalid arguments");
+  }
+
+  if (!userId) {
+    throw new Error("User not authenticated");
   }
 
   try {
-    if (!currentUser) {
-      throw new Error("User not authenticated");
-    }
-
-    // Create default player data
+    // Use provided playerData or create default
     const newPlayerData = playerData || {
       name: playerName,
       lvl: 1,
       gold: 0,
       allocated: false,
-      stats: {
-        atk: 0,
-        def: 0,
-        hp: 100,
-        hpMax: 100,
-        vamp: 0,
-        critRate: 0,
-        critDmg: 0
-      },
-      inventory: {
-        equipment: [],
-        bag: []
-      },
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    // Generate checksum
-    newPlayerData.checksum = generateChecksum(newPlayerData);
-
     // Save to Firestore
-    await db.collection("players").doc(currentUser.uid).set(newPlayerData);
+    await db.collection("players").doc(userId).set(newPlayerData);
     
     console.log("✅ Player created:", playerName);
     return newPlayerData;
