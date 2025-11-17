@@ -196,18 +196,6 @@
         window.validatePlayerData();
     }, 10000);
 
-    // 8. Ghi đè các hàm nguy hiểm
-    const originalEval = window.eval;
-    window.eval = function() {
-        console.warn('⚠️ eval() bị chặn!');
-        return null;
-    };
-
-    const originalFunction = window.Function;
-    window.Function = function() {
-        console.warn('⚠️ Function() constructor bị chặn!');
-        return function() {};
-    };
 
     // 9. Bảo vệ Firebase functions
     const protectFunction = (obj, funcName) => {
