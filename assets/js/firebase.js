@@ -1,5 +1,5 @@
 // =============================
-//  Firebase Config
+// Firebase Configuration
 // =============================
 const firebaseConfig = {
     apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
@@ -11,58 +11,24 @@ const firebaseConfig = {
     measurementId: "G-NW033BL7PW"
 };
 
-
 // =============================
 // Initialize Firebase
 // =============================
 firebase.initializeApp(firebaseConfig);
 
-
 // =============================
-// Firebase Services
+// Services
 // =============================
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// ❗ CHỈ KHAI BÁO MỘT LẦN — KHÔNG LẶP LẠI
 const functions = firebase.app().functions("asia-southeast1");
 
-// Export global (file khác sẽ dùng)
+// EXPORT GLOBAL
 window.auth = auth;
 window.db = db;
 window.functions = functions;
-
-console.log("🔥 Firebase initialized");
-
-
-// =============================
-// SECURITY – Validate Before Save
-// =============================
-const validateBeforeSave = (p) => {
-    if (!p) return p;
-
-    // Basic sanity limits
-    if (p.gold > 1_000_000_000) p.gold = 1_000_000_000;
-    if (p.gold < 0) p.gold = 0;
-
-    if (p.lvl > 1000) p.lvl = 1000;
-    if (p.lvl < 1) p.lvl = 1;
-
-    if (p.stats) {
-        if (p.stats.atk > 999999) p.stats.atk = 999999;
-        if (p.stats.def > 999999) p.stats.def = 999999;
-        if (p.stats.atkSpd > 10) p.stats.atkSpd = 10;
-        if (p.stats.hp > p.stats.hpMax) p.stats.hp = p.stats.hpMax;
-        if (p.stats.hpMax > 99999999) p.stats.hpMax = 99999999;
-        if (p.stats.vamp > 100) p.stats.vamp = 100;
-        if (p.stats.critRate > 100) p.stats.critRate = 100;
-        if (p.stats.critDmg > 1000) p.stats.critDmg = 1000;
-    }
-
-    if (p.inventory?.equipment?.length > 1000) {
-        p.inventory.equipment = p.inventory.equipment.slice(0, 1000);
-    }
-
-    return p;
-};
 
 
 // =============================
@@ -82,7 +48,8 @@ const generateChecksum = (data) => {
 
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        const c = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + c;
         hash |= 0;
     }
     return hash;
@@ -93,113 +60,45 @@ const verifyChecksum = (data, checksum) =>
 
 
 // =============================
-// AUTH
+// VALIDATE PLAYER
 // =============================
-const firebaseLogin = (email, password) =>
-    auth.signInWithEmailAndPassword(email, password);
+const validateBeforeSave = (p) => {
+    if (!p) return null;
+    if (p.gold > 1e9) p.gold = 1e9;
+    if (p.gold < 0) p.gold = 0;
+    if (p.lvl > 1000) p.lvl = 1000;
+    if (p.lvl < 1) p.lvl = 1;
 
-const firebaseRegister = (email, password) =>
-    auth.createUserWithEmailAndPassword(email, password);
-
-const firebaseLogout = () =>
-    auth.signOut();
-
-const getCurrentUser = () => auth.currentUser;
-
-// =============================
-// CHECK IF PLAYER NAME EXISTS
-// =============================
-const checkPlayerNameExists = async (playerName) => {
-    try {
-        const snap = await db.collection("players")
-            .where("name", "==", playerName)
-            .get();
-
-        return !snap.empty; // true = đã tồn tại
-    } catch (err) {
-        console.error("❌ checkPlayerNameExists error:", err);
-        return false;
+    if (p.stats) {
+        if (p.stats.atk > 999999) p.stats.atk = 999999;
+        if (p.stats.def > 999999) p.stats.def = 999999;
+        if (p.stats.hpMax > 99999999) p.stats.hpMax = 99999999;
+        if (p.stats.hp > p.stats.hpMax) p.stats.hp = p.stats.hpMax;
+        if (p.stats.critRate > 100) p.stats.critRate = 100;
+        if (p.stats.critDmg > 1000) p.stats.critDmg = 1000;
     }
+
+    return p;
 };
 
-window.checkPlayerNameExists = checkPlayerNameExists;
 
 // =============================
-// CREATE PLAYER (Cloud Function)
+// CLOUD FUNCTIONS CALLS
 // =============================
 const createPlayerData = async (playerName) => {
-    try {
-        const fn = window.functions.httpsCallable("createPlayer");
-        const res = await fn({ name: playerName });
-        return res.data.player;
-    } catch (err) {
-        console.error("❌ createPlayer error:", err);
-        throw err;
-    }
+    const fn = window.functions.httpsCallable("createPlayer");
+    const res = await fn({ name: playerName });
+    return res.data.player;
+};
+
+const updatePlayerData = async (uid, data) => {
+    const valid = validateBeforeSave(data);
+    const fn = window.functions.httpsCallable("serverUpdatePlayer");
+    return fn({ player: valid });
 };
 
 
 // =============================
-// PLAYER DATA
+// Firebase initialized
 // =============================
-const getPlayerData = async (uid) => {
-    try {
-        const doc = await db.collection("players").doc(uid).get();
-        return doc.exists ? doc.data() : null;
-    } catch (err) {
-        console.error("❌ getPlayerData error:", err);
-        return null;
-    }
-};
-
-const updatePlayerData = async (uid, playerData) => {
-    try {
-        const validated = validateBeforeSave(playerData);
-        const fn = window.functions.httpsCallable("serverUpdatePlayer");
-        return await fn({ player: validated });
-    } catch (err) {
-        console.error("❌ updatePlayerData error:", err);
-        throw err;
-    }
-};
-
-
-// =============================
-// VOLUME DATA
-// =============================
-const saveVolumeData = (uid, volumeData) =>
-    db.collection("players").doc(uid).update({
-        volumeSettings: volumeData
-    });
-
-const getVolumeData = async (uid) => {
-    const doc = await db.collection("players").doc(uid).get();
-    return doc.exists ? doc.data().volumeSettings || null : null;
-};
-
-
-// =============================
-// AUTO SAVE
-// =============================
-let autoSaveInterval = null;
-
-const startAutoSave = (uid, getPlayerDataFunc) => {
-    if (autoSaveInterval) clearInterval(autoSaveInterval);
-
-    autoSaveInterval = setInterval(async () => {
-        try {
-            const p = getPlayerDataFunc();
-            if (p && getCurrentUser()) {
-                const validated = validateBeforeSave(p);
-                await updatePlayerData(uid, validated);
-                console.log("💾 Auto-save OK");
-            }
-        } catch (err) {
-            console.error("❌ Auto-save error:", err);
-        }
-    }, 30000);
-};
-
-const stopAutoSave = () => {
-    if (autoSaveInterval) clearInterval(autoSaveInterval);
-};
+console.log("🔥 Firebase initialized");
