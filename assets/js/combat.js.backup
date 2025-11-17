@@ -1,4 +1,4 @@
-// combat.js - Client-side combat system
+// combat.js (FULL - server-side authoritative)
 
 // DOM + flags
 const combatPanel = document.querySelector("#combatPanel");
@@ -51,7 +51,7 @@ const updateCombatLog = () => {
     btn.onclick = () => {
       sfxConfirm && sfxConfirm.play();
       if (playerDead) {
-        // Return to title / reset
+        // Return to title / reset (same as original behavior)
         playerDead = false;
         let dimDungeon = document.querySelector('#dungeon-main');
         if (dimDungeon) {
@@ -142,10 +142,6 @@ const playerAttack = () => {
     addCombatLog(`Bạn hồi ${nFormatter(heal)} HP từ ma cà rồng`);
   }
 
-  // Update UI
-  playerLoadStats && playerLoadStats();
-  enemyLoadStats && enemyLoadStats();
-
   // Check enemy death
   if (enemy.stats.hp <= 0) {
     enemyDead = true;
@@ -165,10 +161,6 @@ const enemyAttack = () => {
   
   addCombatLog(`${enemy.name} tấn công bạn gây ${nFormatter(damage)} sát thương`);
 
-  // Update UI
-  playerLoadStats && playerLoadStats();
-  enemyLoadStats && enemyLoadStats();
-
   // Check player death
   if (player.stats.hp <= 0) {
     playerDead = true;
@@ -179,8 +171,6 @@ const enemyAttack = () => {
 // ---------------- Local combat resolution ----------------
 async function resolveCombatLocal() {
   try {
-    addCombatLog(`Trận chiến bắt đầu!`);
-    
     // Combat loop: alternate attacks until one dies
     let round = 0;
     const maxRounds = 100; // Prevent infinite loop
@@ -193,14 +183,18 @@ async function resolveCombatLocal() {
       if (enemyDead) break;
 
       // Small delay for readability
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 300));
 
       // Enemy counterattack
       enemyAttack();
       if (playerDead) break;
 
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 300));
     }
+
+    // Update UI after combat
+    playerLoadStats && playerLoadStats();
+    enemyLoadStats && enemyLoadStats();
 
   } catch (err) {
     console.error('Lỗi combat:', err);
@@ -217,8 +211,8 @@ function onEnemyDefeated() {
   player.gold += goldGain;
   player.xp += xpGain;
 
-  addCombatLog(`<span style='color: #4ade80'>✓ Bạn đã đánh bại ${enemy.name}!</span>`);
-  addCombatLog(`Nhận được <span style='color: #fbbf24'>${nFormatter(goldGain)} vàng</span> và <span style='color: #60a5fa'>${nFormatter(xpGain)} exp</span>`);
+  addCombatLog(`<span style='color: #4ade80'>Bạn đã đánh bại ${enemy.name}!</span>`);
+  addCombatLog(`Nhận được ${nFormatter(goldGain)} vàng và ${nFormatter(xpGain)} exp`);
 
   // Check level up
   checkLevelUp();
@@ -228,7 +222,7 @@ function onEnemyDefeated() {
     const drop = enemy.drops[Math.floor(Math.random() * enemy.drops.length)];
     player.inventory = player.inventory || { equipment: [], bag: [] };
     player.inventory.equipment.push(drop);
-    addCombatLog(`${enemy.name} rơi <span style='color: #a78bfa'>${drop.name}</span> (${drop.rarity})!`);
+    addCombatLog(`${enemy.name} rơi <span style='color: #fbbf24'>${drop.name}</span>!`);
   }
 
   // Save progress
@@ -239,7 +233,7 @@ function onEnemyDefeated() {
 }
 
 function onPlayerDefeated() {
-  addCombatLog(`<span style='color: #ef4444'>✗ Bạn đã thua trước ${enemy.name}...</span>`);
+  addCombatLog(`<span style='color: #ef4444'>Bạn đã thua trước ${enemy.name}...</span>`);
   addCombatLog(`Bạn mất 10% vàng hiện có.`);
   
   // Penalty: lose 10% gold
@@ -247,9 +241,6 @@ function onPlayerDefeated() {
   
   // Reset HP to 50%
   player.stats.hp = Math.floor(player.stats.hpMax * 0.5);
-  
-  // Save
-  savePlayerDataToFirebase && savePlayerDataToFirebase();
   
   playerDead = true;
   updateCombatLog();
@@ -263,15 +254,92 @@ function checkLevelUp() {
     player.xp -= xpNeeded;
     
     // Stat increases on level up
-    player.baseStats = player.baseStats || { atk: 0, def: 0, hpMax: 100 };
-    player.baseStats.atk = (player.baseStats.atk || 0) + 2;
-    player.baseStats.def = (player.baseStats.def || 0) + 1;
-    player.baseStats.hpMax = (player.baseStats.hpMax || 100) + 10;
-    player.stats.hpMax = player.baseStats.hpMax;
+    player.baseStats.atk += 2;
+    player.baseStats.def += 1;
+    player.baseStats.hpMax += 10;
     player.stats.hp = player.stats.hpMax; // Full heal on level up
     
-    addCombatLog(`<span style='color: #60a5fa'>⭐ LEVEL UP! Bạn đã lên cấp ${player.lvl}</span>`);
+    addCombatLog(`<span style='color: #60a5fa'>LEVEL UP! Bạn đã lên cấp ${player.lvl}</span>`);
   }
+}
+
+// ---------------- Apply server result ----------------
+function applyCombatResult(result) {
+  if (!result) {
+    addCombatLog('Không nhận được kết quả từ server.');
+    endCombat();
+    return;
+  }
+
+  // If server returns an authoritative player object, merge it.
+  if (result.player && typeof result.player === 'object') {
+    // Replace or merge safe fields from server
+    // IMPORTANT: server is single source of truth for game-critical fields
+    Object.assign(player, result.player);
+    // If server returns nested stats object, make sure to update correctly
+    if (result.player.stats) {
+      player.stats = result.player.stats;
+    }
+    if (result.player.inventory) {
+      player.inventory = result.player.inventory;
+    }
+  } else {
+    // Fallback: update minimal fields returned
+    if (typeof result.gold === 'number') player.gold = result.gold;
+    if (typeof result.lvl === 'number') player.lvl = result.lvl;
+    if (typeof result.xp === 'number') player.xp = result.xp;
+  }
+
+  // If server returns combatLog (array of strings), display them progressively
+  if (Array.isArray(result.combatLog) && result.combatLog.length > 0) {
+    // optional: animate logs with small delay for drama
+    (async () => {
+      for (let line of result.combatLog) {
+        addCombatLog(line);
+        // small delay to mimic pacing (200ms)
+        await new Promise(r => setTimeout(r, 200));
+      }
+      finalizeAfterCombat(result);
+    })();
+  } else {
+    // no combatLog provided: show short summary and finalize
+    if (result.victory) addCombatLog(`Bạn đã đánh bại ${enemy.name}!`);
+    else addCombatLog(`Bạn đã thua trước ${enemy.name}...`);
+
+    addCombatLog(`Bạn nhận được ${nFormatter(result.goldGain || 0)} vàng và ${nFormatter(result.xpGain || 0)} exp.`);
+    finalizeAfterCombat(result);
+  }
+}
+
+// Final UI/state updates and closing steps after server result displayed
+function finalizeAfterCombat(result) {
+  // Drops
+  if (Array.isArray(result.drops) && result.drops.length > 0) {
+    player.inventory = player.inventory || { equipment: [] };
+    for (let it of result.drops) {
+      player.inventory.equipment.push(it);
+      addCombatLog(`${enemy.name} rơi ${it.name} (${it.rarity}).`);
+    }
+  }
+
+  // Set enemy hp to 0 on client UI (server determined death)
+  enemy.stats.hp = 0;
+
+  // Optional: if server returned new player.stats.hp, we already merged above.
+  // If not, don't modify HP beyond what server told us.
+
+  // Update UI
+  playerLoadStats && playerLoadStats();
+  enemyLoadStats && enemyLoadStats();
+
+  // Show accept / return button
+  enemyDead = !!result.victory;
+  playerDead = !result.victory && !!result.playerDead; // if server informs death
+
+  updateCombatLog();
+
+  // End combat (stops timers, cleans up buffs)
+  endCombat();
 }
 
 // ---------------- Start combat (client-side resolution) ----------------
@@ -312,7 +380,8 @@ const endCombat = () => {
   sfxCombatEnd && sfxCombatEnd.play();
   player.inCombat = false;
 
-  // Remove temporary buffs
+  // Remove temporary buffs (client-only). IMPORTANT: do NOT call saveData()
+  // because saveData may attempt to write game-critical fields. We only adjust local temp stats.
   if (player.skills && player.skills.includes("Rampager")) {
     objectValidation && objectValidation();
     player.baseStats.atk -= (player.tempStats ? player.tempStats.atk : 0) || 0;
@@ -332,8 +401,9 @@ const endCombat = () => {
   combatSeconds = 0;
 };
 
-// ---------------- Expose for debugging ----------------
+// ---------------- Small utility: safe show on load ----------------
 try {
+  // expose for debugging if needed
   window.startCombatLocal = startCombat;
   window.resolveCombatLocal = resolveCombatLocal;
 } catch (e) { /* ignore */ }
