@@ -217,18 +217,48 @@ const checkPlayerNameExists = (playerName) => {
 /**
  * Create new player in Firestore with validation
  */
-const createPlayerData = async (playerName) => {
-    try {
-        const createFn = functions.httpsCallable("createPlayer");
-        const res = await createFn({ name: playerName });
+const createPlayerData = async (...args) => {
+  // Normalize args
+  let playerName = null;
+  let playerData = null;
 
-        console.log("Player created server-side:", res.data);
-        return res.data.player;
+  if (args.length === 1) {
+    playerName = args[0];
+  } else if (args.length >= 2) {
+    // main.js passes (userId, playerName, defaultPlayer)
+    playerName = args[1];
+    playerData = args[2] || null;
+  } else {
+    throw new Error("createPlayerData: invalid arguments");
+  }
 
-    } catch (err) {
-        console.error("Lỗi tạo người chơi server-side:", err);
-        throw err;
+  try {
+    // Ensure firebase.functions() is available (must be initialized in firebase.js)
+    if (typeof functions === 'undefined') {
+      throw new Error('Firebase Functions is not initialized. Add "const functions = firebase.functions();" after init.');
     }
+
+    // Call Cloud Function createPlayer and pass optional full playerData if available
+    const createFn = functions.httpsCallable("createPlayer");
+    const payload = { name: playerName };
+    if (playerData) payload.playerData = playerData; // server may use this to seed fields
+
+    const res = await createFn(payload);
+
+    // res.data should include created player object (server should return it)
+    if (res && res.data && res.data.player) {
+      console.log("Player created server-side:", res.data);
+      return res.data.player;
+    } else {
+      // fallback: return the raw response data
+      console.warn("createPlayerData: Cloud Function returned unexpected payload", res);
+      return res.data || null;
+    }
+
+  } catch (err) {
+    console.error("Lỗi tạo người chơi server-side:", err);
+    throw err;
+  }
 };
 
 /**
