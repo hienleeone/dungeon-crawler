@@ -15,6 +15,7 @@ firebase.initializeApp(firebaseConfig);
 // Get Firebase services
 const auth = firebase.auth();
 const db = firebase.firestore();
+const functions = firebase.functions();
 
 // Global variables
 let currentUser = null;
