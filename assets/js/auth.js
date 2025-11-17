@@ -6,9 +6,9 @@
 
 let currentUser = null;
 
-// Initialize Firebase Auth State - Wait for Firebase to load
-setTimeout(() => {
-    if (typeof firebase !== 'undefined' && firebase.auth) {
+// Wait for Firebase to load before initializing
+const initializeFirebaseAuth = () => {
+    if (typeof firebase !== 'undefined' && firebase.auth && firebase.firestore) {
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
@@ -19,12 +19,15 @@ setTimeout(() => {
                 showLoginScreen();
             }
         });
+        console.log("Firebase Auth initialized successfully");
     } else {
-        // Retry if Firebase not ready
-        console.warn("Firebase not loaded yet, retrying...");
-        setTimeout(arguments.callee, 200);
+        console.warn("Firebase not ready, retrying in 500ms...");
+        setTimeout(initializeFirebaseAuth, 500);
     }
-}, 500);
+};
+
+// Start initialization after 2 seconds to ensure CDN scripts load
+setTimeout(initializeFirebaseAuth, 2000);
 
 // Show Login Screen
 const showLoginScreen = () => {
@@ -51,7 +54,13 @@ const hideLoginScreen = () => {
 
 // Register User
 const registerUser = async (email, password, confirmPassword) => {
-    // Check if Firebase is loaded
+    // Wait for Firebase to load if not ready
+    let attempts = 0;
+    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        attempts++;
+    }
+    
     if (typeof firebase === 'undefined' || !firebase.auth) {
         showAuthError("Firebase chưa load. Vui lòng làm mới trang!");
         return false;
@@ -90,7 +99,13 @@ const registerUser = async (email, password, confirmPassword) => {
 
 // Login User
 const loginUser = async (email, password) => {
-    // Check if Firebase is loaded
+    // Wait for Firebase to load if not ready
+    let attempts = 0;
+    while ((typeof firebase === 'undefined' || !firebase.auth) && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        attempts++;
+    }
+    
     if (typeof firebase === 'undefined' || !firebase.auth) {
         showAuthError("Firebase chưa load. Vui lòng làm mới trang!");
         return false;
