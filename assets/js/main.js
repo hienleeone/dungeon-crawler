@@ -467,6 +467,8 @@ const calculateStats = () => {
 
 // Resets the progress back to start
 const progressReset = () => {
+    if (!player || !dungeon) return;
+    
     player.stats.hp = player.stats.hpMax;
     player.lvl = 1;
     player.blessing = 1;

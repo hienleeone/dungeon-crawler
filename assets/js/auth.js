@@ -335,21 +335,38 @@ const showLeaderboard = async () => {
             .sort((a, b) => b.value - a.value)
             .slice(0, 3);
 
-        // Tạo HTML cho leaderboard
-        let goldHTML = '<h4>🏆 Top Vàng</h4>';
-        goldTop.forEach((entry, index) => {
-            goldHTML += `<p>${index + 1}. ${entry.name}: ${nFormatter(entry.value)}</p>`;
-        });
+        // Tạo HTML cho leaderboard với style đẹp hơn
+        const rankIcons = ['🥇', '🥈', '🥉'];
+        
+        let goldHTML = '<div style="margin-bottom: 20px;"><h4 style="color: #FFD700; margin-bottom: 10px;">🏆 Top Vàng</h4>';
+        if (goldTop.length === 0) {
+            goldHTML += '<p style="color: #888; font-style: italic;">Chưa có dữ liệu</p>';
+        } else {
+            goldTop.forEach((entry, index) => {
+                goldHTML += `<p style="padding: 5px 0; border-bottom: 1px solid #333;">${rankIcons[index]} <b>${entry.name}</b>: <span style="color: #FFD700;">${nFormatter(entry.value)}</span></p>`;
+            });
+        }
+        goldHTML += '</div>';
 
-        let levelHTML = '<h4>⭐ Top Level</h4>';
-        levelTop.forEach((entry, index) => {
-            levelHTML += `<p>${index + 1}. ${entry.name}: Lv.${entry.value}</p>`;
-        });
+        let levelHTML = '<div style="margin-bottom: 20px;"><h4 style="color: #4FC3F7; margin-bottom: 10px;">⭐ Top Level</h4>';
+        if (levelTop.length === 0) {
+            levelHTML += '<p style="color: #888; font-style: italic;">Chưa có dữ liệu</p>';
+        } else {
+            levelTop.forEach((entry, index) => {
+                levelHTML += `<p style="padding: 5px 0; border-bottom: 1px solid #333;">${rankIcons[index]} <b>${entry.name}</b>: <span style="color: #4FC3F7;">Lv.${entry.value}</span></p>`;
+            });
+        }
+        levelHTML += '</div>';
 
-        let floorHTML = '<h4>🏔️ Top Tầng</h4>';
-        floorTop.forEach((entry, index) => {
-            floorHTML += `<p>${index + 1}. ${entry.name}: Tầng ${entry.value}</p>`;
-        });
+        let floorHTML = '<div style="margin-bottom: 20px;"><h4 style="color: #66BB6A; margin-bottom: 10px;">🏔️ Top Tầng</h4>';
+        if (floorTop.length === 0) {
+            floorHTML += '<p style="color: #888; font-style: italic;">Chưa có dữ liệu</p>';
+        } else {
+            floorTop.forEach((entry, index) => {
+                floorHTML += `<p style="padding: 5px 0; border-bottom: 1px solid #333;">${rankIcons[index]} <b>${entry.name}</b>: <span style="color: #66BB6A;">Tầng ${entry.value}</span></p>`;
+            });
+        }
+        floorHTML += '</div>';
 
         defaultModalElement.style.display = "flex";
         defaultModalElement.innerHTML = `
