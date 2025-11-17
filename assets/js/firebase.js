@@ -1,3 +1,18 @@
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Auth & Firestore
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Cloud Functions (đúng region bạn deploy)
+const functions = firebase.app().functions("asia-southeast1");
+
+// Xuất global để file khác có thể dùng
+window.auth = auth;
+window.db = db;
+window.functions = functions;
+
 // Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
@@ -8,21 +23,6 @@ const firebaseConfig = {
     appId: "1:508725790521:web:a58b2f0608b028baaccae8",
     measurementId: "G-NW033BL7PW"
 };
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-
-// Initialize Auth & Firestore
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// Initialize Cloud Functions (QUAN TRỌNG)
-const functions = firebase.app().functions("asia-southeast1");
-
-// Cho các file khác dùng
-window.auth = auth;
-window.db = db;
-window.functions = functions;
 
 // Global variables
 let currentUser = null;
