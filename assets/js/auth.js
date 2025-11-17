@@ -4,6 +4,10 @@
 firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
         currentUser = user;
+        
+        // Ẩn màn hình auth
+        document.querySelector("#auth-screen").style.display = "none";
+        
         // Người dùng đã đăng nhập, load dữ liệu từ Firebase
         await loadPlayerDataFromFirebase(user.uid);
         
@@ -19,6 +23,8 @@ firebase.auth().onAuthStateChanged(async (user) => {
         // Chưa đăng nhập, hiển thị màn hình auth
         currentUser = null;
         document.querySelector("#auth-screen").style.display = "flex";
+        document.querySelector("#character-creation").style.display = "none";
+        document.querySelector("#title-screen").style.display = "none";
     }
 });
 
