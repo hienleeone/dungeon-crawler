@@ -71,19 +71,19 @@ const initialDungeonLoad = () => {
             action: 0,
         };
     }
-    if (!dungeon.status) {
-        dungeon.status = {
-            exploring: false,
-            paused: true,
-            event: false,
-        };
-    }
+    
+    // Luôn reset status về tạm dừng khi load lại
+    dungeon.status = {
+        exploring: false,
+        paused: true,
+        event: false,
+    };
+    
     updateDungeonLog();
     loadDungeonProgress();
     dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
     dungeonAction.innerHTML = "Tạm Dừng...";
     dungeonActivity.innerHTML = "Khám Phá";
-    dungeonTime.innerHTML = "00:00:00";
     dungeonTimer = setInterval(dungeonEvent, 1000);
     playTimer = setInterval(dungeonCounter, 1000);
 }
