@@ -47,7 +47,9 @@ window.addEventListener("load", function () {
                             createPlayerData(currentUser.uid, playerName, defaultPlayer)
                                 .then(() => {
                                     document.querySelector("#alert").innerHTML = "";
-                                    allocationPopup();
+                                    // Follow original flow: show title screen "Nhấn để khám phá hầm ngục"
+                                    // Player allocation will occur when they click the title screen.
+                                    runLoad("title-screen", "flex");
                                 })
                                 .catch((error) => {
                                     console.error("Error creating player:", error);
