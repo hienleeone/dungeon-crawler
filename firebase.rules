@@ -1,0 +1,90 @@
+{
+  "rules": {
+    // ========== DUNGEON CRAWLER GAME RULES ==========
+    // Realtime Database Rules
+    
+    // Dữ liệu người chơi - chỉ chủ sở hữu mới đọc/ghi được
+    "players": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid && auth != null",
+        ".validate": "newData.hasChildren(['playerData', 'lastSaved'])",
+        
+        "playerData": {
+          ".validate": "newData.hasChildren(['name', 'lvl', 'gold'])",
+          
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 15"
+          },
+          
+          "lvl": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000"
+          },
+          
+          "gold": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          }
+        },
+        
+        "dungeonData": {
+          ".validate": "newData.hasChild('floorCount')"
+        },
+        
+        "lastSaved": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    
+    // Tên người chơi - kiểm tra tên trùng lặp
+    "playerNames": {
+      "$name": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['uid', 'name', 'timestamp'])",
+        
+        "uid": {
+          ".validate": "newData.val() === auth.uid"
+        },
+        
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 15"
+        },
+        
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    
+    // Bảng xếp hạng - mọi người đọc được, chỉ chủ sở hữu mới ghi được
+    "leaderboard": {
+      ".read": true,
+      
+      "$uid": {
+        ".write": "$uid === auth.uid && auth != null",
+        ".validate": "newData.hasChildren(['name', 'level', 'gold', 'floor', 'timestamp'])",
+        
+        "name": {
+          ".validate": "newData.isString()"
+        },
+        
+        "level": {
+          ".validate": "newData.isNumber() && newData.val() >= 1"
+        },
+        
+        "gold": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        
+        "floor": {
+          ".validate": "newData.isNumber() && newData.val() >= 1"
+        },
+        
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    }
+  }
+}

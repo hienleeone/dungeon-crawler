@@ -1,4 +1,6 @@
+// Player data loaded from Firebase, not localStorage
 let player = null;
+if (player) { player.gold = Number(player.gold) || 0; }
 let inventoryOpen = false;
 let leveled = false;
 const lvlupSelect = document.querySelector("#lvlupSelect");
@@ -43,9 +45,6 @@ const playerLvlUp = () => {
     player.bonusStats.atkSpd += 0.15;
     player.bonusStats.critRate += 0.1;
     player.bonusStats.critDmg += 0.25;
-    
-    // Force save on level up
-    if (typeof forceSave === 'function') forceSave();
 }
 
 // Refresh the player stats

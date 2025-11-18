@@ -1,25 +1,21 @@
 // Firebase Configuration
-// QUAN TRỌNG: Thay thế các giá trị bên dưới bằng config từ Firebase Console của bạn
+// QUAN TRỌNG: Thay thế các giá trị bên dưới bằng thông tin Firebase của bạn
 const firebaseConfig = {
-    apiKey: "AIzaSyAcw_6krS2s3-14T98SZSEhGQcNDdLME1w",
-    authDomain: "data-dc-soulmc.firebaseapp.com",
-    projectId: "data-dc-soulmc",
-    storageBucket: "data-dc-soulmc.firebasestorage.app",
-    messagingSenderId: "539439303064",
-    appId: "1:539439303064:web:b2038f2bfe81d95a6603ed",
-    measurementId: "G-FKGXSSW90C"
+    apiKey: "AIzaSyAW-FtufPxI9mCuZDuTgxRUjHOGtgJ2hgc",
+    authDomain: "soulmc-account.firebaseapp.com",
+    projectId: "soulmc-account",
+    storageBucket: "soulmc-account.firebasestorage.app",
+    messagingSenderId: "508725790521",
+    appId: "1:508725790521:web:a58b2f0608b028baaccae8",
+    measurementId: "G-NW033BL7PW"
 };
 
-// Khởi tạo Firebase
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Khởi tạo services
+// Get Firebase services
 const auth = firebase.auth();
-const db = firebase.firestore();
+const database = firebase.database();
 
-// Biến global để lưu user hiện tại
+// Global Firebase user
 let currentUser = null;
-
-// Biến global để track unsaved changes
-let hasUnsavedChanges = false;
-let isSaving = false;

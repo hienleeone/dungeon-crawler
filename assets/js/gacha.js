@@ -1,8 +1,4 @@
 (function(){
-  // Prevent multiple initialization
-  if (window.gachaInitialized) return;
-  window.gachaInitialized = true;
-  
   const GACHA_COST = 1000;
 
   const GACHA_RARITIES = [
@@ -65,11 +61,8 @@
       reward = { type:'consumable', rarity, data: { id: consId } };
     }
 
-    // Trigger debounced save
-    try { 
-      if (typeof saveData === 'function') saveData();
-      if (typeof playerLoadStats === 'function') playerLoadStats(); 
-    } catch(e){}
+    try { if (typeof saveData === 'function') saveData(); } catch(e){}
+    try { if (typeof playerLoadStats === 'function') playerLoadStats(); } catch(e){}
 
     return { ok:true, reward };
   }
@@ -119,103 +112,73 @@
         </div>
       `;
       document.body.appendChild(modal);
-      
-      // Only attach event listeners once when modal is created
-      const btnOpen = openBtn || document.getElementById('open-gacha') || null;
-      const closeX = modal.querySelector('#gacha-modal-x') || modal.querySelector('.gacha-close') || null;
-      const closeBtn = modal.querySelector('#gacha-close') || modal.querySelector('.gacha-close-btn') || null;
-      const rollBtn = modal.querySelector('#gacha-roll-btn');
-      const roll10Btn = modal.querySelector('#gacha-roll10-btn');
-      const resultEl = modal.querySelector('#gacha-result');
+    }
 
-      if (btnOpen) {
-        btnOpen.addEventListener('click', ()=> {
-          // Close other modals first
-          const inventoryModal = document.getElementById('inventory');
-          if (inventoryModal) inventoryModal.style.display = 'none';
-          
-          modal.style.display = 'flex';
-          if (resultEl) resultEl.innerHTML = '';
-          const content = modal.querySelector('.content');
-          if (content) { content.classList.add('gacha-shake'); setTimeout(()=> content.classList.remove('gacha-shake'),420); }
-        });
-      }
+    const btnOpen = openBtn || document.getElementById('open-gacha') || null;
+    const closeX = modal.querySelector('#gacha-modal-x') || modal.querySelector('.gacha-close') || null;
+    const closeBtn = modal.querySelector('#gacha-close') || modal.querySelector('.gacha-close-btn') || null;
+    const rollBtn = modal.querySelector('#gacha-roll-btn');
+    const roll10Btn = modal.querySelector('#gacha-roll10-btn');
+    const resultEl = modal.querySelector('#gacha-result');
 
-      if (closeX) closeX.addEventListener('click', ()=> { modal.style.display='none'; if (resultEl) resultEl.innerHTML=''; });
-      if (closeBtn) closeBtn.addEventListener('click', ()=> { modal.style.display='none'; if (resultEl) resultEl.innerHTML=''; });
-
-      modal.addEventListener('click', (e)=> {
-        if (e.target === modal) { modal.style.display = 'none'; if (resultEl) resultEl.innerHTML=''; }
-      });
-
-      if (rollBtn) rollBtn.addEventListener('click', async ()=> {
-        const res = doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
-        if (!res.ok) { if (resultEl) resultEl.innerHTML = `<span style="color:red">${res.error}</span>`; return; }
-        
-        const r = res.reward;
-        const name = r.data && (r.data.name || r.data.type || r.data.category || r.data.id) || 'Vật phẩm';
-        const contentEl = modal.querySelector('.content');
-        if (contentEl) {
-          contentEl.classList.add('gacha-shake');
-          setTimeout(()=> {
-            contentEl.classList.remove('gacha-shake');
-            contentEl.classList.add('gacha-flash');
-            setTimeout(()=> contentEl.classList.remove('gacha-flash'), 260);
-          }, 420);
-        }
-        if (resultEl) {
-          const row = document.createElement('div');
-          row.className = 'gacha-item-row r-' + r.rarity;
-          row.innerHTML = `<div style="font-weight:700">${r.rarity}</div><div>${name}</div>`;
-          resultEl.innerHTML = '';
-          resultEl.appendChild(row);
-          setTimeout(()=> row.classList.add('gacha-pop'), 260);
-        }
-        
-        // Auto-save to Firebase after UI updates
-        setTimeout(async () => {
-          if (typeof savePlayerDataToFirebase === 'function') {
-            try { 
-              await savePlayerDataToFirebase(); 
-              console.log('Gacha saved successfully');
-            } catch(e) { 
-              console.error('Gacha save error:', e); 
-            }
-          }
-        }, 100);
-      });
-
-      if (roll10Btn) roll10Btn.addEventListener('click', async ()=> {
-        const bulk = doGachaBulk(10, GACHA_COST, typeof player !== 'undefined' ? player : null);
-        if (!bulk.ok) { if (resultEl) resultEl.innerHTML = `<span style="color:red">${bulk.error}</span>`; return; }
-        
-        if (resultEl) {
-          resultEl.innerHTML = '';
-          bulk.results.forEach((it, idx) => {
-            const r = it.reward;
-            if (!r) return;
-            const name = r.data && (r.data.name || r.data.type || r.data.category || r.data.id) || 'Vật phẩm';
-            const row = document.createElement('div');
-            row.className = 'gacha-item-row r-' + r.rarity;
-            row.innerHTML = `<div style="font-weight:700">${idx+1}. ${r.rarity}</div><div>${name}</div>`;
-            resultEl.appendChild(row);
-            setTimeout(()=> row.classList.add('gacha-pop'), 180 + idx*60);
-          });
-        }
-        
-        // Auto-save to Firebase after UI updates
-        setTimeout(async () => {
-          if (typeof savePlayerDataToFirebase === 'function') {
-            try { 
-              await savePlayerDataToFirebase(); 
-              console.log('Gacha bulk saved successfully');
-            } catch(e) { 
-              console.error('Gacha save error:', e); 
-            }
-          }
-        }, 1200);
+    if (btnOpen) {
+      btnOpen.addEventListener('click', ()=> {
+        modal.style.display = 'flex';
+        if (resultEl) resultEl.innerHTML = '';
+        const content = modal.querySelector('.content');
+        if (content) { content.classList.add('gacha-shake'); setTimeout(()=> content.classList.remove('gacha-shake'),420); }
       });
     }
+
+    if (closeX) closeX.addEventListener('click', ()=> { modal.style.display='none'; if (resultEl) resultEl.innerHTML=''; });
+    if (closeBtn) closeBtn.addEventListener('click', ()=> { modal.style.display='none'; if (resultEl) resultEl.innerHTML=''; });
+
+    modal.addEventListener('click', (e)=> {
+      if (e.target === modal) { modal.style.display = 'none'; if (resultEl) resultEl.innerHTML=''; }
+    });
+
+    if (rollBtn) rollBtn.addEventListener('click', ()=> {
+      const res = doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
+      if (!res.ok) { if (resultEl) resultEl.innerHTML = `<span style="color:red">${res.error}</span>`; return; }
+      const r = res.reward;
+      const name = r.data && (r.data.name || r.data.type || r.data.category || r.data.id) || 'Vật phẩm';
+      const contentEl = modal.querySelector('.content');
+      if (contentEl) {
+        contentEl.classList.add('gacha-shake');
+        setTimeout(()=> {
+          contentEl.classList.remove('gacha-shake');
+          contentEl.classList.add('gacha-flash');
+          setTimeout(()=> contentEl.classList.remove('gacha-flash'), 260);
+        }, 420);
+      }
+      if (resultEl) {
+        const row = document.createElement('div');
+        row.className = 'gacha-item-row r-' + r.rarity;
+        row.innerHTML = `<div style="font-weight:700">${r.rarity}</div><div>${name}</div>`;
+        resultEl.innerHTML = '';
+        resultEl.appendChild(row);
+        setTimeout(()=> row.classList.add('gacha-pop'), 260);
+      }
+    });
+
+    if (roll10Btn) roll10Btn.addEventListener('click', ()=> {
+      const bulk = doGachaBulk(10, GACHA_COST, typeof player !== 'undefined' ? player : null);
+      if (!bulk.ok) { if (resultEl) resultEl.innerHTML = `<span style="color:red">${bulk.error}</span>`; return; }
+      if (resultEl) {
+        resultEl.innerHTML = '';
+        bulk.results.forEach((it, idx) => {
+          const r = it.reward;
+          if (!r) return;
+          const name = r.data && (r.data.name || r.data.type || r.data.category || r.data.id) || 'Vật phẩm';
+          const row = document.createElement('div');
+          row.className = 'gacha-item-row r-' + r.rarity;
+          row.innerHTML = `<div style="font-weight:700">${idx+1}. ${r.rarity}</div><div>${name}</div>`;
+          resultEl.appendChild(row);
+          setTimeout(()=> row.classList.add('gacha-pop'), 180 + idx*60);
+        });
+      }
+    });
+
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initUI); else initUI();

@@ -37,7 +37,6 @@ const hpValidation = () => {
         playerExpGain();
         addCombatLog(`${enemy.name} rơi <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(enemy.rewards.gold)} vàng.`)
         player.gold += enemy.rewards.gold;
-        // if (typeof markUnsaved === 'function') markUnsaved(); // Tạm tắt
         playerLoadStats();
         if (enemy.rewards.drop) {
             createEquipmentPrint("combat");
@@ -110,7 +109,7 @@ const playerAttack = () => {
         player.baseStats.atk += 5;
         objectValidation();
         player.tempStats.atk += 5;
-        // saveData(); // BỎ - Không auto-save mỗi đòn đánh
+        saveData();
     }
     if (player.skills.includes("Blade Dance")) {
         // Gain increased attack speed after each hit. Stack resets after battle

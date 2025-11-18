@@ -40,50 +40,20 @@ dungeonActivity.addEventListener('click', function () {
 
 // Sets up the initial dungeon
 const initialDungeonLoad = () => {
-    // Dungeon data sẽ được load từ Firebase trong auth.js
-    // Không cần load từ localStorage nữa
-    if (!dungeon || !dungeon.progress) {
-        dungeon = {
-            rating: 500,
-            grade: "E",
-            progress: {
-                floor: 1,
-                room: 1,
-                floorLimit: 100,
-                roomLimit: 5,
-            },
-            settings: {
-                enemyBaseLvl: 1,
-                enemyLvlGap: 5,
-                enemyBaseStats: 1,
-                enemyScaling: 1.1,
-            },
-            status: {
-                exploring: false,
-                paused: true,
-                event: false,
-            },
-            statistics: {
-                kills: 0,
-                runtime: 0,
-            },
-            backlog: [],
-            action: 0,
+    if (localStorage.getItem("dungeonData") !== null) {
+        dungeon = JSON.parse(localStorage.getItem("dungeonData"));
+        dungeon.status = {
+            exploring: false,
+            paused: true,
+            event: false,
         };
+        updateDungeonLog();
     }
-    
-    // Luôn reset status về tạm dừng khi load lại
-    dungeon.status = {
-        exploring: false,
-        paused: true,
-        event: false,
-    };
-    
-    updateDungeonLog();
     loadDungeonProgress();
     dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
     dungeonAction.innerHTML = "Tạm Dừng...";
     dungeonActivity.innerHTML = "Khám Phá";
+    dungeonTime.innerHTML = "00:00:00";
     dungeonTimer = setInterval(dungeonEvent, 1000);
     playTimer = setInterval(dungeonCounter, 1000);
 }
@@ -92,11 +62,6 @@ const initialDungeonLoad = () => {
 const dungeonStartPause = () => {
     if (!dungeon.status.paused) {
         sfxPause.play();
-        
-        // Dừng nhạc khi tạm dừng
-        if (typeof bgmDungeon !== 'undefined' && bgmDungeon) {
-            bgmDungeon.pause();
-        }
 
         dungeonAction.innerHTML = "Tạm Dừng...";
         dungeonActivity.innerHTML = "Khám Phá";
@@ -104,19 +69,11 @@ const dungeonStartPause = () => {
         dungeon.status.paused = true;
     } else {
         sfxUnpause.play();
-        
-        // Phát nhạc khi bắt đầu khám phá
-        if (typeof bgmDungeon !== 'undefined' && bgmDungeon && !player.inCombat) {
-            bgmDungeon.play();
-        }
 
         dungeonAction.innerHTML = "Khám Phá...";
         dungeonActivity.innerHTML = "Tạm dừng";
         dungeon.status.exploring = true;
         dungeon.status.paused = false;
-        
-        // Đánh dấu có thay đổi chưa lưu khi bắt đầu chơi
-        hasUnsavedChanges = true;
     }
 }
 
@@ -133,8 +90,6 @@ const loadDungeonProgress = () => {
     if (dungeon.progress.room > dungeon.progress.roomLimit) {
         dungeon.progress.room = 1;
         dungeon.progress.floor++;
-        // Force save when advancing to new floor
-        if (typeof forceSave === 'function') forceSave();
     }
     floorCount.innerHTML = `Tầng ${dungeon.progress.floor}`;
     roomCount.innerHTML = `Phòng ${dungeon.progress.room}`;
