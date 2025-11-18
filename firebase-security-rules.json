@@ -1,0 +1,70 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid && (!newData.exists() || (newData.exists() && newData.child('playerData').exists() && newData.child('checksum').exists() && newData.child('lastUpdated').exists() && (!data.exists() || !data.child('lastUpdated').exists() || now - data.child('lastUpdated').val() > 1000)))",
+        
+        "playerData": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 100000"
+        },
+        
+        "dungeonData": {
+          ".validate": "newData.isString() && newData.val().length < 100000"
+        },
+        
+        "enemyData": {
+          ".validate": "newData.isString() && newData.val().length < 100000"
+        },
+        
+        "volumeData": {
+          ".validate": "newData.isString() && newData.val().length < 10000"
+        },
+        
+        "lastUpdated": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 1000"
+        },
+        
+        "checksum": {
+          ".validate": "newData.isString() && newData.val().length == 64"
+        }
+      }
+    },
+    
+    "playerNames": {
+      ".read": true,
+      "$name": {
+        ".write": "auth != null && (!data.exists() || data.val() == auth.uid)",
+        ".validate": "newData.exists() && newData.isString() && newData.val().length > 0 && newData.val().matches(/^[a-zA-Z0-9_\\u00C0-\\u1EF9]{3,15}$/)"
+      }
+    },
+    
+    "leaderboard": {
+      ".read": true,
+      ".indexOn": ["gold", "level", "floor"],
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid",
+        
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 15"
+        },
+        
+        "gold": {
+          ".validate": "newData.isNumber()"
+        },
+        
+        "level": {
+          ".validate": "newData.isNumber()"
+        },
+        
+        "floor": {
+          ".validate": "newData.isNumber()"
+        },
+        
+        "lastUpdated": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    }
+  }
+}

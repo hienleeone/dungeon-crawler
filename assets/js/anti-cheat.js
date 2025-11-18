@@ -1,0 +1,622 @@
+// ===== ADVANCED ANTI-CHEAT SYSTEM =====
+// Hệ thống chống gian lận toàn diện - Chặn hoàn toàn console
+
+(function() {
+    'use strict';
+
+    // ===== 0. CHẶN NGAY TỪ ĐẦU (TRƯỚC KHI DEVTOOLS MỞ) =====
+    // Backup console gốc nếu cần debug
+    const _originalConsole = window.console;
+    
+    // ===== 1. DISABLE CONSOLE MẠNH MẼ HƠN =====
+    const disableConsole = () => {
+        // Vô hiệu hóa tất cả console methods
+        const methods = ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace', 'dir', 'dirxml', 'group', 'groupCollapsed', 'groupEnd', 'clear', 'count', 'countReset', 'assert', 'profile', 'profileEnd', 'time', 'timeLog', 'timeEnd', 'timeStamp'];
+        
+        // Tạo fake console với proxy để chặn mọi truy cập
+        const handler = {
+            get: function(target, prop) {
+                if (methods.includes(prop)) {
+                    return function() {
+                        // Không làm gì cả - im lặng hoàn toàn
+                        return undefined;
+                    };
+                }
+                return undefined;
+            },
+            set: function() {
+                return false; // Chặn mọi set
+            }
+        };
+        
+        const fakeConsole = new Proxy({}, handler);
+
+        // Override console nhiều lần để chắc chắn
+        try {
+            // Method 1: defineProperty
+            Object.defineProperty(window, 'console', {
+                get: () => fakeConsole,
+                set: () => false,
+                configurable: false // Không cho config lại
+            });
+        } catch (e) {
+            // Method 2: Direct assignment
+            window.console = fakeConsole;
+        }
+        
+        // Method 3: Seal để không thể modify
+        try {
+            Object.freeze(window.console);
+        } catch (e) {}
+    };
+    
+    // Chạy disable console NGAY LẬP TỨC
+    disableConsole();
+
+    // ===== 2. DETECT DEVTOOLS =====
+    let devtoolsOpen = false;
+    let banned = false;
+    
+    const devtoolsChecker = () => {
+        if (banned) return;
+        
+        const threshold = 160;
+        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+        
+        // Check Firebug
+        const isFirebug = window.console && (window.console.firebug || (window.console.exception && window.console.table));
+        
+        if (widthThreshold || heightThreshold || isFirebug) {
+            if (!devtoolsOpen) {
+                devtoolsOpen = true;
+                handleDevToolsOpen();
+            }
+        }
+    };
+
+    // Kiểm tra devtools bằng cách đo thời gian debugger
+    const detectDevToolsByTiming = () => {
+        if (banned) return;
+        
+        const start = performance.now();
+        debugger;
+        const end = performance.now();
+        
+        if (end - start > 100) {
+            handleDevToolsOpen();
+        }
+    };
+
+    // Kiểm tra devtools bằng toString override
+    const detectDevToolsByToString = () => {
+        if (banned) return;
+        
+        const element = new Image();
+        Object.defineProperty(element, 'id', {
+            get: function() {
+                handleDevToolsOpen();
+                return 'detect';
+            }
+        });
+        
+        requestAnimationFrame(() => {
+            console.log(element);
+            console.clear();
+        });
+    };
+
+    const handleDevToolsOpen = () => {
+        if (banned) return;
+        banned = true;
+        
+        // XÓA DỮ LIỆU FIREBASE TRƯỚC KHI HIỂN THỊ BAN SCREEN
+        setTimeout(() => {
+            try {
+                // Xóa dữ liệu Firebase
+                if (typeof currentUser !== 'undefined' && currentUser && typeof database !== 'undefined') {
+                    const userId = currentUser.uid;
+                    
+                    // Xóa player name
+                    if (typeof player !== 'undefined' && player && player.name) {
+                        database.ref('playerNames/' + player.name).remove().catch(() => {});
+                    }
+                    
+                    // Xóa user data
+                    database.ref('users/' + userId).remove().catch(() => {});
+                    
+                    // Xóa leaderboard
+                    database.ref('leaderboard/' + userId).remove().catch(() => {});
+                }
+                
+                // Logout Firebase
+                if (typeof auth !== 'undefined' && auth && auth.signOut) {
+                    auth.signOut().catch(() => {});
+                }
+                
+                // Clear local storage
+                localStorage.clear();
+                sessionStorage.clear();
+            } catch (e) {
+                // Ignore
+            }
+        }, 100);
+        
+        // BAN USER
+        localStorage.setItem('_banned', Date.now().toString());
+        localStorage.setItem('_banReason', 'DevTools detected');
+        
+        // Hiển thị màn hình BAN vĩnh viễn
+        document.body.innerHTML = `
+            <div style="
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                background: linear-gradient(135deg, #1a0000 0%, #330000 100%);
+                color: #fff;
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+            ">
+                <div style="
+                    max-width: 600px;
+                    background: rgba(0,0,0,0.8);
+                    padding: 40px;
+                    border-radius: 20px;
+                    border: 3px solid #ff0000;
+                    box-shadow: 0 0 50px rgba(255,0,0,0.5);
+                ">
+                    <h1 style="color: #ff0000; font-size: 4rem; margin: 0; text-shadow: 0 0 20px #ff0000;">⛔ THÔNG BÁO</h1>
+                    <h2 style="color: #ff4444; font-size: 2rem; margin: 20px 0;">BẠN ĐÃ BỊ CẤM</h2>
+                    
+                    <div style="
+                        background: rgba(255,0,0,0.1);
+                        padding: 20px;
+                        border-radius: 10px;
+                        margin: 30px 0;
+                        border-left: 5px solid #ff0000;
+                    ">
+                        <p style="font-size: 1.3rem; margin: 10px 0;"><strong>Lý do:</strong> Phát hiện Developer Tools</p>
+                        <p style="font-size: 1.1rem; margin: 10px 0; color: #ffaaaa;">Hành vi vi phạm chính sách chống gian lận</p>
+                    </div>
+                    
+                    <div style="
+                        text-align: left;
+                        background: rgba(255,255,255,0.05);
+                        padding: 20px;
+                        border-radius: 10px;
+                        margin: 20px 0;
+                    ">
+                        <p style="font-size: 1rem; margin: 10px 0;">🚫 Bạn không thể:</p>
+                        <ul style="font-size: 0.95rem; line-height: 1.8; color: #ffcccc;">
+                            <li>+ Truy cập game từ trình duyệt này</li>
+                            <li>+ Tạo tài khoản mới trên thiết bị này</li>
+                            <li>+ Sử dụng DevTools khi chơi game</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,0,0.1); border-radius: 10px;">
+                        <p style="font-size: 1rem; color: #ffff00;">💡 Muốn chơi lại?</p>
+                        <p style="font-size: 0.9rem; color: #ffffaa; margin-top: 10px;">
+                            1. Đóng hoàn toàn DevTools<br>
+                            2. Xóa dữ liệu trang web<br>
+                            3. Sử dụng trình duyệt khác<br>
+                            4. CAM KẾT không mở DevTools nữa!
+                        </p>
+                    </div>
+                    
+                    <p style="font-size: 0.85rem; color: #888; margin-top: 30px;">
+                        Hệ thống anti-cheat đã ghi nhận vi phạm này.<br>
+                        Đã xử lý xóa toàn bộ dữ liệu người chơi.<br>
+                        Thời gian: ${new Date().toLocaleString('vi-VN')}
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        // Clear tất cả intervals và timeouts
+        const highestTimeoutId = setTimeout(";");
+        for (let i = 0; i < highestTimeoutId; i++) {
+            clearTimeout(i);
+        }
+        
+        const highestIntervalId = setInterval(";");
+        for (let i = 0; i < highestIntervalId; i++) {
+            clearInterval(i);
+        }
+        
+        // Disable tất cả interactions
+        document.body.style.pointerEvents = 'none';
+        
+        // Prevent reload
+        window.onbeforeunload = function() {
+            return "Bạn đã bị cấm truy cập!";
+        };
+        
+        throw new Error("Access Banned - DevTools detected!");
+    };
+
+    // ===== 3. DISABLE RIGHT CLICK =====
+    document.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        return false;
+    });
+
+    // ===== 4. DISABLE KEYBOARD SHORTCUTS =====
+    document.addEventListener('keydown', e => {
+        // F12
+        if (e.keyCode === 123) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Ctrl+U (View Source)
+        if (e.ctrlKey && e.keyCode === 85) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Ctrl+S (Save)
+        if (e.ctrlKey && e.keyCode === 83) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // F12 alternative
+        if (e.key === 'F12') {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // ===== 5. PROTECT GLOBAL OBJECTS =====
+    const protectGlobalObjects = () => {
+        // Chặn truy cập trực tiếp vào player object
+        let _player = null;
+        
+        // Override window.player với getter/setter có bảo vệ
+        Object.defineProperty(window, 'player', {
+            get: function() {
+                return _player;
+            },
+            set: function(value) {
+                // Chỉ cho phép set từ code game, không cho từ console
+                const stack = new Error().stack;
+                if (stack && stack.includes('console')) {
+                    console.warn('⚠️ Không thể chỉnh sửa player từ console!');
+                    return false;
+                }
+                _player = value;
+                return true;
+            },
+            configurable: false
+        });
+        
+        // Chặn Object.defineProperty để không thể override lại
+        const originalDefineProperty = Object.defineProperty;
+        Object.defineProperty = function(obj, prop, descriptor) {
+            // Chặn việc redefine player, dungeon, enemy
+            if (obj === window && (prop === 'player' || prop === 'dungeon' || prop === 'enemy')) {
+                console.warn('⚠️ Không thể chỉnh sửa game objects!');
+                return obj;
+            }
+            return originalDefineProperty.apply(this, arguments);
+        };
+    };
+
+    // ===== 6. DETECT BROWSER EXTENSIONS =====
+    const detectExtensions = () => {
+        const isChrome = /Chrome/.test(navigator.userAgent);
+        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+        const isFirefox = /Firefox/.test(navigator.userAgent);
+        
+        // Phát hiện extension qua performance
+        if (performance.getEntriesByType) {
+            const entries = performance.getEntriesByType('resource');
+            const extensionDetected = entries.some(entry => 
+                entry.name.includes('chrome-extension://') || 
+                entry.name.includes('moz-extension://')
+            );
+            
+            if (extensionDetected) {
+                console.warn('Extension detected');
+            }
+        }
+    };
+
+    // ===== 7. ANTI-DEBUG =====
+    const antiDebug = () => {
+        // Check window size thường xuyên (300ms - nhanh hơn để catch ngay)
+        setInterval(() => {
+            devtoolsChecker();
+        }, 300);
+        
+        // Check timing ít thường xuyên hơn để tránh lag (1.5 giây)
+        setInterval(() => {
+            detectDevToolsByTiming();
+        }, 1500);
+    };
+
+    // ===== 8. OBFUSCATE CODE =====
+    // Code đã được làm khó đọc để tránh reverse engineering
+    
+    // ===== 9. DETECT IFRAME INJECTION =====
+    const detectIframe = () => {
+        if (window.top !== window.self) {
+            // Website đang chạy trong iframe
+            window.top.location = window.self.location;
+        }
+    };
+
+    // ===== 10. CLEAR STORAGE ON SUSPICIOUS ACTIVITY =====
+    const clearOnSuspicious = () => {
+        try {
+            // Monitor localStorage changes
+            const originalSetItem = localStorage.setItem;
+            localStorage.setItem = function(key, value) {
+                // Validate trước khi set
+                if (key.includes('player') || key.includes('game')) {
+                    try {
+                        JSON.parse(value); // Validate JSON
+                    } catch (e) {
+                        return; // Không cho set nếu không phải JSON hợp lệ
+                    }
+                }
+                return originalSetItem.apply(this, arguments);
+            };
+        } catch (e) {
+            // Ignore
+        }
+    };
+
+    // ===== 11. RANDOM INTEGRITY CHECKS =====
+    let integrityCheckInterval;
+    const startIntegrityChecks = () => {
+        integrityCheckInterval = setInterval(() => {
+            // Check nếu console đã được restore
+            if (window.console.log.toString().length < 10) {
+                disableConsole();
+            }
+            
+            // Check devtools
+            devtoolsChecker();
+            
+            // Check iframe
+            detectIframe();
+            
+            // Random check
+            if (Math.random() < 0.1) {
+                detectDevToolsByToString();
+            }
+            
+            // ⚠️ CHECK: Anti-cheat có bị disable không?
+            if (!window._antiCheatActive) {
+                window._antiCheatActive = true; // Restore
+            }
+            
+            // ⚠️ CHECK: Player object có bị modify bất thường không?
+            if (typeof window.player !== 'undefined' && window.player) {
+                // Validate gold không vượt quá giới hạn
+                if (window.player.gold > 999999999999) {
+                    alert('⚠️ Phát hiện dữ liệu bất thường! Game sẽ được tải lại.');
+                    location.reload();
+                }
+                // Validate level không vượt quá giới hạn
+                if (window.player.lvl > 10000) {
+                    alert('⚠️ Phát hiện dữ liệu bất thường! Game sẽ được tải lại.');
+                    location.reload();
+                }
+            }
+        }, 2000);
+    };
+
+    // ===== 12. DISABLE COMMON HACKING TOOLS =====
+    const disableHackingTools = () => {
+        // Disable eval
+        window.eval = function() {
+            console.warn('⚠️ eval() đã bị vô hiệu hóa!');
+            throw new Error('eval is disabled');
+        };
+        
+        // Disable Function constructor
+        window.Function = new Proxy(Function, {
+            construct: function() {
+                console.warn('⚠️ Function constructor đã bị vô hiệu hóa!');
+                throw new Error('Function constructor is disabled');
+            }
+        });
+        
+        // Disable setTimeout/setInterval với string
+        const originalSetTimeout = window.setTimeout;
+        const originalSetInterval = window.setInterval;
+        
+        window.setTimeout = function(fn, delay) {
+            if (typeof fn === 'string') {
+                console.warn('⚠️ setTimeout với string đã bị chặn!');
+                throw new Error('setTimeout with string is disabled');
+            }
+            return originalSetTimeout.apply(this, arguments);
+        };
+        
+        window.setInterval = function(fn, delay) {
+            if (typeof fn === 'string') {
+                console.warn('⚠️ setInterval với string đã bị chặn!');
+                throw new Error('setInterval with string is disabled');
+            }
+            return originalSetInterval.apply(this, arguments);
+        };
+        
+        // ===== CHẶN __proto__ và prototype pollution =====
+        Object.freeze(Object.prototype);
+        Object.freeze(Array.prototype);
+        Object.freeze(Function.prototype);
+    };
+
+    // ===== 13. CHẶN COMMAND INJECTION VÀO GAME OBJECTS =====
+    const protectGameVariables = () => {
+        // Tạo snapshot của player để so sánh
+        let lastSnapshot = null;
+        
+        setInterval(() => {
+            if (window.player && window.player.gold !== undefined) {
+                const currentSnapshot = {
+                    gold: window.player.gold,
+                    lvl: window.player.lvl,
+                    timestamp: Date.now()
+                };
+                
+                if (lastSnapshot) {
+                    const timeDiff = currentSnapshot.timestamp - lastSnapshot.timestamp;
+                    const goldDiff = currentSnapshot.gold - lastSnapshot.gold;
+                    const lvlDiff = currentSnapshot.lvl - lastSnapshot.lvl;
+                    
+                    // Nếu gold tăng đột ngột trong thời gian ngắn (không phải từ gameplay)
+                    // VD: tăng > 100k trong < 1s → cheat
+                    if (timeDiff < 1000 && goldDiff > 100000 && !window.player.inCombat) {
+                        alert('⚠️ Phát hiện chỉnh sửa gold bất thường!\n\nVui lòng chơi game một cách công bằng.');
+                        // Reset về giá trị cũ
+                        window.player.gold = lastSnapshot.gold;
+                        window.player.lvl = lastSnapshot.lvl;
+                        return;
+                    }
+                    
+                    // Nếu level tăng đột ngột (> 5 level trong < 1s)
+                    if (timeDiff < 1000 && lvlDiff > 5) {
+                        alert('⚠️ Phát hiện chỉnh sửa level bất thường!\n\nGame sẽ được tải lại.');
+                        location.reload();
+                        return;
+                    }
+                }
+                
+                lastSnapshot = currentSnapshot;
+            }
+        }, 500); // Check mỗi 0.5 giây
+    };
+
+    // ===== 14. WATERMARK/FINGERPRINT =====
+    const createFingerprint = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('🛡️', 2, 2);
+        return canvas.toDataURL();
+    };
+
+    // ===== CHECK BAN STATUS =====
+    const checkBanStatus = () => {
+        const banned = localStorage.getItem('_banned');
+        if (banned) {
+            const banTime = parseInt(banned);
+            const banReason = localStorage.getItem('_banReason') || 'Violation detected';
+            
+            // Hiển thị màn hình ban
+            document.body.innerHTML = `
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    background: linear-gradient(135deg, #1a0000 0%, #330000 100%);
+                    color: #fff;
+                    font-family: Arial, sans-serif;
+                    text-align: center;
+                    padding: 20px;
+                ">
+                    <div style="
+                        max-width: 600px;
+                        background: rgba(0,0,0,0.8);
+                        padding: 40px;
+                        border-radius: 20px;
+                        border: 3px solid #ff0000;
+                        box-shadow: 0 0 50px rgba(255,0,0,0.5);
+                    ">
+                        <h1 style="color: #ff0000; font-size: 4rem; margin: 0; text-shadow: 0 0 20px #ff0000;">⛔ BAN ⛔</h1>
+                        <h2 style="color: #ff4444; font-size: 2rem; margin: 20px 0;">TRUY CẬP BỊ CHẶN VĨNH VIỄN</h2>
+                        
+                        <div style="
+                            background: rgba(255,0,0,0.1);
+                            padding: 20px;
+                            border-radius: 10px;
+                            margin: 30px 0;
+                            border-left: 5px solid #ff0000;
+                        ">
+                            <p style="font-size: 1.3rem; margin: 10px 0;"><strong>Lý do:</strong> ${banReason}</p>
+                            <p style="font-size: 1rem; margin: 10px 0; color: #ffaaaa;">Thời gian: ${new Date(banTime).toLocaleString('vi-VN')}</p>
+                        </div>
+                        
+                        <p style="font-size: 1.1rem; color: #ffff00; margin: 20px 0;">
+                            🔒 Thiết bị này đã bị đánh dấu vi phạm và đã bị xóa toàn bộ dữ liệu, tiến trình game. Chúng tôi yêu cầu bạn tuân thủ chính sách và nội quy khi chơi trò chơi trên trang web nhằm xây dựng cộng đồng lành mạnh và môi trường game công bằng!
+                        </p>
+                        
+                        <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,0,0.1); border-radius: 10px;">
+                            <p style="font-size: 1rem; color: #ffff00;">💡 Cách khắc phục:</p>
+                            <p style="font-size: 0.9rem; color: #ffffaa; margin-top: 10px;">
+                                Xóa dữ liệu trang web (Clear Site Data)<br>
+                                hoặc sử dụng trình duyệt/thiết bị khác
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Prevent any action
+            throw new Error("Access Banned");
+        }
+    };
+
+    // ===== INITIALIZATION =====
+    const init = () => {
+        // CHECK BAN ĐẦU TIÊN
+        checkBanStatus();
+        
+        // CHECK DEVTOOLS NGAY KHI INIT (để catch trường hợp DevTools đã mở)
+        devtoolsChecker();
+        detectDevToolsByTiming();
+        
+        // Apply all protections
+        disableConsole();
+        protectGlobalObjects();
+        detectExtensions();
+        antiDebug();
+        detectIframe();
+        clearOnSuspicious();
+        startIntegrityChecks();
+        disableHackingTools();
+        protectGameVariables();
+        
+        // Log protection status
+        const fingerprint = createFingerprint();
+        
+        // Prevent script removal
+        Object.freeze(init);
+    };
+
+    // Start anti-cheat system
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    // Prevent script unload
+    window.addEventListener('beforeunload', () => {
+        // Last check
+        devtoolsChecker();
+    });
+
+    // Export để có thể gọi từ game (nếu cần)
+    window._antiCheatActive = true;
+    
+    // Self-protection: Prevent this script from being modified
+    Object.freeze(window._antiCheatActive);
+})();

@@ -4,33 +4,8 @@ const dungeonTime = document.querySelector("#dungeonTime");
 const floorCount = document.querySelector("#floorCount");
 const roomCount = document.querySelector("#roomCount");
 
-let dungeon = {
-    rating: 500,
-    grade: "E",
-    progress: {
-        floor: 1,
-        room: 1,
-        floorLimit: 100,
-        roomLimit: 5,
-    },
-    settings: {
-        enemyBaseLvl: 1,
-        enemyLvlGap: 5,
-        enemyBaseStats: 1,
-        enemyScaling: 1.1,
-    },
-    status: {
-        exploring: false,
-        paused: true,
-        event: false,
-    },
-    statistics: {
-        kills: 0,
-        runtime: 0,
-    },
-    backlog: [],
-    action: 0,
-};
+// Không khai báo dungeon ở đây nữa, để Firebase quản lý
+// dungeon sẽ được khởi tạo bởi initializeDefaultDungeon() hoặc loadPlayerData()
 
 // ===== Dungeon Setup =====
 // Enables start and pause on button click
@@ -40,26 +15,34 @@ dungeonActivity.addEventListener('click', function () {
 
 // Sets up the initial dungeon
 const initialDungeonLoad = () => {
-    if (localStorage.getItem("dungeonData") !== null) {
-        dungeon = JSON.parse(localStorage.getItem("dungeonData"));
+    // Đảm bảo dungeon được khởi tạo
+    if (!dungeon || dungeon === null) {
+        if (typeof initializeDefaultDungeon === 'function') {
+            initializeDefaultDungeon();
+        }
+    }
+    
+    if (dungeon) {
         dungeon.status = {
             exploring: false,
             paused: true,
             event: false,
         };
         updateDungeonLog();
+        loadDungeonProgress();
+        dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
+        dungeonAction.innerHTML = "Tạm Dừng...";
+        dungeonActivity.innerHTML = "Khám Phá";
+        dungeonTime.innerHTML = "00:00:00";
+        dungeonTimer = setInterval(dungeonEvent, 1000);
+        playTimer = setInterval(dungeonCounter, 1000);
     }
-    loadDungeonProgress();
-    dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
-    dungeonAction.innerHTML = "Tạm Dừng...";
-    dungeonActivity.innerHTML = "Khám Phá";
-    dungeonTime.innerHTML = "00:00:00";
-    dungeonTimer = setInterval(dungeonEvent, 1000);
-    playTimer = setInterval(dungeonCounter, 1000);
 }
 
 // Start and Pause Functionality
 const dungeonStartPause = () => {
+    if (!dungeon || dungeon === null) return;
+    
     if (!dungeon.status.paused) {
         sfxPause.play();
 
@@ -79,6 +62,8 @@ const dungeonStartPause = () => {
 
 // Counts the total time for the current run and total playtime
 const dungeonCounter = () => {
+    if (!dungeon || dungeon === null) return;
+    
     player.playtime++;
     dungeon.statistics.runtime++;
     dungeonTime.innerHTML = new Date(dungeon.statistics.runtime * 1000).toISOString().slice(11, 19);
@@ -87,6 +72,8 @@ const dungeonCounter = () => {
 
 // Loads the floor and room count
 const loadDungeonProgress = () => {
+    if (!dungeon || dungeon === null) return;
+    
     if (dungeon.progress.room > dungeon.progress.roomLimit) {
         dungeon.progress.room = 1;
         dungeon.progress.floor++;
@@ -97,6 +84,8 @@ const loadDungeonProgress = () => {
 
 // ========== Events in the Dungeon ==========
 const dungeonEvent = () => {
+    if (!dungeon || dungeon === null) return;
+    
     if (dungeon.status.exploring && !dungeon.status.event) {
         dungeon.action++;
         let choices;

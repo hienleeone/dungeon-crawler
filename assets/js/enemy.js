@@ -1,31 +1,34 @@
-// Enemy
-let enemy = {
-    name: null,
-    type: null,
-    lvl: null,
-    stats: {
-        hp: null,
-        hpMax: null,
-        atk: 0,
-        def: 0,
-        atkSpd: 0,
-        vamp: 0,
-        critRate: 0,
-        critDmg: 0
-    },
-    image: {
-        name: null,
-        type: null,
-        size: null
-    },
-    rewards: {
-        exp: null,
-        gold: null,
-        drop: null
-    }
-};
+// Enemy - không khai báo object ban đầu, sẽ được khởi tạo khi cần
+let enemy = null;
 
 const generateRandomEnemy = (condition) => {
+    // Khởi tạo enemy object mới
+    enemy = {
+        name: null,
+        type: null,
+        lvl: null,
+        stats: {
+            hp: null,
+            hpMax: null,
+            atk: 0,
+            def: 0,
+            atkSpd: 0,
+            vamp: 0,
+            critRate: 0,
+            critDmg: 0
+        },
+        image: {
+            name: null,
+            type: null,
+            size: null
+        },
+        rewards: {
+            exp: null,
+            gold: null,
+            drop: null
+        }
+    };
+    
     // List of possible enemy names
     const enemyNames = [
         // Goblin

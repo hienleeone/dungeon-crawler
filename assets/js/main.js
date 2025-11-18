@@ -1,6 +1,61 @@
 window.addEventListener("load", function () {
-    // Authentication is handled by firebase-auth.js
-    // Don't show anything until user is authenticated
+    // Xử lý đăng nhập/đăng ký
+    const loginForm = document.querySelector("#login-form");
+    const registerForm = document.querySelector("#register-form");
+    const showRegisterBtn = document.querySelector("#show-register");
+    const showLoginBtn = document.querySelector("#show-login");
+    const loginPanel = document.querySelector("#login-panel");
+    const registerPanel = document.querySelector("#register-panel");
+
+    // Chuyển đổi giữa đăng nhập và đăng ký
+    showRegisterBtn.addEventListener("click", function() {
+        loginPanel.style.display = "none";
+        registerPanel.style.display = "block";
+        document.querySelector("#auth-alert").innerHTML = "";
+    });
+
+    showLoginBtn.addEventListener("click", function() {
+        registerPanel.style.display = "none";
+        loginPanel.style.display = "block";
+        document.querySelector("#register-alert").innerHTML = "";
+    });
+
+    // Xử lý đăng nhập
+    loginForm.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const email = document.querySelector("#login-email").value;
+        const password = document.querySelector("#login-password").value;
+
+        const success = await loginUser(email, password);
+        if (success) {
+            document.querySelector("#login-screen").style.display = "none";
+            if (isNewUser || player === null) {
+                runLoad("character-creation", "flex");
+            } else {
+                let target = document.querySelector("#title-screen");
+                target.style.display = "flex";
+            }
+        }
+    });
+
+    // Xử lý đăng ký
+    registerForm.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const email = document.querySelector("#register-email").value;
+        const password = document.querySelector("#register-password").value;
+        const confirmPassword = document.querySelector("#register-confirm-password").value;
+
+        if (password !== confirmPassword) {
+            document.querySelector("#register-alert").innerHTML = "Mật khẩu không khớp!";
+            return;
+        }
+
+        const success = await registerUser(email, password, confirmPassword);
+        if (success) {
+            document.querySelector("#login-screen").style.display = "none";
+            runLoad("character-creation", "flex");
+        }
+    });
 
     // Title Screen Validation
     document.querySelector("#title-screen").addEventListener("click", function () {
@@ -28,16 +83,13 @@ window.addEventListener("load", function () {
             if (playerName.length < 3 || playerName.length > 15) {
                 document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
             } else {
-                // Check if name already exists
+                // Kiểm tra tên có bị trùng không
                 const nameExists = await checkPlayerNameExists(playerName);
                 if (nameExists) {
                     document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
                     return;
                 }
-                
-                // Register the name
-                await registerPlayerName(playerName);
-                
+
                 player = {
                     name: playerName,
                     lvl: 1,
@@ -103,9 +155,24 @@ window.addEventListener("load", function () {
                     deaths: 0,
                     inCombat: false
                 };
+                
+                // Đăng ký tên người chơi
+                await registerPlayerName(playerName);
+                
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
-                saveData();
+                
+                // Khởi tạo dungeon object cho nhân vật mới
+                if (typeof initializeDefaultDungeon === 'function') {
+                    initializeDefaultDungeon();
+                }
+                
+                // Áp dụng protection sau khi tạo player
+                if (typeof protectPlayerObject === 'function') {
+                    protectPlayerObject();
+                }
+                
+                await savePlayerData();
                 document.querySelector("#character-creation").style.display = "none";
                 runLoad("title-screen", "flex");
             }
@@ -174,8 +241,8 @@ window.addEventListener("load", function () {
         let playerMenu = document.querySelector('#player-menu');
         let runMenu = document.querySelector('#stats');
         let quitRun = document.querySelector('#quit-run');
-        let logoutBtn = document.querySelector('#logout-btn');
         let leaderboardBtn = document.querySelector('#leaderboard-btn');
+        let logoutBtn = document.querySelector('#logout-btn');
         let volumeSettings = document.querySelector('#volume-btn');
 
         // Player profile click function
@@ -235,14 +302,15 @@ window.addEventListener("load", function () {
             };
         };
 
-        // Quit the current run - now deletes all data
+        // Quit the current run / Delete all data
         quitRun.onclick = function () {
             sfxOpen.play();
             menuModalElement.style.display = "none";
             defaultModalElement.style.display = "flex";
             defaultModalElement.innerHTML = `
             <div class="content">
-                <p>Bạn có muốn xóa toàn bộ dữ liệu và chơi lại từ đầu?</p>
+                <p>Bạn có muốn xóa toàn bộ dữ liệu game?</p>
+                <p style="color: #ff4444; font-size: 0.9rem;">Cảnh báo: Hành động này không thể hoàn tác!</p>
                 <div class="button-container">
                     <button id="quit-run">Đồng Ý</button>
                     <button id="cancel-quit">Hủy Bỏ</button>
@@ -252,18 +320,21 @@ window.addEventListener("load", function () {
             let cancel = document.querySelector('#cancel-quit');
             quit.onclick = async function () {
                 sfxConfirm.play();
-                // Delete all player data from Firebase
-                await deletePlayerData();
-                
-                // Stop music
-                bgmDungeon.stop();
-                
-                // Clear intervals
-                clearInterval(dungeonTimer);
-                clearInterval(playTimer);
-                
-                defaultModalElement.style.display = "none";
-                defaultModalElement.innerHTML = "";
+                // Xóa toàn bộ dữ liệu
+                const success = await deleteAllGameData();
+                if (success) {
+                    bgmDungeon.stop();
+                    let dimDungeon = document.querySelector('#dungeon-main');
+                    dimDungeon.style.filter = "brightness(100%)";
+                    dimDungeon.style.display = "none";
+                    menuModalElement.style.display = "none";
+                    menuModalElement.innerHTML = "";
+                    defaultModalElement.style.display = "none";
+                    defaultModalElement.innerHTML = "";
+                    runLoad("character-creation", "flex");
+                    clearInterval(dungeonTimer);
+                    clearInterval(playTimer);
+                }
             };
             cancel.onclick = function () {
                 sfxDecline.play();
@@ -273,13 +344,134 @@ window.addEventListener("load", function () {
             };
         };
 
-        // Show leaderboard
-        leaderboardBtn.onclick = function () {
+        // Leaderboard button
+        leaderboardBtn.onclick = async function () {
+            sfxOpen.play();
             menuModalElement.style.display = "none";
-            showLeaderboard();
+            defaultModalElement.style.display = "flex";
+            defaultModalElement.innerHTML = `
+            <div class="content" id="leaderboard-tab">
+                <div class="content-head">
+                    <h3>Bảng Xếp Hạng</h3>
+                    <p id="leaderboard-close"><i class="fa fa-xmark"></i></p>
+                </div>
+                <div id="leaderboard-content">
+                    <p style="text-align: center;">Đang tải...</p>
+                </div>
+            </div>`;
+            
+            let leaderboardTab = document.querySelector('#leaderboard-tab');
+            leaderboardTab.style.width = "22rem";
+            let leaderboardClose = document.querySelector('#leaderboard-close');
+            let leaderboardContent = document.querySelector('#leaderboard-content');
+            
+            // Trạng thái hiển thị (top 3 hay top 10)
+            if (!leaderboardContent.dataset.expanded) {
+                leaderboardContent.dataset.expanded = 'false';
+            }
+            const isExpanded = leaderboardContent.dataset.expanded === 'true';
+            const limit = isExpanded ? 10 : 3;
+            
+            // Lấy dữ liệu leaderboard
+            const topGold = await getTopGoldPlayers(limit);
+            const topLevel = await getTopLevelPlayers(limit);
+            const topFloor = await getTopFloorPlayers(limit);
+            
+            const medals = ['🥇', '🥈', '🥉'];
+            
+            // Hàm tạo danh sách
+            const createList = (players, valueKey, label, color) => {
+                let list = `<div style="background: ${color}; padding: 12px; border-radius: 8px; margin-bottom: 12px;">`;
+                list += `<h4 style="margin: 0 0 8px 0; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">${label}</h4>`;
+                
+                if (players.length === 0) {
+                    list += '<p style="color: #ddd; font-style: italic; margin: 5px 0;">Chưa có dữ liệu</p>';
+                } else {
+                    players.forEach((player, index) => {
+                        const medal = index < 3 ? medals[index] + ' ' : `${index + 1}. `;
+                        const nameStyle = index < 3 ? 'font-weight: bold; font-size: 1.05em;' : '';
+                        
+                        let value;
+                        if (valueKey === 'gold') {
+                            value = nFormatter(player.gold) + ' vàng';
+                        } else if (valueKey === 'level') {
+                            value = 'Level ' + player.level;
+                        } else if (valueKey === 'floor') {
+                            value = 'Tầng ' + player.floor;
+                        }
+                        
+                        list += `<div style="background: rgba(255,255,255,0.15); padding: 6px 8px; margin: 4px 0; border-radius: 5px; ${nameStyle}">`;
+                        list += `${medal}<span style="color: #fff;">${player.name}</span> - <span style="color: #ffd700;">${value}</span>`;
+                        list += '</div>';
+                    });
+                }
+                
+                list += '</div>';
+                return list;
+            };
+            
+            let content = '';
+            content += createList(topGold, 'gold', '💰 Top Vàng', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+            content += createList(topLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)');
+            content += createList(topFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)');
+            
+            // Nút toggle
+            const toggleText = isExpanded ? 'Thu gọn (Top 3)' : 'Xem thêm (Top 10)';
+            content += `<div style="text-align: center; margin-top: 15px;">`;
+            content += `<button id="toggle-leaderboard-btn" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #fff; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-size: 0.95em; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;">${toggleText}</button>`;
+            content += '</div>';
+            
+            leaderboardContent.innerHTML = content;
+            
+            // Sự kiện cho nút toggle
+            const toggleBtn = document.getElementById("toggle-leaderboard-btn");
+            toggleBtn.onmouseover = function() {
+                this.style.transform = 'scale(1.05)';
+            };
+            toggleBtn.onmouseout = function() {
+                this.style.transform = 'scale(1)';
+            };
+            toggleBtn.onclick = async function() {
+                leaderboardContent.dataset.expanded = (!isExpanded).toString();
+                
+                // Reload dữ liệu
+                const newLimit = !isExpanded ? 10 : 3;
+                leaderboardContent.innerHTML = '<p style="text-align: center;">Đang tải...</p>';
+                
+                const [newTopGold, newTopLevel, newTopFloor] = await Promise.all([
+                    getTopGoldPlayers(newLimit),
+                    getTopLevelPlayers(newLimit),
+                    getTopFloorPlayers(newLimit)
+                ]);
+                
+                let newContent = '';
+                newContent += createList(newTopGold, 'gold', '💰 Top Vàng', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+                newContent += createList(newTopLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)');
+                newContent += createList(newTopFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)');
+                
+                const newToggleText = !isExpanded ? 'Thu gọn (Top 3)' : 'Xem thêm (Top 10)';
+                newContent += `<div style="text-align: center; margin-top: 15px;">`;
+                newContent += `<button id="toggle-leaderboard-btn" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #fff; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-size: 0.95em; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;">${newToggleText}</button>`;
+                newContent += '</div>';
+                
+                leaderboardContent.innerHTML = newContent;
+                
+                // Re-attach sự kiện
+                const newToggleBtn = document.getElementById("toggle-leaderboard-btn");
+                newToggleBtn.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
+                newToggleBtn.onmouseout = function() { this.style.transform = 'scale(1)'; };
+                newToggleBtn.onclick = toggleBtn.onclick;
+            };
+            
+            leaderboardClose.onclick = function () {
+                sfxDecline.play();
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                menuModalElement.style.display = "flex";
+            };
         };
 
-        // Logout function
+        // Logout button
         logoutBtn.onclick = function () {
             sfxOpen.play();
             menuModalElement.style.display = "none";
@@ -292,13 +484,23 @@ window.addEventListener("load", function () {
                     <button id="cancel-logout">Hủy Bỏ</button>
                 </div>
             </div>`;
-            let confirm = document.querySelector('#confirm-logout');
-            let cancel = document.querySelector('#cancel-logout');
-            confirm.onclick = async function () {
+            let confirmLogout = document.querySelector('#confirm-logout');
+            let cancelLogout = document.querySelector('#cancel-logout');
+            confirmLogout.onclick = async function () {
                 sfxConfirm.play();
-                await logout();
+                await logoutUser();
+                bgmDungeon.stop();
+                let dimDungeon = document.querySelector('#dungeon-main');
+                dimDungeon.style.filter = "brightness(100%)";
+                dimDungeon.style.display = "none";
+                menuModalElement.style.display = "none";
+                menuModalElement.innerHTML = "";
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                clearInterval(dungeonTimer);
+                clearInterval(playTimer);
             };
-            cancel.onclick = function () {
+            cancelLogout.onclick = function () {
                 sfxDecline.play();
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
@@ -366,8 +568,7 @@ window.addEventListener("load", function () {
                 bgmDungeon.stop();
                 setVolume();
                 bgmDungeon.play();
-                // Save volume to localStorage (not critical game data)
-                localStorage.setItem("volumeData", JSON.stringify(volume));
+                saveData();
             };
         };
 
@@ -398,11 +599,9 @@ const enterDungeon = () => {
     document.querySelector("#title-screen").style.display = "none";
     runLoad("dungeon-main", "flex");
     if (player.inCombat) {
-        // Enemy data is loaded from Firebase, not localStorage
-        if (enemy) {
-            showCombatInfo();
-            startCombat(bgmBattleMain);
-        }
+        // enemy will already be loaded from Firebase
+        showCombatInfo();
+        startCombat(bgmBattleMain);
     } else {
         bgmDungeon.play();
     }
@@ -413,15 +612,11 @@ const enterDungeon = () => {
     playerLoadStats();
 }
 
-// Save all the data (now saves to Firebase instead of localStorage)
-const saveData = () => {
-    // Volume settings can stay in localStorage (not critical)
-    const volumeData = JSON.stringify(volume);
-    localStorage.setItem("volumeData", volumeData);
-    
-    // Player data is saved to Firebase
-    if (typeof saveDataToFirebase === 'function') {
-        saveDataToFirebase();
+// Save all the data to Firebase (replacing localStorage)
+const saveData = async () => {
+    // Sử dụng debounced save thay vì save ngay lập tức
+    if (typeof debouncedSave === 'function') {
+        debouncedSave();
     }
 }
 
@@ -494,6 +689,62 @@ const progressReset = () => {
     dungeon.statistics.runtime = 0;
     combatBacklog.length = 0;
     saveData();
+}
+
+// Export and Import Save Data
+const exportData = () => {
+    const exportedData = btoa(JSON.stringify(player));
+    return exportedData;
+}
+
+const importData = (importedData) => {
+    try {
+        let playerImport = JSON.parse(atob(importedData));
+        if (playerImport.inventory !== undefined) {
+            sfxOpen.play();
+            defaultModalElement.style.display = "none";
+            confirmationModalElement.style.display = "flex";
+            confirmationModalElement.innerHTML = `
+            <div class="content">
+                <p>Bạn có chắc chắn muốn nhập dữ liệu này không? Thao tác này sẽ xóa dữ liệu hiện tại và đặt lại tiến trình hầm ngục của bạn.</p>
+                <div class="button-container">
+                    <button id="import-btn">Đồng Ý</button>
+                    <button id="cancel-btn">Hủy Bỏ</button>
+                </div>
+            </div>`;
+            let confirm = document.querySelector("#import-btn");
+            let cancel = document.querySelector("#cancel-btn");
+            confirm.onclick = function () {
+                sfxConfirm.play();
+                player = playerImport;
+                saveData();
+                bgmDungeon.stop();
+                let dimDungeon = document.querySelector('#dungeon-main');
+                dimDungeon.style.filter = "brightness(100%)";
+                dimDungeon.style.display = "none";
+                menuModalElement.style.display = "none";
+                menuModalElement.innerHTML = "";
+                confirmationModalElement.style.display = "none";
+                confirmationModalElement.innerHTML = "";
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                runLoad("title-screen", "flex");
+                clearInterval(dungeonTimer);
+                clearInterval(playTimer);
+                progressReset();
+            }
+            cancel.onclick = function () {
+                sfxDecline.play();
+                confirmationModalElement.style.display = "none";
+                confirmationModalElement.innerHTML = "";
+                defaultModalElement.style.display = "flex";
+            }
+        } else {
+            sfxDeny.play();
+        }
+    } catch (err) {
+        sfxDeny.play();
+    }
 }
 
 // Player Stat Allocation
@@ -756,3 +1007,56 @@ const objectValidation = () => {
     }
     saveData();
 }
+
+// ===== ANTI-CHEAT INTEGRITY CHECK =====
+// Kiểm tra xem anti-cheat có được load đúng không
+window.addEventListener('load', function() {
+    // Đợi 500ms để đảm bảo tất cả scripts đã load
+    setTimeout(function() {
+        if (!window._antiCheatActive) {
+            document.body.innerHTML = `
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: #fff;
+                    font-family: Arial, sans-serif;
+                    text-align: center;
+                    padding: 20px;
+                ">
+                    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">🛡️ Lỗi Bảo Mật</h1>
+                    <p style="font-size: 1.2rem; max-width: 600px; margin-bottom: 30px;">
+                        Hệ thống phát hiện một số file bảo mật không được tải đúng cách.
+                        Điều này có thể do:
+                    </p>
+                    <ul style="text-align: left; font-size: 1rem; margin-bottom: 30px;">
+                        <li>Trình chặn quảng cáo (AdBlock, uBlock)</li>
+                        <li>Extensions trình duyệt can thiệp</li>
+                        <li>Kết nối mạng không ổn định</li>
+                    </ul>
+                    <p style="font-size: 1.1rem; margin-bottom: 20px;">Vui lòng:</p>
+                    <ol style="text-align: left; font-size: 1rem; margin-bottom: 30px;">
+                        <li>Tắt AdBlock/uBlock cho trang này</li>
+                        <li>Tắt các extensions đáng ngờ</li>
+                        <li>Tải lại trang (Ctrl+F5)</li>
+                    </ol>
+                    <button onclick="location.reload()" style="
+                        padding: 15px 40px;
+                        font-size: 1.2rem;
+                        background: #fff;
+                        color: #667eea;
+                        border: none;
+                        border-radius: 50px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                        transition: transform 0.2s;
+                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🔄 Tải Lại Trang</button>
+                </div>
+            `;
+            throw new Error('Anti-cheat system not loaded');
+        }
+    }, 500);
+});

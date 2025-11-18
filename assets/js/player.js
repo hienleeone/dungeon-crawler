@@ -1,6 +1,4 @@
-// Player data loaded from Firebase, not localStorage
-let player = null;
-if (player) { player.gold = Number(player.gold) || 0; }
+let player = null; // Will be loaded from Firebase
 let inventoryOpen = false;
 let leveled = false;
 const lvlupSelect = document.querySelector("#lvlupSelect");

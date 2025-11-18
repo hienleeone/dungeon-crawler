@@ -1,51 +1,83 @@
-# Hướng Dẫn Cấu Hình Firebase cho Dungeon Crawler
+# Hướng Dẫn Cài Đặt Firebase cho Dungeon Crawler
 
-## Bước 1: Tạo Project Firebase
+## Bước 1: Tạo Dự Án Firebase
 
 1. Truy cập [Firebase Console](https://console.firebase.google.com/)
-2. Nhấn "Add project" hoặc "Thêm dự án"
-3. Đặt tên cho project (ví dụ: "dungeon-crawler")
-4. Làm theo các bước tạo project
+2. Đăng nhập bằng tài khoản Google của bạn
+3. Nhấp vào "Add project" hoặc "Thêm dự án"
+4. Đặt tên dự án (ví dụ: "dungeon-crawler-game")
+5. Tắt Google Analytics (không bắt buộc cho dự án này)
+6. Nhấp "Create project"
 
-## Bước 2: Kích Hoạt Firebase Authentication
+## Bước 2: Kích Hoạt Authentication
 
-1. Trong Firebase Console, chọn project của bạn
-2. Vào **Authentication** > **Sign-in method**
-3. Kích hoạt **Email/Password**
-4. Nhấn Save
+1. Trong Firebase Console, chọn dự án vừa tạo
+2. Vào menu bên trái, chọn **Build** > **Authentication**
+3. Nhấp "Get started"
+4. Chọn tab "Sign-in method"
+5. Nhấp vào "Email/Password"
+6. Bật tùy chọn "Enable"
+7. Nhấp "Save"
 
 ## Bước 3: Kích Hoạt Realtime Database
 
-1. Trong Firebase Console, vào **Realtime Database**
-2. Nhấn "Create Database"
-3. Chọn location gần nhất (ví dụ: Singapore)
-4. Chọn "Start in test mode" (chúng ta sẽ cập nhật rules sau)
-5. Nhấn Enable
+1. Vào menu bên trái, chọn **Build** > **Realtime Database**
+2. Nhấp "Create Database"
+3. Chọn vị trí server (khuyến nghị: **us-central1** hoặc **asia-southeast1** cho khu vực Việt Nam)
+4. Chọn **Start in test mode** (để test, sau này sẽ cấu hình bảo mật)
+5. Nhấp "Enable"
 
-## Bước 4: Cập Nhật Firebase Rules
+## Bước 4: Cấu Hình Security Rules
 
-1. Vào **Realtime Database** > **Rules**
-2. Mở file `firebase.rules` trong project
-3. Copy toàn bộ nội dung trong file `firebase.rules`
-4. Paste vào Firebase Console Rules
-5. Nhấn **Publish**
+Sau khi tạo database, cập nhật **Rules** như sau:
+
+```json
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    },
+    "playerNames": {
+      ".read": true,
+      "$playerName": {
+        ".write": "!data.exists() || data.val() === auth.uid"
+      }
+    },
+    "leaderboard": {
+      ".read": true,
+      "$uid": {
+        ".write": "$uid === auth.uid"
+      }
+    }
+  }
+}
+```
+
+Giải thích:
+- **users**: Mỗi người chỉ có thể đọc/ghi dữ liệu của chính họ
+- **playerNames**: Mọi người có thể đọc để kiểm tra tên trùng, nhưng chỉ có thể tạo tên mới hoặc cập nhật tên của mình
+- **leaderboard**: Mọi người có thể xem bảng xếp hạng, nhưng chỉ có thể cập nhật điểm của mình
 
 ## Bước 5: Lấy Firebase Configuration
 
-1. Trong Firebase Console, nhấn vào biểu tượng **Settings (bánh răng)** > **Project settings**
-2. Scroll xuống phần **Your apps**
-3. Nhấn vào biểu tượng **Web** (</>)
-4. Đặt tên cho app (ví dụ: "Dungeon Crawler Web")
-5. Copy phần **firebaseConfig**
+1. Vào **Project Overview** (biểu tượng bánh răng) > **Project settings**
+2. Cuộn xuống phần "Your apps"
+3. Nhấp vào biểu tượng **Web** (`</>`)
+4. Đặt tên app (ví dụ: "Dungeon Crawler Web")
+5. **KHÔNG** chọn "Also set up Firebase Hosting"
+6. Nhấp "Register app"
+7. Sao chép phần **firebaseConfig**
 
-## Bước 6: Cập Nhật Firebase Config trong Code
+## Bước 6: Cập Nhật Code
 
-1. Mở file `assets/js/firebase-config.js`
-2. Thay thế các giá trị sau bằng thông tin từ Firebase Console:
+Mở file `assets/js/firebase.js` và thay thế các giá trị trong `firebaseConfig`:
 
 ```javascript
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",              // Thay bằng apiKey của bạn
+    apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
     databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
     projectId: "YOUR_PROJECT_ID",
@@ -55,93 +87,106 @@ const firebaseConfig = {
 };
 ```
 
-3. Lưu file
+**Lưu ý quan trọng:** Thay thế TẤT CẢ các giá trị `YOUR_...` bằng giá trị thực tế từ Firebase Console.
 
-## Bước 7: Deploy và Test
+## Bước 7: Test Hệ Thống
 
-1. Upload tất cả files lên web hosting của bạn
-2. Truy cập website
+1. Mở file `index.html` trong trình duyệt
+2. Bạn sẽ thấy giao diện đăng nhập
 3. Thử đăng ký tài khoản mới
-4. Kiểm tra Firebase Console để xem dữ liệu
+4. Đăng nhập và tạo nhân vật
+5. Kiểm tra dữ liệu trong Firebase Console > Realtime Database
 
-## Cấu Trúc Dữ Liệu trong Firebase
+## Bước 8: Cấu Hình Bảo Mật Nâng Cao (Khuyến Nghị)
+
+### Email Verification (Xác thực Email)
+
+Nếu muốn bắt buộc người dùng xác thực email:
+
+1. Vào **Authentication** > **Templates**
+2. Tùy chỉnh template "Email address verification"
+3. Thêm code sau vào `firebase.js` trong hàm `registerUser`:
+
+```javascript
+await userCredential.user.sendEmailVerification();
+```
+
+### Password Reset (Đặt Lại Mật Khẩu)
+
+Để cho phép người dùng đặt lại mật khẩu, thêm chức năng này vào giao diện đăng nhập.
+
+## Các Tính Năng Đã Triển Khai
+
+✅ Đăng ký/Đăng nhập bằng Email/Password
+✅ Lưu trữ dữ liệu game trên Firebase Realtime Database
+✅ Kiểm tra tên người chơi trùng lặp
+✅ Đăng xuất
+✅ Xóa toàn bộ dữ liệu game
+✅ Bảng xếp hạng (Top 3):
+   - Vàng cao nhất
+   - Level cao nhất  
+   - Tầng cao nhất
+✅ Tự động lưu mỗi 30 giây
+✅ Lưu khi đóng trang
+
+## Cấu Trúc Dữ Liệu Firebase
 
 ```
-dungeon-crawler/
-├── players/
+firebase-database/
+├── users/
 │   └── {userId}/
-│       ├── playerData (object)
-│       ├── dungeonData (object)
-│       ├── enemyData (object)
-│       └── lastSaved (timestamp)
+│       ├── playerData (JSON string)
+│       ├── dungeonData (JSON string)
+│       ├── enemyData (JSON string)
+│       ├── volumeData (JSON string)
+│       └── lastUpdated (timestamp)
 ├── playerNames/
-│   └── {playerName}/
-│       ├── uid (string)
-│       ├── name (string)
-│       └── timestamp (number)
+│   └── {playerName}: {userId}
 └── leaderboard/
     └── {userId}/
-        ├── name (string)
-        ├── level (number)
-        ├── gold (number)
-        ├── floor (number)
-        └── timestamp (number)
+        ├── name
+        ├── gold
+        ├── level
+        ├── floor
+        └── lastUpdated
 ```
 
-## Các Tính Năng Mới
+## Troubleshooting (Xử Lý Lỗi)
 
-### 1. Hệ Thống Đăng Nhập/Đăng Ký
-- Khi vào game, người chơi phải đăng nhập hoặc đăng ký
-- Email và mật khẩu được quản lý bởi Firebase Authentication
-- Mật khẩu tối thiểu 6 ký tự
-
-### 2. Kiểm Tra Tên Trùng Lặp
-- Khi tạo nhân vật, hệ thống sẽ kiểm tra tên đã tồn tại chưa
-- Mỗi tên chỉ được sử dụng 1 lần
-
-### 3. Lưu Dữ Liệu Tự Động
-- Dữ liệu được lưu vào Firebase mỗi khi có thay đổi
-- Auto-save mỗi 30 giây
-- Không còn sử dụng localStorage cho dữ liệu game (chống gian lận)
-
-### 4. Menu Mới
-- **Đăng Xuất**: Thay thế "Mã Dữ Liệu"
-- **Xóa Dữ Liệu**: Thay thế "Xóa Hầm Ngục" - xóa toàn bộ dữ liệu và chơi lại từ đầu
-- **Xếp Hạng**: Xem top 3 người chơi (vàng, level, tầng)
-
-### 5. Bảng Xếp Hạng
-- Top 3 người chơi có vàng nhiều nhất
-- Top 3 người chơi có level cao nhất
-- Top 3 người chơi đi được tầng cao nhất
-- Cập nhật realtime
-
-## Bảo Mật
-
-- Mỗi người chơi chỉ có thể đọc/ghi dữ liệu của chính họ
-- Không thể chỉnh sửa dữ liệu người khác
-- Firebase Rules đảm bảo tính toàn vẹn dữ liệu
-- LocalStorage chỉ lưu âm lượng (không quan trọng)
-
-## Troubleshooting
-
-### Lỗi: "Firebase is not defined"
-- Kiểm tra xem bạn đã load firebase-config.js trước các file khác chưa
+### Lỗi: "Firebase not defined"
+- Kiểm tra đã thêm Firebase SDK vào `index.html` chưa
+- Đảm bảo thứ tự script đúng (Firebase SDK trước `firebase.js`)
 
 ### Lỗi: "Permission denied"
-- Kiểm tra Firebase Rules đã được cập nhật chưa
-- Kiểm tra người dùng đã đăng nhập chưa
+- Kiểm tra Security Rules trong Firebase Console
+- Đảm bảo người dùng đã đăng nhập
 
-### Lỗi: "Invalid email"
-- Email phải đúng định dạng (example@email.com)
+### Lỗi: "Failed to load resource"
+- Kiểm tra `databaseURL` trong config có đúng không
+- Đảm bảo Realtime Database đã được kích hoạt
 
 ### Dữ liệu không lưu
-- Kiểm tra Firebase Database URL trong config
+- Mở Console trong trình duyệt (F12) để xem lỗi
 - Kiểm tra kết nối internet
-- Mở Console (F12) để xem lỗi
+- Kiểm tra Security Rules
 
-## Support
+## Lưu Ý Quan Trọng
 
-Nếu có vấn đề, kiểm tra:
-1. Firebase Console > Authentication (xem có user không)
-2. Firebase Console > Realtime Database (xem có data không)
-3. Browser Console (F12) để xem lỗi JavaScript
+⚠️ **Bảo mật API Key**: Mặc dù API Key được công khai trong code, Firebase vẫn an toàn nhờ Security Rules. Tuy nhiên:
+- Nên giới hạn domain được phép sử dụng API Key trong Firebase Console
+- Vào **Project Settings** > **General** > cuộn xuống **Public settings** > thêm domain của bạn
+
+⚠️ **Quota miễn phí**: Firebase Spark (Free plan) có giới hạn:
+- 100 kết nối đồng thời
+- 1GB dữ liệu lưu trữ
+- 10GB/tháng data transfer
+- Nếu vượt quá, cần nâng cấp lên Blaze plan (trả theo usage)
+
+⚠️ **Backup**: Nên thường xuyên backup dữ liệu từ Firebase Console
+
+## Hỗ Trợ
+
+Nếu gặp vấn đề, tham khảo:
+- [Firebase Documentation](https://firebase.google.com/docs)
+- [Firebase Authentication Guide](https://firebase.google.com/docs/auth)
+- [Realtime Database Guide](https://firebase.google.com/docs/database)
