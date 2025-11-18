@@ -1,35 +1,24 @@
 // Authentication Handler
 
-let isLoadingPlayerData = false; // Flag để ngăn load loop
-let hasLoadedInitialData = false; // Flag để chỉ load 1 lần
+let isLoadingPlayerData = false;
+let hasLoadedInitialData = false;
 
 // Kiểm tra trạng thái đăng nhập khi load trang
 firebase.auth().onAuthStateChanged(async (user) => {
-    if (isLoadingPlayerData) {
-        console.log("Đang load data, bỏ qua onAuthStateChanged");
-        return;
-    }
+    if (isLoadingPlayerData) return;
     
     if (user) {
         currentUser = user;
         
-        // CHỈ LOAD DATA 1 LẦN DUY NHẤT khi đăng nhập
-        if (hasLoadedInitialData) {
-            console.log("Đã load data rồi, bỏ qua onAuthStateChanged");
-            return;
-        }
-        
+        if (hasLoadedInitialData) return;
         hasLoadedInitialData = true;
         
-        // Ẩn màn hình auth
         document.querySelector("#auth-screen").style.display = "none";
         
-        // Người dùng đã đăng nhập, load dữ liệu từ Firebase
         isLoadingPlayerData = true;
         await loadPlayerDataFromFirebase(user.uid);
         isLoadingPlayerData = false;
         
-        // Kiểm tra xem người chơi đã có tên chưa
         if (player === null || !player || !player.name) {
             runLoad("character-creation", "flex");
         } else if (player.allocated) {
@@ -38,10 +27,9 @@ firebase.auth().onAuthStateChanged(async (user) => {
             runLoad("title-screen", "flex");
         }
     } else {
-        // Chưa đăng nhập, hiển thị màn hình auth
         currentUser = null;
         player = null;
-        hasLoadedInitialData = false; // Reset flag khi logout
+        hasLoadedInitialData = false;
         document.querySelector("#auth-screen").style.display = "flex";
         document.querySelector("#character-creation").style.display = "none";
         document.querySelector("#title-screen").style.display = "none";
@@ -49,135 +37,99 @@ firebase.auth().onAuthStateChanged(async (user) => {
     }
 });
 
-// Wait for DOM to be ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAuthButtons);
-} else {
-    initAuthButtons();
-}
+// Chuyển đổi giữa login và register form
+document.querySelector("#show-register-btn").addEventListener("click", function () {
+    document.querySelector("#login-form").style.display = "none";
+    document.querySelector("#register-form").style.display = "block";
+    document.querySelector("#register-alert").innerHTML = "";
+});
 
-function initAuthButtons() {
-    console.log("Initializing auth buttons...");
-    
-    // Chuyển đổi giữa login và register form
-    const showRegisterBtn = document.querySelector("#show-register-btn");
-    const showLoginBtn = document.querySelector("#show-login-btn");
-    const loginBtn = document.querySelector("#login-btn");
-    const registerBtn = document.querySelector("#register-btn");
-    
-    console.log("Buttons found:", {
-        showRegisterBtn: !!showRegisterBtn,
-        showLoginBtn: !!showLoginBtn,
-        loginBtn: !!loginBtn,
-        registerBtn: !!registerBtn
-    });
-    
-    if (!showRegisterBtn || !showLoginBtn || !loginBtn || !registerBtn) {
-        console.error("Auth buttons not found!");
-        setTimeout(initAuthButtons, 500); // Retry after 500ms
+document.querySelector("#show-login-btn").addEventListener("click", function () {
+    document.querySelector("#register-form").style.display = "none";
+    document.querySelector("#login-form").style.display = "block";
+    document.querySelector("#login-alert").innerHTML = "";
+});
+
+// Đăng nhập
+document.querySelector("#login-btn").addEventListener("click", async function () {
+    const email = document.querySelector("#login-email").value;
+    const password = document.querySelector("#login-password").value;
+    const alertElement = document.querySelector("#login-alert");
+
+    if (!email || !password) {
+        alertElement.innerHTML = "Vui lòng nhập đầy đủ thông tin!";
         return;
     }
-    
-    console.log("Attaching event listeners...");
-    
-    showRegisterBtn.addEventListener("click", function () {
-        console.log("Show register clicked");
-        document.querySelector("#login-form").style.display = "none";
-        document.querySelector("#register-form").style.display = "block";
-        document.querySelector("#register-alert").innerHTML = "";
-    });
 
-    showLoginBtn.addEventListener("click", function () {
-        console.log("Show login clicked");
-        document.querySelector("#register-form").style.display = "none";
-        document.querySelector("#login-form").style.display = "block";
-        document.querySelector("#login-alert").innerHTML = "";
-    });
-
-    // Đăng nhập
-    loginBtn.addEventListener("click", async function () {
-        const email = document.querySelector("#login-email").value;
-        const password = document.querySelector("#login-password").value;
-        const alertElement = document.querySelector("#login-alert");
-
-        if (!email || !password) {
-            alertElement.innerHTML = "Vui lòng nhập đầy đủ thông tin!";
-            return;
+    try {
+        alertElement.innerHTML = "Đang đăng nhập...";
+        await firebase.auth().signInWithEmailAndPassword(email, password);
+        alertElement.innerHTML = "";
+    } catch (error) {
+        console.error("Login error:", error);
+        if (error.code === 'auth/user-not-found') {
+            alertElement.innerHTML = "Tài khoản không tồn tại!";
+        } else if (error.code === 'auth/wrong-password') {
+            alertElement.innerHTML = "Sai mật khẩu!";
+        } else if (error.code === 'auth/invalid-email') {
+            alertElement.innerHTML = "Email không hợp lệ!";
+        } else if (error.code === 'auth/invalid-credential') {
+            alertElement.innerHTML = "Email hoặc mật khẩu không đúng!";
+        } else if (error.code === 'auth/too-many-requests') {
+            alertElement.innerHTML = "Quá nhiều lần thử. Vui lòng thử lại sau!";
+        } else {
+            alertElement.innerHTML = "Đăng nhập thất bại. Vui lòng kiểm tra lại!";
         }
+    }
+});
 
-        try {
-            alertElement.innerHTML = "Đang đăng nhập...";
-            await firebase.auth().signInWithEmailAndPassword(email, password);
-            alertElement.innerHTML = "";
-            // onAuthStateChanged sẽ tự động xử lý sau khi đăng nhập thành công
-        } catch (error) {
-            console.error("Login error:", error);
-            if (error.code === 'auth/user-not-found') {
-                alertElement.innerHTML = "Tài khoản không tồn tại!";
-            } else if (error.code === 'auth/wrong-password') {
-                alertElement.innerHTML = "Sai mật khẩu!";
-            } else if (error.code === 'auth/invalid-email') {
-                alertElement.innerHTML = "Email không hợp lệ!";
-            } else if (error.code === 'auth/invalid-credential') {
-                alertElement.innerHTML = "Email hoặc mật khẩu không đúng!";
-            } else if (error.code === 'auth/too-many-requests') {
-                alertElement.innerHTML = "Quá nhiều lần thử. Vui lòng thử lại sau!";
-            } else {
-                alertElement.innerHTML = "Đăng nhập thất bại. Vui lòng kiểm tra lại!";
-            }
-        }
-    });
+// Đăng ký
+document.querySelector("#register-btn").addEventListener("click", async function () {
+    const email = document.querySelector("#register-email").value;
+    const password = document.querySelector("#register-password").value;
+    const confirmPassword = document.querySelector("#register-password-confirm").value;
+    const alertElement = document.querySelector("#register-alert");
 
-    // Đăng ký
-    registerBtn.addEventListener("click", async function () {
-        const email = document.querySelector("#register-email").value;
-        const password = document.querySelector("#register-password").value;
-        const confirmPassword = document.querySelector("#register-password-confirm").value;
-        const alertElement = document.querySelector("#register-alert");
+    if (!email || !password || !confirmPassword) {
+        alertElement.innerHTML = "Vui lòng nhập đầy đủ thông tin!";
+        return;
+    }
 
-        if (!email || !password || !confirmPassword) {
-            alertElement.innerHTML = "Vui lòng nhập đầy đủ thông tin!";
-            return;
-        }
+    if (password !== confirmPassword) {
+        alertElement.innerHTML = "Mật khẩu không khớp!";
+        return;
+    }
 
-        if (password !== confirmPassword) {
-            alertElement.innerHTML = "Mật khẩu không khớp!";
-            return;
-        }
+    if (password.length < 6) {
+        alertElement.innerHTML = "Mật khẩu phải có ít nhất 6 ký tự!";
+        return;
+    }
 
-        if (password.length < 6) {
+    try {
+        alertElement.innerHTML = "Đang đăng ký...";
+        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        
+        await db.collection('players').doc(userCredential.user.uid).set({
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            email: email
+        });
+        
+        alertElement.innerHTML = "";
+    } catch (error) {
+        console.error("Register error:", error);
+        if (error.code === 'auth/email-already-in-use') {
+            alertElement.innerHTML = "Email đã được sử dụng!";
+        } else if (error.code === 'auth/invalid-email') {
+            alertElement.innerHTML = "Email không hợp lệ!";
+        } else if (error.code === 'auth/weak-password') {
             alertElement.innerHTML = "Mật khẩu phải có ít nhất 6 ký tự!";
-            return;
+        } else if (error.code === 'auth/operation-not-allowed') {
+            alertElement.innerHTML = "Đăng ký email/password chưa được bật!";
+        } else {
+            alertElement.innerHTML = "Đăng ký thất bại. Vui lòng thử lại!";
         }
-
-        try {
-            alertElement.innerHTML = "Đang đăng ký...";
-            const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-            
-            // Tạo document rỗng cho người chơi mới
-            await db.collection('players').doc(userCredential.user.uid).set({
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                email: email
-            });
-            
-            alertElement.innerHTML = "";
-            // onAuthStateChanged sẽ tự động xử lý sau khi đăng ký thành công
-        } catch (error) {
-            console.error("Register error:", error);
-            if (error.code === 'auth/email-already-in-use') {
-                alertElement.innerHTML = "Email đã được sử dụng!";
-            } else if (error.code === 'auth/invalid-email') {
-                alertElement.innerHTML = "Email không hợp lệ!";
-            } else if (error.code === 'auth/weak-password') {
-                alertElement.innerHTML = "Mật khẩu phải có ít nhất 6 ký tự!";
-            } else if (error.code === 'auth/operation-not-allowed') {
-                alertElement.innerHTML = "Đăng ký email/password chưa được bật!";
-            } else {
-                alertElement.innerHTML = "Đăng ký thất bại. Vui lòng thử lại!";
-            }
-        }
-    });
-}
+    }
+});
 
 // Đăng xuất
 const logoutUser = async () => {
