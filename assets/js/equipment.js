@@ -200,7 +200,7 @@ const createEquipment = () => {
     equipment.value = Math.round((equipmentValue * 3) / 2);
     player.inventory.equipment.push(JSON.stringify(equipment));
 
-    // saveData(); // BỎ - Chỉ lưu thủ công
+    saveData();
     showInventory();
     showEquipment();
 

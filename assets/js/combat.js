@@ -117,7 +117,7 @@ const playerAttack = () => {
         player.baseStats.atkSpd += 0.01;
         objectValidation();
         player.tempStats.atkSpd += 0.01;
-        // saveData(); // BỎ - Không auto-save mỗi đòn đánh
+        saveData();
     }
 
     // Lifesteal formula
@@ -296,14 +296,14 @@ const endCombat = () => {
         objectValidation();
         player.baseStats.atk -= player.tempStats.atk;
         player.tempStats.atk = 0;
-        // saveData(); // BỎ - Không auto-save
+        saveData();
     }
     if (player.skills.includes("Blade Dance")) {
         // Remove Blade Dance attack speed buff
         objectValidation();
         player.baseStats.atkSpd -= player.tempStats.atkSpd;
         player.tempStats.atkSpd = 0;
-        // saveData(); // BỎ - Không auto-save
+        saveData();
     }
 
     // Stops every timer in combat
