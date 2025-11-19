@@ -493,14 +493,26 @@ const sellAll = (rarity) => {
     };
 
     if (rarity === "Tất Cả") {
-        if (player.inventory.equipment.length !== 0) {
+        const hasEquipment = player.inventory.equipment.length !== 0;
+        const hasConsumables = player.inventory.consumables && player.inventory.consumables.length !== 0;
+        
+        if (hasEquipment || hasConsumables) {
             sfxSell.play();
             let totalGold = 0;
+            
+            // Bán tất cả equipment
             for (let i = player.inventory.equipment.length - 1; i >= 0; i--) {
                 const val = getValueFrom(player.inventory.equipment[i]);
                 totalGold += val;
                 player.inventory.equipment.splice(i, 1);
             }
+            
+            // Bán tất cả consumables (1 gold mỗi cái)
+            if (player.inventory.consumables && player.inventory.consumables.length > 0) {
+                totalGold += player.inventory.consumables.length;
+                player.inventory.consumables = [];
+            }
+            
             player.gold += totalGold;
             playerLoadStats();
             showInventory();

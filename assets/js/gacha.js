@@ -16,6 +16,31 @@
     { key: "Heirloom", chance: 0.2 }
   ];
 
+  // Helper function để lấy icon equipment
+  function getEquipmentIcon(category) {
+    const icons = {
+      "Sword": '<i class="ra ra-relic-blade"></i>',
+      "Axe": '<i class="ra ra-axe"></i>',
+      "Hammer": '<i class="ra ra-flat-hammer"></i>',
+      "Dagger": '<i class="ra ra-bowie-knife"></i>',
+      "Flail": '<i class="ra ra-chain"></i>',
+      "Scythe": '<i class="ra ra-scythe"></i>',
+      "Plate": '<i class="ra ra-vest"></i>',
+      "Chain": '<i class="ra ra-vest"></i>',
+      "Leather": '<i class="ra ra-vest"></i>',
+      "Tower": '<i class="ra ra-shield"></i>',
+      "Kite": '<i class="ra ra-heavy-shield"></i>',
+      "Buckler": '<i class="ra ra-round-shield"></i>',
+      "Great Helm": '<i class="ra ra-knight-helmet"></i>',
+      "Horned Helm": '<i class="ra ra-horned-helm"></i>',
+      "Weapon": '<i class="ra ra-sword"></i>',
+      "Armor": '<i class="ra ra-vest"></i>',
+      "Shield": '<i class="ra ra-shield"></i>',
+      "Helmet": '<i class="ra ra-knight-helmet"></i>'
+    };
+    return icons[category] || '<i class="ra ra-sword"></i>';
+  }
+
   // Tính giá gacha dựa vào cấp độ Lời Nguyền
   function getGachaCost() {
     if (!dungeon || !dungeon.settings || !dungeon.settings.enemyScaling) {
@@ -203,11 +228,22 @@
     // Pick rarity
     const rarity = pickRarity();
     
-    // Xác định xem có phải equipment không
-    const isEquipment = ['Epic', 'Legendary', 'Heirloom'].includes(rarity) || Math.random() < 0.35;
+    // Xác định xem có phải là vòng quay rỗng không (Common/Uncommon có tỷ lệ rỗng)
+    let isEmptyRoll = false;
+    if (rarity === 'Common' || rarity === 'Uncommon') {
+      isEmptyRoll = Math.random() < 0.5; // 50% tỷ lệ rỗng cho Common/Uncommon
+    }
     
     let item;
-    if (isEquipment) {
+    if (isEmptyRoll) {
+      // Vòng quay rỗng
+      item = {
+        type: 'empty',
+        rarity: rarity,
+        name: 'Vòng quay rỗng',
+        data: null
+      };
+    } else {
       // Tạo equipment
       const equipment = createEquipmentWithRarity(rarity);
       
@@ -221,21 +257,8 @@
         type: 'equipment',
         rarity: rarity,
         name: equipment.name || equipment.category || equipment.type || 'Equipment',
+        category: equipment.category || equipment.type,
         data: equipment
-      };
-    } else {
-      // Tạo consumable
-      if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
-      if (!Array.isArray(player.inventory.consumables)) player.inventory.consumables = [];
-      
-      const potionId = 'potion_small';
-      player.inventory.consumables.push(potionId);
-      
-      item = {
-        type: 'consumable',
-        rarity: rarity,
-        name: 'Potion nhỏ',
-        data: { id: potionId }
       };
     }
 
@@ -282,10 +305,24 @@
     // Loop để tạo items
     for (let i = 0; i < count; i++) {
       const rarity = pickRarity();
-      const isEquipment = ['Epic', 'Legendary', 'Heirloom'].includes(rarity) || Math.random() < 0.35;
+      
+      // Xác định xem có phải là vòng quay rỗng không
+      let isEmptyRoll = false;
+      if (rarity === 'Common' || rarity === 'Uncommon') {
+        isEmptyRoll = Math.random() < 0.5;
+      }
       
       let item;
-      if (isEquipment) {
+      if (isEmptyRoll) {
+        // Vòng quay rỗng
+        item = {
+          type: 'empty',
+          rarity: rarity,
+          name: 'Vòng quay rỗng',
+          data: null
+        };
+      } else {
+        // Tạo equipment
         const equipment = createEquipmentWithRarity(rarity);
         
         if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
@@ -297,20 +334,8 @@
           type: 'equipment',
           rarity: rarity,
           name: equipment.name || equipment.category || equipment.type || 'Equipment',
+          category: equipment.category || equipment.type,
           data: equipment
-        };
-      } else {
-        if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
-        if (!Array.isArray(player.inventory.consumables)) player.inventory.consumables = [];
-        
-        const potionId = 'potion_small';
-        player.inventory.consumables.push(potionId);
-        
-        item = {
-          type: 'consumable',
-          rarity: rarity,
-          name: 'Potion nhỏ',
-          data: { id: potionId }
         };
       }
       
@@ -408,29 +433,64 @@
         
         isProcessing = true;
         rollBtn.disabled = true;
+        roll10Btn.disabled = true;
         rollBtn.style.opacity = '0.5';
+        roll10Btn.style.opacity = '0.5';
+
+        // Hiển thị animation đang gacha
+        if (resultEl) {
+          resultEl.innerHTML = '<div class="gacha-spinning">🎰 Đang quay...</div>';
+          resultEl.classList.add('gacha-shake');
+        }
+
+        // Delay để tạo hiệu ứng hồi hộp
+        await new Promise(resolve => setTimeout(resolve, 800));
 
         const result = await doSingleGacha();
+
+        if (resultEl) resultEl.classList.remove('gacha-shake');
 
         if (!result.success) {
           if (resultEl) resultEl.innerHTML = `<span style="color:red">${result.error}</span>`;
         } else {
           const item = result.item;
           if (resultEl) {
+            resultEl.innerHTML = '';
+            
+            // Lấy icon cho equipment
+            let iconHtml = '';
+            if (item.type === 'equipment' && item.category) {
+              iconHtml = getEquipmentIcon(item.category);
+            } else if (item.type === 'empty') {
+              iconHtml = '<i class="fas fa-times-circle"></i>';
+            }
+            
             const row = document.createElement('div');
             row.className = 'gacha-item-row r-' + item.rarity;
-            row.innerHTML = `<div style="font-weight:700">${item.rarity}</div><div>${item.name}</div>`;
-            resultEl.innerHTML = '';
+            row.innerHTML = `
+              <div style="font-size:32px;">${iconHtml}</div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;">
+                <div style="font-weight:700;color:#ffd700;">${item.rarity}</div>
+                <div style="font-size:13px;">${item.name}</div>
+              </div>
+            `;
             resultEl.appendChild(row);
-            setTimeout(() => row.classList.add('gacha-pop'), 100);
+            
+            // Animation xuất hiện
+            setTimeout(() => {
+              row.classList.add('gacha-pop');
+              row.classList.add('gacha-flash');
+            }, 50);
           }
         }
 
         setTimeout(() => {
           rollBtn.disabled = false;
+          roll10Btn.disabled = false;
           rollBtn.style.opacity = '1';
+          roll10Btn.style.opacity = '1';
           isProcessing = false;
-        }, 800);
+        }, 600);
       };
     }
 
@@ -440,10 +500,23 @@
         if (isProcessing || roll10Btn.disabled) return;
         
         isProcessing = true;
+        rollBtn.disabled = true;
         roll10Btn.disabled = true;
+        rollBtn.style.opacity = '0.5';
         roll10Btn.style.opacity = '0.5';
 
+        // Hiển thị animation đang gacha
+        if (resultEl) {
+          resultEl.innerHTML = '<div class="gacha-spinning">🎰 Đang quay 10 lần...</div>';
+          resultEl.classList.add('gacha-shake');
+        }
+
+        // Delay để tạo hiệu ứng
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         const result = await doBulkGacha(10);
+
+        if (resultEl) resultEl.classList.remove('gacha-shake');
 
         if (!result.success) {
           if (resultEl) resultEl.innerHTML = `<span style="color:red">${result.error}</span>`;
@@ -452,17 +525,39 @@
           if (resultEl) {
             resultEl.innerHTML = '';
             items.forEach((item, idx) => {
+              // Lấy icon cho equipment
+              let iconHtml = '';
+              if (item.type === 'equipment' && item.category) {
+                iconHtml = getEquipmentIcon(item.category);
+              } else if (item.type === 'empty') {
+                iconHtml = '<i class="fas fa-times-circle"></i>';
+              }
+              
               const row = document.createElement('div');
               row.className = 'gacha-item-row r-' + item.rarity;
-              row.innerHTML = `<div style="font-weight:700">${idx + 1}. ${item.rarity}</div><div>${item.name}</div>`;
+              row.style.opacity = '0';
+              row.innerHTML = `
+                <div style="font-size:24px;min-width:32px;">${iconHtml}</div>
+                <div style="display:flex;gap:6px;align-items:center;flex:1;">
+                  <span style="font-weight:700;color:#ffd700;min-width:90px;">${item.rarity}</span>
+                  <span style="font-size:12px;">${item.name}</span>
+                </div>
+              `;
               resultEl.appendChild(row);
-              setTimeout(() => row.classList.add('gacha-pop'), 150 + idx * 80);
+              
+              // Animation xuất hiện lần lượt
+              setTimeout(() => {
+                row.style.opacity = '1';
+                row.classList.add('gacha-pop');
+              }, 150 + idx * 100);
             });
           }
         }
 
         setTimeout(() => {
+          rollBtn.disabled = false;
           roll10Btn.disabled = false;
+          rollBtn.style.opacity = '1';
           roll10Btn.style.opacity = '1';
           isProcessing = false;
         }, 2000);
