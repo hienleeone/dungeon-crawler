@@ -358,12 +358,12 @@
       items.push(item);
     }
 
-    // Save data 1 lần
+    // Save data 1 lần (không await để nhanh hơn)
     try {
       if (typeof savePlayerData === 'function') {
-        await savePlayerData(false);
+        savePlayerData(false); // Bỏ await
       } else if (typeof saveData === 'function') {
-        await saveData();
+        saveData(); // Bỏ await
       }
     } catch (e) {
       console.error('Lỗi save:', e);
@@ -467,35 +467,33 @@
 
         const result = await doSingleGacha();
 
-        // Giảm delay để nhanh hơn (600ms thay vì 1200ms)
-        setTimeout(() => {
-          if (!result.success) {
-            if (resultEl) resultEl.innerHTML = `<span style="color:red">${result.error}</span>`;
-          } else {
-            const item = result.item;
-            if (resultEl) {
-              const icon = getItemIcon(item);
-              const row = document.createElement('div');
-              row.className = 'gacha-item-row';
-              row.style.cssText = 'display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem; margin: 0.5rem 0; background: rgba(0,0,0,0.3); border-radius: 0.5rem; border-left: 4px solid var(--rarity-color);';
-              row.style.setProperty('--rarity-color', getRarityColor(item.rarity));
-              row.innerHTML = `<div style="font-size:1.8rem;">${icon}</div><div><div class="${item.rarity}" style="font-weight:700; font-size:1.1rem;">${item.rarity}</div><div style="font-size:0.9rem; opacity:0.8;">${item.name}</div></div>`;
-              resultEl.innerHTML = '';
-              resultEl.appendChild(row);
-              setTimeout(() => row.style.animation = 'gachaPop 0.5s ease-out', 50);
-              
-              // Cập nhật UI
-              if (typeof showInventory === 'function') showInventory();
-              if (typeof playerLoadStats === 'function') playerLoadStats();
-            }
+        // Hiển thị kết quả ngay lập tức
+        if (!result.success) {
+          if (resultEl) resultEl.innerHTML = `<span style="color:red">${result.error}</span>`;
+        } else {
+          const item = result.item;
+          if (resultEl) {
+            const icon = getItemIcon(item);
+            const row = document.createElement('div');
+            row.className = 'gacha-item-row';
+            row.style.cssText = 'display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem; margin: 0.5rem 0; background: rgba(0,0,0,0.3); border-radius: 0.5rem; border-left: 4px solid var(--rarity-color);';
+            row.style.setProperty('--rarity-color', getRarityColor(item.rarity));
+            row.innerHTML = `<div style="font-size:1.8rem;">${icon}</div><div><div class="${item.rarity}" style="font-weight:700; font-size:1.1rem;">${item.rarity}</div><div style="font-size:0.9rem; opacity:0.8;">${item.name}</div></div>`;
+            resultEl.innerHTML = '';
+            resultEl.appendChild(row);
+            setTimeout(() => row.style.animation = 'gachaPop 0.5s ease-out', 50);
+            
+            // Cập nhật UI
+            if (typeof showInventory === 'function') showInventory();
+            if (typeof playerLoadStats === 'function') playerLoadStats();
           }
+        }
 
-          setTimeout(() => {
-            rollBtn.disabled = false;
-            rollBtn.style.opacity = '1';
-            isProcessing = false;
-          }, 200);
-        }, 600); // Giảm từ 1200ms xuống 600ms
+        setTimeout(() => {
+          rollBtn.disabled = false;
+          rollBtn.style.opacity = '1';
+          isProcessing = false;
+        }, 200);
       };
     }
 
@@ -526,40 +524,38 @@
 
         const result = await doBulkGacha(10);
 
-        // Giảm delay để nhanh hơn (800ms thay vì 1500ms)
-        setTimeout(() => {
-          if (!result.success) {
-            if (resultEl) resultEl.innerHTML = `<span style="color:red">${result.error}</span>`;
-          } else {
-            const items = result.items;
-            if (resultEl) {
-              resultEl.innerHTML = '';
-              items.forEach((item, idx) => {
-                const icon = getItemIcon(item);
-                const row = document.createElement('div');
-                row.className = 'gacha-item-row';
-                row.style.cssText = 'display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem; margin: 0.3rem 0; background: rgba(0,0,0,0.3); border-radius: 0.4rem; border-left: 3px solid var(--rarity-color); opacity: 0;';
-                row.style.setProperty('--rarity-color', getRarityColor(item.rarity));
-                row.innerHTML = `<div style="font-size:1.5rem;">${icon}</div><div style="flex:1;"><span class="${item.rarity}" style="font-weight:700;">${item.rarity}</span> <span style="opacity:0.8;">${item.name}</span></div>`;
-                resultEl.appendChild(row);
-                setTimeout(() => {
-                  row.style.animation = 'gachaPop 0.4s ease-out forwards';
-                  row.style.opacity = '1';
-                }, 50 + idx * 40); // Giảm delay giữa các items
-              });
-              
-              // Cập nhật UI
-              if (typeof showInventory === 'function') showInventory();
-              if (typeof playerLoadStats === 'function') playerLoadStats();
-            }
+        // Hiển thị kết quả ngay lập tức (không setTimeout)
+        if (!result.success) {
+          if (resultEl) resultEl.innerHTML = `<span style="color:red">${result.error}</span>`;
+        } else {
+          const items = result.items;
+          if (resultEl) {
+            resultEl.innerHTML = '';
+            items.forEach((item, idx) => {
+              const icon = getItemIcon(item);
+              const row = document.createElement('div');
+              row.className = 'gacha-item-row';
+              row.style.cssText = 'display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem; margin: 0.3rem 0; background: rgba(0,0,0,0.3); border-radius: 0.4rem; border-left: 3px solid var(--rarity-color); opacity: 0;';
+              row.style.setProperty('--rarity-color', getRarityColor(item.rarity));
+              row.innerHTML = `<div style="font-size:1.5rem;">${icon}</div><div style="flex:1;"><span class="${item.rarity}" style="font-weight:700;">${item.rarity}</span> <span style="opacity:0.8;">${item.name}</span></div>`;
+              resultEl.appendChild(row);
+              setTimeout(() => {
+                row.style.animation = 'gachaPop 0.4s ease-out forwards';
+                row.style.opacity = '1';
+              }, 50 + idx * 40);
+            });
+            
+            // Cập nhật UI
+            if (typeof showInventory === 'function') showInventory();
+            if (typeof playerLoadStats === 'function') playerLoadStats();
           }
+        }
 
-          setTimeout(() => {
-            roll10Btn.disabled = false;
-            roll10Btn.style.opacity = '1';
-            isProcessing = false;
-          }, 300); // Giảm delay cuối
-        }, 800); // Giảm từ 1500ms xuống 800ms
+        setTimeout(() => {
+          roll10Btn.disabled = false;
+          roll10Btn.style.opacity = '1';
+          isProcessing = false;
+        }, 300);
       };
     }
   }
