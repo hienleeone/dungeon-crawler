@@ -490,7 +490,7 @@ async function checkPlayerNameExists(playerName) {
     }
 }
 
-// Đăng ký tên người chơi với kiểm tra kép (check trước khi set)
+// Đăng ký tên người chơi với transaction để ngăn race condition
 async function registerPlayerName(playerName) {
     if (!currentUser) {
         console.error("Chưa đăng nhập!");
@@ -501,27 +501,32 @@ async function registerPlayerName(playerName) {
         const userId = currentUser.uid;
         const nameRef = database.ref('playerNames/' + playerName);
         
-        // Kiểm tra lại lần nữa trước khi đăng ký
-        const snapshot = await nameRef.once('value');
-        
-        if (snapshot.exists()) {
-            const ownerUserId = snapshot.val();
-            
-            // Nếu không phải của mình, từ chối
-            if (ownerUserId !== userId) {
-                console.error("Tên đã được sử dụng bởi người khác:", ownerUserId);
-                return false;
+        // Sử dụng transaction để đảm bảo atomic operation
+        const result = await nameRef.transaction((currentValue) => {
+            // Nếu tên đã tồn tại
+            if (currentValue !== null) {
+                // Chỉ cho phép nếu thuộc về chính user này
+                if (currentValue === userId) {
+                    console.log("Tên này đã thuộc về bạn");
+                    return currentValue; // Giữ nguyên
+                }
+                // Tên thuộc về người khác, hủy transaction
+                console.error("Tên đã được sử dụng bởi người khác:", currentValue);
+                return; // abort transaction
             }
             
-            // Nếu là của mình, OK
-            console.log("Tên này đã thuộc về bạn");
-            return true;
-        }
+            // Tên chưa tồn tại, claim nó
+            return userId;
+        });
         
-        // Tên chưa tồn tại, đăng ký
-        await nameRef.set(userId);
-        console.log("Đăng ký tên thành công:", playerName);
-        return true;
+        // Kiểm tra kết quả transaction
+        if (result.committed) {
+            console.log("Đăng ký tên thành công:", playerName);
+            return true;
+        } else {
+            console.error("Không thể đăng ký tên - đã bị sử dụng");
+            return false;
+        }
         
     } catch (error) {
         console.error("Lỗi đăng ký tên:", error);

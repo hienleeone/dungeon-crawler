@@ -34,8 +34,9 @@
     "playerNames": {
       ".read": true,
       "$name": {
-        ".write": "auth != null && (!data.exists() || data.val() == auth.uid || !newData.exists())",
-        ".validate": "!newData.exists() || (newData.isString() && newData.val().length > 0)"
+        ".write": "auth != null && (!data.exists() || data.val() == auth.uid)",
+        ".validate": "newData.isString() && newData.val() == auth.uid",
+        ".indexOn": ".value"
       }
     },
     
