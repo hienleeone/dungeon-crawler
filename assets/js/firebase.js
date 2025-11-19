@@ -374,6 +374,11 @@ async function loadPlayerData() {
             player = loadedPlayer;
             if (player) { player.gold = Number(player.gold) || 0; }
             
+            // ⚠️ QUAN TRỌNG: Verify và claim lại tên khi load game
+            if (player && player.name) {
+                await verifyAndClaimPlayerName(player.name);
+            }
+            
             // Áp dụng protection sau khi load
             protectPlayerObject();
             
@@ -533,6 +538,50 @@ async function registerPlayerName(playerName) {
         
     } catch (error) {
         console.error("Lỗi đăng ký tên:", error);
+        return false;
+    }
+}
+
+// Verify và claim lại tên khi load game (để đảm bảo ownership)
+async function verifyAndClaimPlayerName(playerName) {
+    if (!currentUser) {
+        console.error("Chưa đăng nhập!");
+        return false;
+    }
+
+    try {
+        const userId = currentUser.uid;
+        const nameRef = database.ref('playerNames/' + playerName);
+        
+        // Sử dụng transaction để đảm bảo atomic operation
+        const result = await nameRef.transaction((currentValue) => {
+            // Nếu tên chưa tồn tại hoặc không phải của mình
+            if (currentValue === null) {
+                // Tên đã bị xóa/mất - claim lại
+                console.log("Claiming lại tên đã mất:", playerName);
+                return userId;
+            } else if (currentValue === userId) {
+                // Tên vẫn thuộc về mình - OK
+                console.log("Tên vẫn thuộc về bạn:", playerName);
+                return userId;
+            } else {
+                // Tên đã bị người khác chiếm mất - BẤT THƯỜNG!
+                console.error("⚠️ CẢNH BÁO: Tên của bạn đã bị chiếm bởi:", currentValue);
+                alert("⚠️ Tên nhân vật của bạn đã bị người khác sử dụng!\nVui lòng đổi tên khác.");
+                return; // abort - không cho load game
+            }
+        });
+        
+        if (result.committed) {
+            console.log("✓ Verify và claim tên thành công:", playerName);
+            return true;
+        } else {
+            console.error("✗ Không thể verify tên - đã bị chiếm!");
+            return false;
+        }
+        
+    } catch (error) {
+        console.error("Lỗi verify tên:", error);
         return false;
     }
 }
