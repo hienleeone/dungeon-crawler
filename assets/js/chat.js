@@ -161,14 +161,13 @@
 
         const header = document.createElement('div');
         header.style.cssText = `
-            font-size: 0.8em;
-            color: #999;
+            font-size: 0.75em;
             margin-bottom: 3px;
             ${isMyMessage ? 'text-align: right;' : 'text-align: left;'}
         `;
         header.innerHTML = isMyMessage 
-            ? `<span style="color: #0084ff; font-weight: bold;">Bạn</span> ${levelIcon} Lv.${message.userLevel}`
-            : `${levelIcon} <span style="color: #4a9eff; font-weight: bold;">Lv.${message.userLevel}</span> ${escapeHtml(message.userName)}`;
+            ? `<span style="color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);">Bạn</span> ${levelIcon} <span style="font-size: 0.9em; color: #aaa;">Lv.${message.userLevel}</span>`
+            : `${levelIcon} <span style="font-size: 0.9em; color: #aaa;">Lv.${message.userLevel}</span> <span style="color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(message.userName)}</span>`;
 
         const bubble = document.createElement('div');
         bubble.style.cssText = `
