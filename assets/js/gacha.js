@@ -234,21 +234,17 @@
         <div class="content">
           <div class="content-head">
             <h3>Gacha</h3>
-            <p id="gacha-modal-x" style="cursor: pointer;"><i class="fas fa-times"></i></p>
           </div>
           <div style="padding:10px;">
             <button id="gacha-roll-btn" class="gachabtn">Quay 1 lần</button>
             <button id="gacha-roll10-btn" class="gachabtn" style="margin-top:8px;">Quay 10 lần</button>
             <div id="gacha-result" class="gacha-result-area"></div>
           </div>
-          <button id="gacha-close" class="closebtn">Đóng</button>
         </div>
       `;
       document.body.appendChild(modal);
     }
 
-    const closeX = modal.querySelector('#gacha-modal-x');
-    const closeBtn = modal.querySelector('#gacha-close');
     const rollBtn = modal.querySelector('#gacha-roll-btn');
     const roll10Btn = modal.querySelector('#gacha-roll10-btn');
     const resultEl = modal.querySelector('#gacha-result');
@@ -264,18 +260,12 @@
       if (roll10Btn) roll10Btn.textContent = `Quay 10 lần (${cost * 10} Gold)`;
     };
 
-    // Close handlers - đơn giản nhất có thể
-    const doClose = () => {
-      modal.style.display = 'none';
-      if (resultEl) resultEl.innerHTML = '';
-    };
-
-    if (closeX) closeX.onclick = doClose;
-    if (closeBtn) closeBtn.onclick = doClose;
-    
-    // Click outside to close
+    // Click outside modal to close
     modal.onclick = (e) => { 
-      if (e.target === modal) doClose();
+      if (e.target === modal) {
+        modal.style.display = 'none';
+        if (resultEl) resultEl.innerHTML = '';
+      }
     };
 
     // Quay 1 lần
