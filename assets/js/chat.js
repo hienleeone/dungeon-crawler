@@ -154,13 +154,30 @@
 
         // Tạo icon level và màu dựa trên level
         let levelIcon = '⚔️';
-        let levelColor = '#aaa';
+        let levelColor = '#888';
+        let levelIconGlow = '';
         let bubbleGlow = '';
         
-        if (message.userLevel >= 50) {
+        if (message.userLevel >= 100) {
+            levelIcon = '🌟';
+            levelColor = '#ff00ff'; // Tím hồng huyền thoại
+            levelIconGlow = 'text-shadow: 0 0 8px rgba(255, 0, 255, 0.8), 0 0 12px rgba(255, 0, 255, 0.5);';
+            bubbleGlow = 'border: 1px solid rgba(255, 0, 255, 0.6); box-shadow: 0 0 8px rgba(255, 0, 255, 0.4);';
+        } else if (message.userLevel >= 80) {
+            levelIcon = '🔱';
+            levelColor = '#ff1493'; // Hồng đậm thần thoại
+            levelIconGlow = 'text-shadow: 0 0 8px rgba(255, 20, 147, 0.8), 0 0 12px rgba(255, 20, 147, 0.5);';
+            bubbleGlow = 'border: 1px solid rgba(255, 20, 147, 0.6); box-shadow: 0 0 8px rgba(255, 20, 147, 0.4);';
+        } else if (message.userLevel >= 60) {
+            levelIcon = '⚡';
+            levelColor = '#ffa500'; // Cam vàng sấm sét
+            levelIconGlow = 'text-shadow: 0 0 8px rgba(255, 165, 0, 0.8), 0 0 12px rgba(255, 165, 0, 0.5);';
+            bubbleGlow = 'border: 1px solid rgba(255, 165, 0, 0.6); box-shadow: 0 0 8px rgba(255, 165, 0, 0.4);';
+        } else if (message.userLevel >= 50) {
             levelIcon = '👑';
             levelColor = '#ffd700'; // Vàng gold
-            bubbleGlow = 'box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 0 0 25px rgba(255, 215, 0, 0.3);';
+            levelIconGlow = 'text-shadow: 0 0 10px rgba(255, 215, 0, 0.9), 0 0 15px rgba(255, 215, 0, 0.6);';
+            bubbleGlow = 'border: 1px solid rgba(255, 215, 0, 0.7); box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);';
         } else if (message.userLevel >= 40) {
             levelIcon = '💎';
             levelColor = '#00ffff'; // Cyan kim cương
@@ -172,7 +189,7 @@
             levelColor = '#ffeb3b'; // Vàng
         } else if (message.userLevel >= 10) {
             levelIcon = '🗡️';
-            levelColor = '#b0b0b0'; // Bạc
+            levelColor = '#e0e0e0'; // Bạc sáng
         }
 
         const header = document.createElement('div');
@@ -182,8 +199,8 @@
             ${isMyMessage ? 'text-align: right;' : 'text-align: left;'}
         `;
         header.innerHTML = isMyMessage 
-            ? `<span style="color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);">Bạn</span> <span style="margin-left: 3px;">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span>`
-            : `<span style="margin-left: 3px;">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span> <span style="color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(message.userName)}</span>`;
+            ? `<span style="color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);">Bạn</span> <span style="margin-left: 3px; ${levelIconGlow}">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span>`
+            : `<span style="margin-left: 3px; ${levelIconGlow}">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span> <span style="color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(message.userName)}</span>`;
 
         const bubble = document.createElement('div');
         bubble.style.cssText = `
@@ -195,7 +212,7 @@
             word-wrap: break-word;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             ${isMyMessage ? 'border-bottom-right-radius: 4px;' : 'border-bottom-left-radius: 4px;'}
-            ${message.userLevel >= 50 ? bubbleGlow : ''}
+            ${bubbleGlow}
         `;
         bubble.textContent = message.message;
 
