@@ -468,23 +468,23 @@ async function checkPlayerNameExists(playerName) {
     try {
         const snapshot = await database.ref('playerNames/' + playerName).once('value');
         if (!snapshot.exists()) {
-            return false; // Tên chưa tồn tại
+            return false; // Tên chưa tồn tại - có thể sử dụng
         }
         
         const ownerUserId = snapshot.val();
         
-        // Nếu tên này thuộc về chính user hiện tại, cho phép sử dụng lại
+        // Tên đã tồn tại - kiểm tra xem có phải của user hiện tại không
         if (currentUser && ownerUserId === currentUser.uid) {
-            console.log("Tên này thuộc về bạn, có thể sử dụng lại");
-            return false; // Cho phép sử dụng
+            console.log("Tên này đã thuộc về bạn");
+            return false; // Cho phép (trường hợp load lại game)
         }
         
-        // Tên thuộc về người khác
-        console.log("Tên đã được sử dụng bởi user:", ownerUserId);
-        return true;
+        // Tên thuộc về người khác - KHÔNG cho phép
+        console.log("Tên đã được sử dụng bởi user khác:", ownerUserId);
+        return true; // Chặn - tên đã có người dùng
     } catch (error) {
         console.error("Lỗi kiểm tra tên:", error);
-        // NẾU CÓ LỖI, CHẶN ĐỂ AN TOÀN (không cho vào cho đến khi Firebase hoạt động)
+        // NẾU CÓ LỖI, CHẶN ĐỂ AN TOÀN
         alert("Lỗi kết nối Firebase. Vui lòng thử lại!");
         return true; // Chặn vào game
     }
@@ -503,28 +503,31 @@ async function registerPlayerName(playerName) {
         
         // Sử dụng transaction để đảm bảo atomic operation
         const result = await nameRef.transaction((currentValue) => {
-            // Nếu tên đã tồn tại
+            // CHỈ cho phép claim nếu tên CHƯA tồn tại
             if (currentValue !== null) {
-                // Chỉ cho phép nếu thuộc về chính user này
-                if (currentValue === userId) {
-                    console.log("Tên này đã thuộc về bạn");
-                    return currentValue; // Giữ nguyên
-                }
-                // Tên thuộc về người khác, hủy transaction
-                console.error("Tên đã được sử dụng bởi người khác:", currentValue);
-                return; // abort transaction
+                // Tên đã có người sử dụng (kể cả chính mình) - KHÔNG cho phép
+                console.error("Transaction abort: Tên đã tồn tại với owner:", currentValue);
+                return; // abort transaction - QUAN TRỌNG: return undefined để abort
             }
             
             // Tên chưa tồn tại, claim nó
+            console.log("Transaction: Claiming tên mới:", playerName);
             return userId;
         });
         
         // Kiểm tra kết quả transaction
         if (result.committed) {
-            console.log("Đăng ký tên thành công:", playerName);
-            return true;
+            // Verify lại một lần nữa để chắc chắn
+            const snapshot = await nameRef.once('value');
+            if (snapshot.val() === userId) {
+                console.log("✓ Đăng ký tên thành công và đã verify:", playerName);
+                return true;
+            } else {
+                console.error("✗ Verify thất bại - tên không khớp uid!");
+                return false;
+            }
         } else {
-            console.error("Không thể đăng ký tên - đã bị sử dụng");
+            console.error("✗ Transaction không committed - tên đã bị sử dụng");
             return false;
         }
         
