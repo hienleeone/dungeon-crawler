@@ -4,7 +4,8 @@
   // Anti-spam protection
   let isGachaProcessing = false;
   let lastGachaTime = 0;
-  const GACHA_COOLDOWN = 300; // 300ms cooldown between rolls
+  const GACHA_COOLDOWN = 500; // 500ms cooldown between rolls
+  let spamAttempts = 0;
 
   const GACHA_RARITIES = [
     { key: "Common", chance: 60 },
@@ -45,14 +46,31 @@
   function doGachaRoll(playerObj, cost = GACHA_COST) {
     // Anti-spam check
     const now = Date.now();
+    
     if (isGachaProcessing) {
-      console.warn("Gacha đang xử lý, vui lòng chờ...");
+      spamAttempts++;
+      console.warn("🚫 Gacha đang xử lý, vui lòng chờ...");
+      
+      // Cảnh báo nếu spam nhiều lần
+      if (spamAttempts >= 3) {
+        if (typeof showAlert === 'function') {
+          showAlert("⚠️ Vui lòng không spam click!");
+        } else {
+          alert("⚠️ Vui lòng không spam click!");
+        }
+        spamAttempts = 0; // Reset counter
+      }
+      
       return { ok:false, error:'Đang xử lý, vui lòng chờ...' };
     }
+    
     if (now - lastGachaTime < GACHA_COOLDOWN) {
-      console.warn("Gacha cooldown...");
+      console.warn("⏳ Gacha cooldown...");
       return { ok:false, error:'Vui lòng chờ giây lát...' };
     }
+    
+    // Reset spam counter on successful call
+    spamAttempts = 0;
     
     // Lock gacha
     isGachaProcessing = true;
@@ -92,7 +110,9 @@
       try { if (typeof playerLoadStats === 'function') playerLoadStats(); } catch(e){}
 
       // Unlock gacha after short delay
-      setTimeout(() => { isGachaProcessing = false; }, 100);
+      setTimeout(() => { 
+        isGachaProcessing = false; 
+      }, 200);
       
       return { ok:true, reward };
     } catch(error) {
@@ -202,14 +222,32 @@
     });
 
     if (rollBtn) rollBtn.addEventListener('click', ()=> {
-      // Disable button temporarily
-      if (rollBtn.disabled) return;
+      // Prevent multiple clicks - check if already disabled
+      if (rollBtn.disabled || isGachaProcessing) {
+        spamAttempts++;
+        if (spamAttempts >= 5) {
+          if (typeof showAlert === 'function') {
+            showAlert("⚠️ NGỪNG SPAM CLICK!\nVui lòng chờ animation hoàn tất.");
+          } else {
+            alert("⚠️ NGỪNG SPAM CLICK!\nVui lòng chờ animation hoàn tất.");
+          }
+          spamAttempts = 0;
+        }
+        return;
+      }
+      
       rollBtn.disabled = true;
+      rollBtn.style.opacity = '0.5';
+      rollBtn.style.cursor = 'not-allowed';
       
       const res = doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
       if (!res.ok) { 
         if (resultEl) resultEl.innerHTML = `<span style="color:red">${res.error}</span>`; 
-        setTimeout(() => { rollBtn.disabled = false; }, 500);
+        setTimeout(() => { 
+          rollBtn.disabled = false; 
+          rollBtn.style.opacity = '1';
+          rollBtn.style.cursor = 'pointer';
+        }, 500);
         return; 
       }
       const r = res.reward;
@@ -233,18 +271,41 @@
       }
       
       // Re-enable button after animation
-      setTimeout(() => { rollBtn.disabled = false; }, 800);
+      setTimeout(() => { 
+        rollBtn.disabled = false; 
+        rollBtn.style.opacity = '1';
+        rollBtn.style.cursor = 'pointer';
+        spamAttempts = 0; // Reset counter
+      }, 1000);
     });
 
     if (roll10Btn) roll10Btn.addEventListener('click', ()=> {
-      // Disable button temporarily
-      if (roll10Btn.disabled) return;
+      // Prevent multiple clicks - check if already disabled
+      if (roll10Btn.disabled || isGachaProcessing) {
+        spamAttempts++;
+        if (spamAttempts >= 5) {
+          if (typeof showAlert === 'function') {
+            showAlert("⚠️ NGỪNG SPAM CLICK!\nĐang quay 10 lần, vui lòng chờ...");
+          } else {
+            alert("⚠️ NGỪNG SPAM CLICK!\nĐang quay 10 lần, vui lòng chờ...");
+          }
+          spamAttempts = 0;
+        }
+        return;
+      }
+      
       roll10Btn.disabled = true;
+      roll10Btn.style.opacity = '0.5';
+      roll10Btn.style.cursor = 'not-allowed';
       
       const bulk = doGachaBulk(10, GACHA_COST, typeof player !== 'undefined' ? player : null);
       if (!bulk.ok) { 
         if (resultEl) resultEl.innerHTML = `<span style="color:red">${bulk.error}</span>`; 
-        setTimeout(() => { roll10Btn.disabled = false; }, 1000);
+        setTimeout(() => { 
+          roll10Btn.disabled = false; 
+          roll10Btn.style.opacity = '1';
+          roll10Btn.style.cursor = 'pointer';
+        }, 1000);
         return; 
       }
       if (resultEl) {
@@ -262,7 +323,12 @@
       }
       
       // Re-enable button after all animations
-      setTimeout(() => { roll10Btn.disabled = false; }, 2000);
+      setTimeout(() => { 
+        roll10Btn.disabled = false; 
+        roll10Btn.style.opacity = '1';
+        roll10Btn.style.cursor = 'pointer';
+        spamAttempts = 0; // Reset counter
+      }, 2500);
     });
 
   }
