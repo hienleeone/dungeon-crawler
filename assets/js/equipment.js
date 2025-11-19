@@ -516,7 +516,13 @@ const sellAll = (rarity) => {
             player.gold += totalGold;
             playerLoadStats();
             showInventory();
-            saveData();
+            
+            // Sử dụng savePlayerData nếu có, không thì saveData
+            if (typeof savePlayerData === 'function') {
+                savePlayerData(false);
+            } else if (typeof saveData === 'function') {
+                saveData();
+            }
         } else {
             sfxDeny.play();
         }
@@ -537,6 +543,7 @@ const sellAll = (rarity) => {
     }
 
     sfxSell.play();
+    let totalGold = 0;
     for (let i = player.inventory.equipment.length - 1; i >= 0; i--) {
         let equipment;
         try {
@@ -546,11 +553,13 @@ const sellAll = (rarity) => {
         }
         if (equipment && equipment.rarity === rarity) {
             const val = Number(equipment.value) || 0;
-            player.gold += val;
+            totalGold += val;
             player.inventory.equipment.splice(i, 1);
         }
     }
+    player.gold += totalGold;
     playerLoadStats();
+    showInventory();
     saveData();
 };
 

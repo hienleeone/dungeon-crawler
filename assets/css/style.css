@@ -1107,6 +1107,11 @@ header button i {
   100%{ transform: scale(1) rotate(0deg); opacity: 1 }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
 .gacha-thumb { width:56px; height:56px; border-radius:8px; object-fit:cover; border:3px solid #fff; }
 
 @media (max-width:480px){
