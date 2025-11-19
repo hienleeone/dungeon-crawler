@@ -543,7 +543,7 @@ async function registerPlayerName(playerName) {
     }
 }
 
-// Verify và claim lại tên khi load game (để đảm bảo ownership)
+// Verify và claim lại tên khi load game (chỉ claim nếu bị mất)
 async function verifyAndClaimPlayerName(playerName) {
     if (!currentUser) {
         console.error("Chưa đăng nhập!");
@@ -554,41 +554,32 @@ async function verifyAndClaimPlayerName(playerName) {
         const userId = currentUser.uid;
         const nameRef = database.ref('playerNames/' + playerName);
         
-        // Đọc giá trị hiện tại trước
+        // Đọc giá trị hiện tại
         const snapshot = await nameRef.once('value');
         const currentValue = snapshot.val();
         
-        // Nếu tên chưa tồn tại - claim lại
+        // Nếu tên vẫn thuộc về mình - OK, không làm gì cả
+        if (currentValue === userId) {
+            console.log("✓ Tên vẫn thuộc về bạn:", playerName);
+            return true;
+        }
+        
+        // Nếu tên đã bị xóa/mất (null) - claim lại
         if (currentValue === null) {
             console.log("Claiming lại tên đã mất:", playerName);
             await nameRef.set(userId);
             return true;
         }
         
-        // Nếu tên đã thuộc về mình - OK, không cần làm gì
-        if (currentValue === userId) {
-            console.log("✓ Tên vẫn thuộc về bạn:", playerName);
-            return true;
-        }
-        
-        // Tên đã bị người khác chiếm - GÁN LẠI TÊN MỚI
-        console.warn("⚠️ Tên đã bị chiếm, tự động đổi tên...");
-        const newName = playerName + "_" + userId.substring(0, 4);
-        
-        // Claim tên mới
-        await database.ref('playerNames/' + newName).set(userId);
-        
-        // Cập nhật tên trong player object
-        player.name = newName;
-        
-        console.log("✓ Đã đổi tên thành:", newName);
-        showAlert(`Tên cũ đã bị sử dụng.\nTên mới của bạn: ${newName}`);
-        
+        // Nếu tên bị người khác chiếm - KHÔNG BAO GIỜ XẢY RA trong trường hợp bình thường
+        // Vì khi tạo nhân vật đã claim tên rồi
+        console.error("⚠️ BẤT THƯỜNG: Tên bị chiếm bởi uid khác:", currentValue);
+        // Vẫn cho load game, không block user
         return true;
         
     } catch (error) {
         console.error("Lỗi verify tên:", error);
-        // Nếu có lỗi, vẫn cho phép load game (không block)
+        // Nếu có lỗi network, vẫn cho load game
         return true;
     }
 }
