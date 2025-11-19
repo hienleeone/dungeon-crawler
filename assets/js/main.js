@@ -4,7 +4,9 @@ window.addEventListener("load", function () {
         const input = document.getElementById(inputId);
         const icon = document.getElementById(iconId);
         if (input && icon) {
-            icon.addEventListener('click', function() {
+            icon.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 if (input.type === 'password') {
                     input.type = 'text';
                     icon.classList.remove('fa-eye');
@@ -18,10 +20,12 @@ window.addEventListener("load", function () {
         }
     };
     
-    // Setup password toggles for login and register
-    setupPasswordToggle('login-password', 'toggle-login-password');
-    setupPasswordToggle('register-password', 'toggle-register-password');
-    setupPasswordToggle('register-confirm-password', 'toggle-register-confirm-password');
+    // Wait for DOM to be fully ready
+    setTimeout(() => {
+        setupPasswordToggle('login-password', 'toggle-login-password');
+        setupPasswordToggle('register-password', 'toggle-register-password');
+        setupPasswordToggle('register-confirm-password', 'toggle-register-confirm-password');
+    }, 100);
     
     // Xử lý đăng nhập/đăng ký
     const loginForm = document.querySelector("#login-form");
