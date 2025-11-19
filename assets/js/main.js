@@ -360,13 +360,14 @@ window.addEventListener("load", function () {
                     <h3>Bảng Xếp Hạng</h3>
                     <p id="leaderboard-close"><i class="fa fa-xmark"></i></p>
                 </div>
-                <div id="leaderboard-content">
+                <div id="leaderboard-content" style="max-height: 60vh; overflow-y: auto; overflow-x: hidden;">
                     <p style="text-align: center;">Đang tải...</p>
                 </div>
             </div>`;
             
             let leaderboardTab = document.querySelector('#leaderboard-tab');
             leaderboardTab.style.width = "22rem";
+            leaderboardTab.style.maxHeight = "80vh";
             let leaderboardClose = document.querySelector('#leaderboard-close');
             let leaderboardContent = document.querySelector('#leaderboard-content');
             

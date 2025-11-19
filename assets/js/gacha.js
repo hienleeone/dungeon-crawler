@@ -248,9 +248,26 @@
     };
 
     // Close modal
-    if (closeX) closeX.onclick = () => { modal.style.display = 'none'; if (resultEl) resultEl.innerHTML = ''; };
-    if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; if (resultEl) resultEl.innerHTML = ''; };
-    modal.onclick = (e) => { if (e.target === modal) { modal.style.display = 'none'; if (resultEl) resultEl.innerHTML = ''; } };
+    if (closeX) {
+      closeX.onclick = (e) => { 
+        e.stopPropagation(); 
+        modal.style.display = 'none'; 
+        if (resultEl) resultEl.innerHTML = ''; 
+      };
+    }
+    if (closeBtn) {
+      closeBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        modal.style.display = 'none'; 
+        if (resultEl) resultEl.innerHTML = ''; 
+      };
+    }
+    modal.onclick = (e) => { 
+      if (e.target === modal) { 
+        modal.style.display = 'none'; 
+        if (resultEl) resultEl.innerHTML = ''; 
+      } 
+    };
 
     // Quay 1 lần
     if (rollBtn) {
