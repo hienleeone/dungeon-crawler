@@ -987,7 +987,7 @@ const allocationPopup = () => {
                 <button id="allocate-reset">Đặt Lại</button>
             </div>
             <div class="row">
-                <p>Passive</p>
+                <p>Kỹ Năng</p>
                 <select id="select-skill">
                     <option value="Remnant Razor">Remnant Razor</option>
                     <option value="Titan's Will">Titan's Will</option>
