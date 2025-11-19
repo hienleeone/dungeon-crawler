@@ -32,6 +32,7 @@
 
   // Lấy icon cho item
   function getItemIcon(item) {
+    if (item.type === 'gold') return '<i class="fas fa-coins" style="color: #FFD700;"></i>';
     if (item.type === 'consumable') return '🧪';
     if (!item.data || !item.data.category) return '<i class="ra ra-sword"></i>';
     
@@ -236,6 +237,30 @@
     // Pick rarity
     const rarity = pickRarity();
     
+    // 10% cơ hội ra vàng thay vì equipment
+    if (Math.random() < 0.1) {
+      const goldAmount = Math.floor(Math.random() * (5000 - 10 + 1)) + 10;
+      player.gold += goldAmount;
+      
+      // Lưu
+      if (typeof savePlayerData === 'function') {
+        await savePlayerData(false);
+      }
+      if (typeof playerLoadStats === 'function') {
+        playerLoadStats();
+      }
+      
+      return { 
+        success: true, 
+        item: {
+          type: 'gold',
+          rarity: rarity,
+          name: `${goldAmount} Vàng`,
+          data: { amount: goldAmount }
+        }
+      };
+    }
+    
     // Luôn tạo equipment (không còn potion)
     const equipment = createEquipmentWithRarity(rarity);
       
@@ -300,6 +325,20 @@
     // Loop để tạo items
     for (let i = 0; i < count; i++) {
       const rarity = pickRarity();
+      
+      // 10% cơ hội ra vàng
+      if (Math.random() < 0.1) {
+        const goldAmount = Math.floor(Math.random() * (5000 - 10 + 1)) + 10;
+        player.gold += goldAmount;
+        
+        items.push({
+          type: 'gold',
+          rarity: rarity,
+          name: `${goldAmount} Vàng`,
+          data: { amount: goldAmount }
+        });
+        continue;
+      }
       
       // Luôn tạo equipment
       const equipment = createEquipmentWithRarity(rarity);
@@ -414,7 +453,7 @@
 
         // Hiệu ứng đang gacha
         if (resultEl) {
-          resultEl.innerHTML = '<div style="font-size:3rem; animation: spin 1s linear infinite;">✨</div>';
+          resultEl.innerHTML = '<div style="text-align:center; padding: 2rem;"><div style="font-size:1.2rem; opacity:0.8; animation: pulse 1s ease-in-out infinite;">Đang quay gacha...</div></div>';
         }
 
         const result = await doSingleGacha();
@@ -427,11 +466,13 @@
             if (resultEl) {
               const icon = getItemIcon(item);
               const row = document.createElement('div');
-              row.className = 'gacha-item-row r-' + item.rarity;
-              row.innerHTML = `<div style="font-size:2rem;">${icon}</div><div style="font-weight:700">${item.rarity}</div><div>${item.name}</div>`;
+              row.className = 'gacha-item-row';
+              row.style.cssText = 'display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem; margin: 0.5rem 0; background: rgba(0,0,0,0.3); border-radius: 0.5rem; border-left: 4px solid var(--rarity-color);';
+              row.style.setProperty('--rarity-color', getRarityColor(item.rarity));
+              row.innerHTML = `<div style="font-size:1.8rem;">${icon}</div><div><div class="${item.rarity}" style="font-weight:700; font-size:1.1rem;">${item.rarity}</div><div style="font-size:0.9rem; opacity:0.8;">${item.name}</div></div>`;
               resultEl.innerHTML = '';
               resultEl.appendChild(row);
-              setTimeout(() => row.classList.add('gacha-pop'), 100);
+              setTimeout(() => row.style.animation = 'gachaPop 0.5s ease-out', 50);
               
               // Cập nhật UI
               if (typeof showInventory === 'function') showInventory();
@@ -459,7 +500,7 @@
 
         // Hiệu ứng đang gacha
         if (resultEl) {
-          resultEl.innerHTML = '<div style="font-size:3rem; animation: spin 1s linear infinite;">✨✨✨</div>';
+          resultEl.innerHTML = '<div style="text-align:center; padding: 2rem;"><div style="font-size:1.2rem; opacity:0.8; animation: pulse 1s ease-in-out infinite;">Đang quay 10 lần...</div></div>';
         }
 
         const result = await doBulkGacha(10);
@@ -474,10 +515,12 @@
               items.forEach((item, idx) => {
                 const icon = getItemIcon(item);
                 const row = document.createElement('div');
-                row.className = 'gacha-item-row r-' + item.rarity;
-                row.innerHTML = `<div style="font-size:1.5rem;">${icon}</div><div style="font-weight:700">${idx + 1}. ${item.rarity}</div><div>${item.name}</div>`;
+                row.className = 'gacha-item-row';
+                row.style.cssText = 'display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem; margin: 0.3rem 0; background: rgba(0,0,0,0.3); border-radius: 0.4rem; border-left: 3px solid var(--rarity-color);';
+                row.style.setProperty('--rarity-color', getRarityColor(item.rarity));
+                row.innerHTML = `<div style="font-size:1.5rem;">${icon}</div><div style="flex:1;"><span class="${item.rarity}" style="font-weight:700;">${item.rarity}</span> <span style="opacity:0.8;">${item.name}</span></div>`;
                 resultEl.appendChild(row);
-                setTimeout(() => row.classList.add('gacha-pop'), 150 + idx * 80);
+                setTimeout(() => row.style.animation = 'gachaPop 0.4s ease-out', 100 + idx * 60);
               });
               
               // Cập nhật UI

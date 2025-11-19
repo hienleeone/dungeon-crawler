@@ -504,7 +504,13 @@ const sellAll = (rarity) => {
             player.gold += totalGold;
             playerLoadStats();
             showInventory();
-            saveData();
+            
+            // Sử dụng savePlayerData nếu có, không thì saveData
+            if (typeof savePlayerData === 'function') {
+                savePlayerData(false);
+            } else if (typeof saveData === 'function') {
+                saveData();
+            }
         } else {
             sfxDeny.play();
         }
