@@ -50,7 +50,7 @@
     return { name: `${rarity} Item`, rarity: rarity, tier: 1, value: 10 };
   }
 
-  function doGachaRoll(playerObj, cost = GACHA_COST) {
+  async function doGachaRoll(playerObj, cost = GACHA_COST) {
     // Anti-spam check
     const now = Date.now();
     
@@ -105,16 +105,28 @@
         if (!Array.isArray(p.inventory.equipment)) p.inventory.equipment = [];
         try { p.inventory.equipment.push(JSON.stringify(equip)); } catch(e){ p.inventory.equipment.push(equip); }
         reward = { type:'equipment', rarity, data: equip };
+        console.log("✅ Thêm equipment:", equip.name || equip.type, "vào inventory");
       } else {
         if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
         if (!Array.isArray(p.inventory.consumables)) p.inventory.consumables = [];
         const consId = 'potion_small';
         p.inventory.consumables.push(consId);
         reward = { type:'consumable', rarity, data: { id: consId } };
+        console.log("✅ Thêm consumable:", consId, "vào inventory");
       }
 
-      try { if (typeof saveData === 'function') saveData(); } catch(e){}
-      try { if (typeof playerLoadStats === 'function') playerLoadStats(); } catch(e){}
+      // Save và update UI
+      try { 
+        if (typeof savePlayerData === 'function') {
+          await savePlayerData(false);
+        } else if (typeof saveData === 'function') {
+          await saveData();
+        }
+      } catch(e){ console.error("Lỗi save:", e); }
+      
+      try { 
+        if (typeof playerLoadStats === 'function') playerLoadStats(); 
+      } catch(e){ console.error("Lỗi load stats:", e); }
 
       // Unlock gacha after short delay
       setTimeout(() => { 
@@ -129,7 +141,7 @@
     }
   }
 
-  function doGachaBulk(count = 10, costPer = GACHA_COST, playerObj) {
+  async function doGachaBulk(count = 10, costPer = GACHA_COST, playerObj) {
     // Anti-spam check for bulk
     if (isGachaProcessing) {
       return { ok:false, error:'Đang xử lý, vui lòng chờ...' };
@@ -166,20 +178,31 @@
           if (!Array.isArray(p.inventory.equipment)) p.inventory.equipment = [];
           try { p.inventory.equipment.push(JSON.stringify(equip)); } catch(e){ p.inventory.equipment.push(equip); }
           reward = { type:'equipment', rarity, data: equip };
+          console.log(`✅ [${i+1}/${count}] Thêm equipment:`, equip.name || equip.type);
         } else {
           if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
           if (!Array.isArray(p.inventory.consumables)) p.inventory.consumables = [];
           const consId = 'potion_small';
           p.inventory.consumables.push(consId);
           reward = { type:'consumable', rarity, data: { id: consId } };
+          console.log(`✅ [${i+1}/${count}] Thêm consumable:`, consId);
         }
         
         results.push({ ok: true, reward });
       }
       
       // Save 1 lần sau khi hoàn tất tất cả
-      try { if (typeof saveData === 'function') saveData(); } catch(e){}
-      try { if (typeof playerLoadStats === 'function') playerLoadStats(); } catch(e){}
+      try { 
+        if (typeof savePlayerData === 'function') {
+          await savePlayerData(false);
+        } else if (typeof saveData === 'function') {
+          await saveData();
+        }
+      } catch(e){ console.error("Lỗi save:", e); }
+      
+      try { 
+        if (typeof playerLoadStats === 'function') playerLoadStats(); 
+      } catch(e){ console.error("Lỗi load stats:", e); }
       
       // Unlock after bulk complete
       setTimeout(() => { isGachaProcessing = false; }, 500);
@@ -252,7 +275,7 @@
       if (e.target === modal) { modal.style.display = 'none'; if (resultEl) resultEl.innerHTML=''; }
     });
 
-    if (rollBtn) rollBtn.addEventListener('click', ()=> {
+    if (rollBtn) rollBtn.addEventListener('click', async ()=> {
       // Prevent multiple clicks - check if already disabled
       if (rollBtn.disabled || isGachaProcessing) {
         spamAttempts++;
@@ -273,7 +296,7 @@
       
       console.log("🎰 Bắt đầu gacha 1 lần...");
       
-      const res = doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
+      const res = await doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
       
       console.log("🎰 Kết quả gacha:", res);
       
@@ -317,7 +340,7 @@
       }, 1000);
     }, { once: false }); // Chỉ đăng ký 1 lần
 
-    if (roll10Btn) roll10Btn.addEventListener('click', ()=> {
+    if (roll10Btn) roll10Btn.addEventListener('click', async ()=> {
       // Prevent multiple clicks - check if already disabled
       if (roll10Btn.disabled || isGachaProcessing) {
         spamAttempts++;
@@ -338,7 +361,7 @@
       
       console.log("🎰 Bắt đầu gacha 10 lần...");
       
-      const bulk = doGachaBulk(10, GACHA_COST, typeof player !== 'undefined' ? player : null);
+      const bulk = await doGachaBulk(10, GACHA_COST, typeof player !== 'undefined' ? player : null);
       
       console.log("🎰 Kết quả bulk gacha:", bulk);
       
