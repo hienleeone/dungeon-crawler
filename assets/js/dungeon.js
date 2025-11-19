@@ -249,8 +249,8 @@ const dungeonEvent = () => {
                     dungeon.status.event = true;
                     choices = `
                             <div class="decision-panel">
-                                <button id="choice1">Enter</button>
-                                <button id="choice2">Ignore</button>
+                                <button id="choice1">Tiến Vào</button>
+                                <button id="choice2">Rời Đi</button>
                             </div>`;
                     addDungeonLog(`<span class="Heirloom">Bạn tìm thấy một căn phòng bí ẩn. Có vẻ như có thứ gì đó đang ngủ bên trong.</span>`, choices);
                     document.querySelector("#choice1").onclick = function () {
