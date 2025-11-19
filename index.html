@@ -103,13 +103,15 @@
                 <p id="player-name"></p>
                 <p id="player-exp"></p>
                 <p id="player-gold"></p>
-                <button id="header-chat-btn" style="position: relative; background: #0084ff; margin-right: 0px;">
-                    <i class="fas fa-comment-dots" style="font-size: 1.2rem;"></i>
-                    <span id="header-chat-badge" style="display:none; position:absolute; top:-8px; right:-8px; background:#ff0000; color:#fff; border-radius:50%; width:18px; height:18px; font-size:11px; line-height:18px; font-weight:bold; border: 2px solid #000;"></span>
-                </button>
-                <button onclick="openInventory()">
-                    <i class="fas fa-bars" style="font-size: 1.3rem;"></i>
-                </button>
+                <div style="display: flex; gap: 2px;">
+                    <button id="header-chat-btn" style="position: relative; background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%); border: 1px solid #654321;">
+                        <i class="fas fa-comment-dots" style="font-size: 1.2rem;"></i>
+                        <span id="header-chat-badge" style="display:none; position:absolute; top:-8px; right:-8px; background:#ff0000; color:#fff; border-radius:50%; width:18px; height:18px; font-size:11px; line-height:18px; font-weight:bold; border: 2px solid #000;"></span>
+                    </button>
+                    <button onclick="openInventory()">
+                        <i class="fas fa-bars" style="font-size: 1.3rem;"></i>
+                    </button>
+                </div>
             </header>
 
             <div class="stat-panel">
