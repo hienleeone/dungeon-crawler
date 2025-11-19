@@ -57,27 +57,44 @@
     let devtoolsOpen = false;
     let banned = false;
     
+    // Phát hiện mobile để tránh false positive
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                     ('ontouchstart' in window) || 
+                     (navigator.maxTouchPoints > 0);
+    
     const devtoolsChecker = () => {
         if (banned) return;
         
-        const threshold = 160;
-        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+        // KHÔNG check window size trên mobile (dễ false positive)
+        if (!isMobile) {
+            const threshold = 160;
+            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    handleDevToolsOpen();
+                }
+                return;
+            }
+        }
         
-        // Check Firebug
-        const isFirebug = window.console && (window.console.firebug || (window.console.exception && window.console.table));
-        
-        if (widthThreshold || heightThreshold || isFirebug) {
-            if (!devtoolsOpen) {
-                devtoolsOpen = true;
-                handleDevToolsOpen();
+        // Check Firebug (chỉ áp dụng cho desktop)
+        if (!isMobile) {
+            const isFirebug = window.console && (window.console.firebug || (window.console.exception && window.console.table));
+            if (isFirebug) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    handleDevToolsOpen();
+                }
             }
         }
     };
 
     // Kiểm tra devtools bằng cách đo thời gian debugger
     const detectDevToolsByTiming = () => {
-        if (banned) return;
+        if (banned || isMobile) return; // Tắt timing check trên mobile
         
         const start = performance.now();
         debugger;
