@@ -417,14 +417,14 @@ window.addEventListener("load", function () {
             };
             
             let content = '';
-            content += createList(topGold, 'gold', '💰 Top Vàng', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
-            content += createList(topLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)');
-            content += createList(topFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)');
+            content += createList(topGold, 'gold', '💰 Top Vàng', 'linear-gradient(135deg, #d4a855 0%, #8b6914 100%)');
+            content += createList(topLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #c77dff 0%, #9d4edd 100%)');
+            content += createList(topFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #52b788 0%, #2d6a4f 100%)');
             
             // Nút toggle
             const toggleText = isExpanded ? 'Thu gọn (Top 3)' : 'Xem thêm (Top 10)';
             content += `<div style="text-align: center; margin-top: 15px;">`;
-            content += `<button id="toggle-leaderboard-btn" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #fff; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-size: 0.95em; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;">${toggleText}</button>`;
+            content += `<button id="toggle-leaderboard-btn" style="background: rgba(255,255,255,0.1); color: #fff; border: 2px solid rgba(255,255,255,0.3); padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.3s; backdrop-filter: blur(5px);">${toggleText}</button>`;
             content += '</div>';
             
             leaderboardContent.innerHTML = content;
@@ -432,10 +432,14 @@ window.addEventListener("load", function () {
             // Sự kiện cho nút toggle
             const toggleBtn = document.getElementById("toggle-leaderboard-btn");
             toggleBtn.onmouseover = function() {
-                this.style.transform = 'scale(1.05)';
+                this.style.background = 'rgba(255,255,255,0.2)';
+                this.style.borderColor = 'rgba(255,255,255,0.5)';
+                this.style.transform = 'translateY(-2px)';
             };
             toggleBtn.onmouseout = function() {
-                this.style.transform = 'scale(1)';
+                this.style.background = 'rgba(255,255,255,0.1)';
+                this.style.borderColor = 'rgba(255,255,255,0.3)';
+                this.style.transform = 'translateY(0)';
             };
             toggleBtn.onclick = async function() {
                 // Đọc trạng thái hiện tại
@@ -454,21 +458,29 @@ window.addEventListener("load", function () {
                 ]);
                 
                 let newContent = '';
-                newContent += createList(newTopGold, 'gold', '💰 Top Vàng', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
-                newContent += createList(newTopLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)');
-                newContent += createList(newTopFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)');
+                newContent += createList(newTopGold, 'gold', '💰 Top Vàng', 'linear-gradient(135deg, #d4a855 0%, #8b6914 100%)');
+                newContent += createList(newTopLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #c77dff 0%, #9d4edd 100%)');
+                newContent += createList(newTopFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #52b788 0%, #2d6a4f 100%)');
                 
                 const newToggleText = newExpanded ? 'Thu gọn (Top 3)' : 'Xem thêm (Top 10)';
                 newContent += `<div style="text-align: center; margin-top: 15px;">`;
-                newContent += `<button id="toggle-leaderboard-btn" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #fff; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-size: 0.95em; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;">${newToggleText}</button>`;
+                newContent += `<button id="toggle-leaderboard-btn" style="background: rgba(255,255,255,0.1); color: #fff; border: 2px solid rgba(255,255,255,0.3); padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.3s; backdrop-filter: blur(5px);">${newToggleText}</button>`;
                 newContent += '</div>';
                 
                 leaderboardContent.innerHTML = newContent;
                 
                 // Re-attach sự kiện
                 const newToggleBtn = document.getElementById("toggle-leaderboard-btn");
-                newToggleBtn.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
-                newToggleBtn.onmouseout = function() { this.style.transform = 'scale(1)'; };
+                newToggleBtn.onmouseover = function() { 
+                    this.style.background = 'rgba(255,255,255,0.2)';
+                    this.style.borderColor = 'rgba(255,255,255,0.5)';
+                    this.style.transform = 'translateY(-2px)';
+                };
+                newToggleBtn.onmouseout = function() { 
+                    this.style.background = 'rgba(255,255,255,0.1)';
+                    this.style.borderColor = 'rgba(255,255,255,0.3)';
+                    this.style.transform = 'translateY(0)';
+                };
                 newToggleBtn.onclick = toggleBtn.onclick;
             };
             
