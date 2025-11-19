@@ -41,24 +41,149 @@
     return "Common";
   }
 
-  // Tạo equipment với rarity cụ thể
+  // Tạo equipment với rarity cụ thể - KHÔNG dùng createEquipment()
   function createEquipmentWithRarity(rarity) {
-    if (typeof createEquipment !== 'function') {
-      return { name: `${rarity} Item`, rarity, tier: 1, value: 100 };
+    const equipment = {
+        category: null,
+        attribute: null,
+        type: null,
+        rarity: rarity,
+        lvl: null,
+        tier: null,
+        value: null,
+        stats: [],
+        name: null
+    };
+
+    // Generate random equipment attribute
+    const equipmentAttributes = ["Damage", "Defense"];
+    equipment.attribute = equipmentAttributes[Math.floor(Math.random() * equipmentAttributes.length)];
+
+    // Generate random equipment name and type based on attribute
+    if (equipment.attribute == "Damage") {
+        const equipmentCategories = ["Sword", "Axe", "Hammer", "Dagger", "Flail", "Scythe"];
+        equipment.category = equipmentCategories[Math.floor(Math.random() * equipmentCategories.length)];
+        equipment.type = "Weapon";
+    } else if (equipment.attribute == "Defense") {
+        const equipmentTypes = ["Armor", "Shield", "Helmet"];
+        equipment.type = equipmentTypes[Math.floor(Math.random() * equipmentTypes.length)];
+        if (equipment.type == "Armor") {
+            const equipmentCategories = ["Plate", "Chain", "Leather"];
+            equipment.category = equipmentCategories[Math.floor(Math.random() * equipmentCategories.length)];
+        } else if (equipment.type == "Shield") {
+            const equipmentCategories = ["Tower", "Kite", "Buckler"];
+            equipment.category = equipmentCategories[Math.floor(Math.random() * equipmentCategories.length)];
+        } else if (equipment.type == "Helmet") {
+            const equipmentCategories = ["Great Helm", "Horned Helm"];
+            equipment.category = equipmentCategories[Math.floor(Math.random() * equipmentCategories.length)];
+        }
     }
-    
-    // Thử tạo equipment khớp rarity 60 lần
-    for (let i = 0; i < 60; i++) {
-      const equip = createEquipment();
-      if (equip && equip.rarity && equip.rarity.toLowerCase() === rarity.toLowerCase()) {
-        return equip;
-      }
+
+    // Determine number of times to loop based on equipment rarity
+    let loopCount;
+    switch (rarity) {
+        case "Common": loopCount = 2; break;
+        case "Uncommon": loopCount = 3; break;
+        case "Rare": loopCount = 4; break;
+        case "Epic": loopCount = 5; break;
+        case "Legendary": loopCount = 6; break;
+        case "Heirloom": loopCount = 8; break;
+        default: loopCount = 2;
     }
+
+    // Generate stats
+    const physicalStats = ["atk", "atkSpd", "vamp", "critRate", "critDmg"];
+    const damageyStats = ["atk", "atk", "vamp", "critRate", "critDmg", "critDmg"];
+    const speedyStats = ["atkSpd", "atkSpd", "atk", "vamp", "critRate", "critRate", "critDmg"];
+    const defenseStats = ["hp", "hp", "def", "def", "atk"];
+    const dmgDefStats = ["hp", "def", "atk", "atk", "critRate", "critDmg"];
     
-    // Nếu không tìm được, tạo 1 cái và gán rarity
-    const equip = createEquipment();
-    equip.rarity = rarity;
-    return equip;
+    let statTypes;
+    if (equipment.attribute == "Damage") {
+        if (equipment.category == "Axe" || equipment.category == "Scythe") {
+            statTypes = damageyStats;
+        } else if (equipment.category == "Dagger" || equipment.category == "Flail") {
+            statTypes = speedyStats;
+        } else if (equipment.category == "Hammer") {
+            statTypes = dmgDefStats;
+        } else {
+            statTypes = physicalStats;
+        }
+    } else {
+        statTypes = defenseStats;
+    }
+
+    // Set equipment level and tier
+    if (dungeon && dungeon.progress && dungeon.settings) {
+        const maxLvl = dungeon.progress.floor * dungeon.settings.enemyLvlGap + (dungeon.settings.enemyBaseLvl - 1);
+        const minLvl = maxLvl - (dungeon.settings.enemyLvlGap - 1);
+        equipment.lvl = Math.floor(Math.random() * (maxLvl - minLvl + 1)) + minLvl;
+        if (equipment.lvl > 100) equipment.lvl = 100;
+        
+        let enemyScaling = dungeon.settings.enemyScaling;
+        if (enemyScaling > 2) enemyScaling = 2;
+        equipment.tier = Math.round((enemyScaling - 1) * 10);
+    } else {
+        equipment.lvl = 1;
+        equipment.tier = 1;
+    }
+
+    // Generate stats and calculate value
+    let equipmentValue = 0;
+    const randomizeNum = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const randomizeDecimal = (min, max) => Math.random() * (max - min) + min;
+    
+    for (let i = 0; i < loopCount; i++) {
+        let statType = statTypes[Math.floor(Math.random() * statTypes.length)];
+        let statValue = 0;
+        
+        const baseScaling = equipment.lvl * 2;
+        
+        if (statType === "hp") {
+            statValue = randomizeNum(baseScaling * 2, baseScaling * 4);
+            equipmentValue += statValue;
+        } else if (statType === "atk" || statType === "def") {
+            statValue = randomizeNum(baseScaling, baseScaling * 2);
+            equipmentValue += statValue * 2.5;
+        } else if (statType === "atkSpd") {
+            statValue = randomizeDecimal(0.5, 3);
+            equipmentValue += statValue * 8.33;
+        } else if (statType === "vamp" || statType === "critRate") {
+            statValue = randomizeDecimal(0.3, 2);
+            equipmentValue += statValue * 20.83;
+        } else if (statType === "critDmg") {
+            statValue = randomizeDecimal(0.5, 3);
+            equipmentValue += statValue * 8.33;
+        }
+
+        // Check if stat exists and merge or add
+        let statExists = equipment.stats.find(s => Object.keys(s)[0] === statType);
+        if (statExists) {
+            statExists[statType] += statValue;
+        } else {
+            equipment.stats.push({ [statType]: statValue });
+        }
+    }
+
+    // Calculate final value with minimum guarantee
+    equipment.value = Math.round((equipmentValue * 3) / 2);
+    
+    const minValueByRarity = {
+        "Common": 50,
+        "Uncommon": 150,
+        "Rare": 500,
+        "Epic": 1500,
+        "Legendary": 5000,
+        "Heirloom": 15000
+    };
+    
+    if (equipment.value < minValueByRarity[rarity] || equipment.value === 0) {
+        equipment.value = minValueByRarity[rarity];
+    }
+
+    equipment.name = `${equipment.category || equipment.type} Lv.${equipment.lvl}`;
+    
+    return equipment;
   }
 
   // Gacha 1 lần
