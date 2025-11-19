@@ -490,7 +490,7 @@ async function checkPlayerNameExists(playerName) {
     }
 }
 
-// Đăng ký tên người chơi với ATOMIC TRANSACTION (tránh race condition)
+// Đăng ký tên người chơi với kiểm tra kép (check trước khi set)
 async function registerPlayerName(playerName) {
     if (!currentUser) {
         console.error("Chưa đăng nhập!");
@@ -501,37 +501,30 @@ async function registerPlayerName(playerName) {
         const userId = currentUser.uid;
         const nameRef = database.ref('playerNames/' + playerName);
         
-        // Sử dụng transaction để đảm bảo atomic operation
-        return new Promise((resolve, reject) => {
-            nameRef.transaction((currentValue) => {
-                if (currentValue === null) {
-                    // Tên chưa tồn tại, đăng ký
-                    return userId;
-                } else if (currentValue === userId) {
-                    // Tên này đã thuộc về user hiện tại, cho phép giữ lại
-                    return userId;
-                } else {
-                    // Tên đã được người khác sử dụng, abort transaction
-                    return undefined; // abort
-                }
-            }, (error, committed, snapshot) => {
-                if (error) {
-                    console.error("Lỗi transaction:", error);
-                    alert("Lỗi kết nối Firebase. Vui lòng thử lại!");
-                    resolve(false);
-                } else if (committed) {
-                    console.log("Đăng ký tên thành công:", playerName);
-                    resolve(true);
-                } else {
-                    console.error("Tên đã được sử dụng bởi người khác!");
-                    alert("Tên này đã có người sử dụng! Vui lòng chọn tên khác.");
-                    resolve(false);
-                }
-            });
-        });
+        // Kiểm tra lại lần nữa trước khi đăng ký
+        const snapshot = await nameRef.once('value');
+        
+        if (snapshot.exists()) {
+            const ownerUserId = snapshot.val();
+            
+            // Nếu không phải của mình, từ chối
+            if (ownerUserId !== userId) {
+                console.error("Tên đã được sử dụng bởi người khác:", ownerUserId);
+                return false;
+            }
+            
+            // Nếu là của mình, OK
+            console.log("Tên này đã thuộc về bạn");
+            return true;
+        }
+        
+        // Tên chưa tồn tại, đăng ký
+        await nameRef.set(userId);
+        console.log("Đăng ký tên thành công:", playerName);
+        return true;
+        
     } catch (error) {
         console.error("Lỗi đăng ký tên:", error);
-        alert("Lỗi kết nối Firebase. Vui lòng thử lại!");
         return false;
     }
 }
