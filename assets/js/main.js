@@ -401,17 +401,17 @@ window.addEventListener("load", function () {
                         let valueColor = '#ffd700'; // Mặc định màu vàng
                         if (valueKey === 'gold') {
                             value = nFormatter(player.gold) + ' vàng';
-                            valueColor = '#ffd700';
+                            valueColor = '#ffeb3b'; // Vàng sáng hơn
                         } else if (valueKey === 'level') {
                             value = 'Level ' + player.level;
-                            valueColor = '#52b788'; // Màu xanh lá cho level
+                            valueColor = '#66ff66'; // Xanh lá sáng hơn
                         } else if (valueKey === 'floor') {
                             value = 'Tầng ' + player.floor;
-                            valueColor = '#c77dff'; // Màu tím cho tầng
+                            valueColor = '#e0b3ff'; // Tím sáng hơn
                         }
                         
                         list += `<div style="background: rgba(255,255,255,0.15); padding: 6px 8px; margin: 4px 0; border-radius: 5px; ${nameStyle}">`;
-                        list += `${medal}<span style="color: #fff;">${player.name}</span> - <span style="color: ${valueColor};">${value}</span>`;
+                        list += `${medal}<span style="color: #fff;">${player.name}</span> - <span style="color: ${valueColor}; font-weight: 700; text-shadow: 1px 1px 3px rgba(0,0,0,0.7);">${value}</span>`;
                         list += '</div>';
                     });
                 }

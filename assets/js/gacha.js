@@ -431,8 +431,8 @@
       if (resultEl) resultEl.innerHTML = '';
       // Cập nhật giá trên button
       const cost = getGachaCost();
-      if (rollBtn) rollBtn.innerHTML = `Quay 1 lần (<i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(cost)})`;
-      if (roll10Btn) roll10Btn.innerHTML = `Quay 10 lần (<i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(cost * 10)})`;
+      if (rollBtn) rollBtn.innerHTML = `Quay 1 lần (<i class="fas fa-coins" style="color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.8), 0 0 10px rgba(255,215,0,0.5); filter: drop-shadow(0 0 2px #000);"></i>${nFormatter(cost)})`;
+      if (roll10Btn) roll10Btn.innerHTML = `Quay 10 lần (<i class="fas fa-coins" style="color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.8), 0 0 10px rgba(255,215,0,0.5); filter: drop-shadow(0 0 2px #000);"></i>${nFormatter(cost * 10)})`;
     };
 
     // Close modal handlers
