@@ -554,36 +554,42 @@ async function verifyAndClaimPlayerName(playerName) {
         const userId = currentUser.uid;
         const nameRef = database.ref('playerNames/' + playerName);
         
-        // Sử dụng transaction để đảm bảo atomic operation
-        const result = await nameRef.transaction((currentValue) => {
-            // Nếu tên chưa tồn tại hoặc không phải của mình
-            if (currentValue === null) {
-                // Tên đã bị xóa/mất - claim lại
-                console.log("Claiming lại tên đã mất:", playerName);
-                return userId;
-            } else if (currentValue === userId) {
-                // Tên vẫn thuộc về mình - OK
-                console.log("Tên vẫn thuộc về bạn:", playerName);
-                return userId;
-            } else {
-                // Tên đã bị người khác chiếm mất - BẤT THƯỜNG!
-                console.error("⚠️ CẢNH BÁO: Tên của bạn đã bị chiếm bởi:", currentValue);
-                alert("⚠️ Tên nhân vật của bạn đã bị người khác sử dụng!\nVui lòng đổi tên khác.");
-                return; // abort - không cho load game
-            }
-        });
+        // Đọc giá trị hiện tại trước
+        const snapshot = await nameRef.once('value');
+        const currentValue = snapshot.val();
         
-        if (result.committed) {
-            console.log("✓ Verify và claim tên thành công:", playerName);
+        // Nếu tên chưa tồn tại - claim lại
+        if (currentValue === null) {
+            console.log("Claiming lại tên đã mất:", playerName);
+            await nameRef.set(userId);
             return true;
-        } else {
-            console.error("✗ Không thể verify tên - đã bị chiếm!");
-            return false;
         }
+        
+        // Nếu tên đã thuộc về mình - OK, không cần làm gì
+        if (currentValue === userId) {
+            console.log("✓ Tên vẫn thuộc về bạn:", playerName);
+            return true;
+        }
+        
+        // Tên đã bị người khác chiếm - GÁN LẠI TÊN MỚI
+        console.warn("⚠️ Tên đã bị chiếm, tự động đổi tên...");
+        const newName = playerName + "_" + userId.substring(0, 4);
+        
+        // Claim tên mới
+        await database.ref('playerNames/' + newName).set(userId);
+        
+        // Cập nhật tên trong player object
+        player.name = newName;
+        
+        console.log("✓ Đã đổi tên thành:", newName);
+        showAlert(`Tên cũ đã bị sử dụng.\nTên mới của bạn: ${newName}`);
+        
+        return true;
         
     } catch (error) {
         console.error("Lỗi verify tên:", error);
-        return false;
+        // Nếu có lỗi, vẫn cho phép load game (không block)
+        return true;
     }
 }
 
