@@ -451,9 +451,18 @@
         rollBtn.disabled = true;
         rollBtn.style.opacity = '0.5';
 
-        // Hiệu ứng đang gacha
+        // Hiệu ứng đang gacha với spinning icon
         if (resultEl) {
-          resultEl.innerHTML = '<div style="text-align:center; padding: 2rem;"><div style="font-size:1.2rem; opacity:0.8; animation: pulse 1s ease-in-out infinite;">Đang quay gacha...</div></div>';
+          resultEl.innerHTML = `
+            <div style="text-align:center; padding: 2rem;">
+              <div style="font-size:3rem; margin-bottom:1rem;">
+                <span style="display:inline-block; animation: spin 1s linear infinite;">✨</span>
+              </div>
+              <div style="font-size:1.2rem; opacity:0.8; animation: pulse 1s ease-in-out infinite;">
+                Đang quay gacha...
+              </div>
+            </div>
+          `;
         }
 
         const result = await doSingleGacha();
@@ -498,9 +507,20 @@
         roll10Btn.disabled = true;
         roll10Btn.style.opacity = '0.5';
 
-        // Hiệu ứng đang gacha
+        // Hiệu ứng đang gacha với spinning cards
         if (resultEl) {
-          resultEl.innerHTML = '<div style="text-align:center; padding: 2rem;"><div style="font-size:1.2rem; opacity:0.8; animation: pulse 1s ease-in-out infinite;">Đang quay 10 lần...</div></div>';
+          resultEl.innerHTML = `
+            <div style="text-align:center; padding: 2rem;">
+              <div style="font-size:3rem; margin-bottom:1rem;">
+                <span style="display:inline-block; animation: spin 1s linear infinite;">🎴</span>
+                <span style="display:inline-block; animation: spin 1s linear infinite 0.2s;">🎴</span>
+                <span style="display:inline-block; animation: spin 1s linear infinite 0.4s;">🎴</span>
+              </div>
+              <div style="font-size:1.2rem; opacity:0.8; animation: pulse 1s ease-in-out infinite;">
+                Đang quay 10 lần...
+              </div>
+            </div>
+          `;
         }
 
         const result = await doBulkGacha(10);
@@ -516,11 +536,14 @@
                 const icon = getItemIcon(item);
                 const row = document.createElement('div');
                 row.className = 'gacha-item-row';
-                row.style.cssText = 'display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem; margin: 0.3rem 0; background: rgba(0,0,0,0.3); border-radius: 0.4rem; border-left: 3px solid var(--rarity-color);';
+                row.style.cssText = 'display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem; margin: 0.3rem 0; background: rgba(0,0,0,0.3); border-radius: 0.4rem; border-left: 3px solid var(--rarity-color); opacity: 0;';
                 row.style.setProperty('--rarity-color', getRarityColor(item.rarity));
                 row.innerHTML = `<div style="font-size:1.5rem;">${icon}</div><div style="flex:1;"><span class="${item.rarity}" style="font-weight:700;">${item.rarity}</span> <span style="opacity:0.8;">${item.name}</span></div>`;
                 resultEl.appendChild(row);
-                setTimeout(() => row.style.animation = 'gachaPop 0.4s ease-out', 100 + idx * 60);
+                setTimeout(() => {
+                  row.style.animation = 'gachaPop 0.4s ease-out forwards';
+                  row.style.opacity = '1';
+                }, 100 + idx * 60);
               });
               
               // Cập nhật UI
