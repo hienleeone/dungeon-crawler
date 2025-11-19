@@ -398,16 +398,20 @@ window.addEventListener("load", function () {
                         const nameStyle = index < 3 ? 'font-weight: bold; font-size: 1.05em;' : '';
                         
                         let value;
+                        let valueColor = '#ffd700'; // Mặc định màu vàng
                         if (valueKey === 'gold') {
                             value = nFormatter(player.gold) + ' vàng';
+                            valueColor = '#ffd700';
                         } else if (valueKey === 'level') {
                             value = 'Level ' + player.level;
+                            valueColor = '#52b788'; // Màu xanh lá cho level
                         } else if (valueKey === 'floor') {
                             value = 'Tầng ' + player.floor;
+                            valueColor = '#c77dff'; // Màu tím cho tầng
                         }
                         
                         list += `<div style="background: rgba(255,255,255,0.15); padding: 6px 8px; margin: 4px 0; border-radius: 5px; ${nameStyle}">`;
-                        list += `${medal}<span style="color: #fff;">${player.name}</span> - <span style="color: #ffd700;">${value}</span>`;
+                        list += `${medal}<span style="color: #fff;">${player.name}</span> - <span style="color: ${valueColor};">${value}</span>`;
                         list += '</div>';
                     });
                 }
@@ -418,8 +422,8 @@ window.addEventListener("load", function () {
             
             let content = '';
             content += createList(topGold, 'gold', '💰 Top Vàng', 'linear-gradient(135deg, #d4a855 0%, #8b6914 100%)');
-            content += createList(topLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #c77dff 0%, #9d4edd 100%)');
-            content += createList(topFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #52b788 0%, #2d6a4f 100%)');
+            content += createList(topLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #52b788 0%, #2d6a4f 100%)');
+            content += createList(topFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #c77dff 0%, #9d4edd 100%)');
             
             // Nút toggle
             const toggleText = isExpanded ? 'Thu gọn (Top 3)' : 'Xem thêm (Top 10)';
@@ -459,8 +463,8 @@ window.addEventListener("load", function () {
                 
                 let newContent = '';
                 newContent += createList(newTopGold, 'gold', '💰 Top Vàng', 'linear-gradient(135deg, #d4a855 0%, #8b6914 100%)');
-                newContent += createList(newTopLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #c77dff 0%, #9d4edd 100%)');
-                newContent += createList(newTopFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #52b788 0%, #2d6a4f 100%)');
+                newContent += createList(newTopLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #52b788 0%, #2d6a4f 100%)');
+                newContent += createList(newTopFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #c77dff 0%, #9d4edd 100%)');
                 
                 const newToggleText = newExpanded ? 'Thu gọn (Top 3)' : 'Xem thêm (Top 10)';
                 newContent += `<div style="text-align: center; margin-top: 15px;">`;

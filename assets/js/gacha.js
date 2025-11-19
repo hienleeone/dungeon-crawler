@@ -431,8 +431,8 @@
       if (resultEl) resultEl.innerHTML = '';
       // Cập nhật giá trên button
       const cost = getGachaCost();
-      if (rollBtn) rollBtn.textContent = `Quay 1 lần (${cost} Gold)`;
-      if (roll10Btn) roll10Btn.textContent = `Quay 10 lần (${cost * 10} Gold)`;
+      if (rollBtn) rollBtn.innerHTML = `Quay 1 lần (<i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(cost)})`;
+      if (roll10Btn) roll10Btn.innerHTML = `Quay 10 lần (<i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(cost * 10)})`;
     };
 
     // Close modal handlers
