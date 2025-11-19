@@ -152,12 +152,28 @@
             margin: 5px 0;
         `;
 
-        // Tạo icon level dựa trên level
+        // Tạo icon level và màu dựa trên level
         let levelIcon = '⚔️';
-        if (message.userLevel >= 50) levelIcon = '👑';
-        else if (message.userLevel >= 30) levelIcon = '🔥';
-        else if (message.userLevel >= 20) levelIcon = '⭐';
-        else if (message.userLevel >= 10) levelIcon = '🗡️';
+        let levelColor = '#aaa';
+        let bubbleGlow = '';
+        
+        if (message.userLevel >= 50) {
+            levelIcon = '👑';
+            levelColor = '#ffd700'; // Vàng gold
+            bubbleGlow = 'box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 0 0 25px rgba(255, 215, 0, 0.3);';
+        } else if (message.userLevel >= 40) {
+            levelIcon = '💎';
+            levelColor = '#00ffff'; // Cyan kim cương
+        } else if (message.userLevel >= 30) {
+            levelIcon = '🔥';
+            levelColor = '#ff6b35'; // Cam đỏ
+        } else if (message.userLevel >= 20) {
+            levelIcon = '⭐';
+            levelColor = '#ffeb3b'; // Vàng
+        } else if (message.userLevel >= 10) {
+            levelIcon = '🗡️';
+            levelColor = '#b0b0b0'; // Bạc
+        }
 
         const header = document.createElement('div');
         header.style.cssText = `
@@ -166,8 +182,8 @@
             ${isMyMessage ? 'text-align: right;' : 'text-align: left;'}
         `;
         header.innerHTML = isMyMessage 
-            ? `<span style="color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);">Bạn</span> <span style="margin-left: 3px;">${levelIcon}</span> <span style="font-size: 0.9em; color: #aaa;">Lv.${message.userLevel}</span>`
-            : `<span style="margin-left: 3px;">${levelIcon}</span> <span style="font-size: 0.9em; color: #aaa;">Lv.${message.userLevel}</span> <span style="color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(message.userName)}</span>`;
+            ? `<span style="color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);">Bạn</span> <span style="margin-left: 3px;">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span>`
+            : `<span style="margin-left: 3px;">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span> <span style="color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(message.userName)}</span>`;
 
         const bubble = document.createElement('div');
         bubble.style.cssText = `
@@ -179,6 +195,7 @@
             word-wrap: break-word;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             ${isMyMessage ? 'border-bottom-right-radius: 4px;' : 'border-bottom-left-radius: 4px;'}
+            ${message.userLevel >= 50 ? bubbleGlow : ''}
         `;
         bubble.textContent = message.message;
 
