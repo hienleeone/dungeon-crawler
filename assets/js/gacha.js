@@ -370,6 +370,8 @@
       document.body.appendChild(modal);
     }
 
+    const closeX = modal.querySelector('#gacha-close-x');
+    const closeBtn = modal.querySelector('#gacha-close-btn');
     const rollBtn = modal.querySelector('#gacha-roll-btn');
     const roll10Btn = modal.querySelector('#gacha-roll10-btn');
     const resultEl = modal.querySelector('#gacha-result');
@@ -385,12 +387,18 @@
       if (roll10Btn) roll10Btn.textContent = `Quay 10 lần (${cost * 10} Gold)`;
     };
 
+    // Close modal handlers
+    const closeModal = () => {
+      modal.style.display = 'none';
+      if (resultEl) resultEl.innerHTML = '';
+    };
+
+    if (closeX) closeX.onclick = closeModal;
+    if (closeBtn) closeBtn.onclick = closeModal;
+    
     // Click outside modal to close
     modal.onclick = (e) => { 
-      if (e.target === modal) {
-        modal.style.display = 'none';
-        if (resultEl) resultEl.innerHTML = '';
-      }
+      if (e.target === modal) closeModal();
     };
 
     // Quay 1 lần

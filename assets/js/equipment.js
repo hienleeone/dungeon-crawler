@@ -495,12 +495,15 @@ const sellAll = (rarity) => {
     if (rarity === "Tất Cả") {
         if (player.inventory.equipment.length !== 0) {
             sfxSell.play();
+            let totalGold = 0;
             for (let i = player.inventory.equipment.length - 1; i >= 0; i--) {
                 const val = getValueFrom(player.inventory.equipment[i]);
-                player.gold += val;
+                totalGold += val;
                 player.inventory.equipment.splice(i, 1);
             }
+            player.gold += totalGold;
             playerLoadStats();
+            showInventory();
             saveData();
         } else {
             sfxDeny.play();
