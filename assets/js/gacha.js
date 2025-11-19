@@ -33,21 +33,30 @@
   // Lấy icon cho item
   function getItemIcon(item) {
     if (item.type === 'consumable') return '🧪';
-    if (!item.data) return '🛡️';
+    if (!item.data || !item.data.category) return '<i class="ra ra-sword"></i>';
     
-    const cat = item.data.category || '';
-    const type = item.data.type || '';
+    const cat = item.data.category;
     
-    if (cat.includes('Sword')) return '⚔️';
-    if (cat.includes('Axe')) return '🪓';
-    if (cat.includes('Hammer')) return '🔨';
-    if (cat.includes('Dagger')) return '🗡️';
-    if (cat.includes('Flail') || cat.includes('Scythe')) return '⚔️';
-    if (type === 'Shield') return '🛡️';
-    if (type === 'Armor') return '🫥';
-    if (type === 'Helmet') return '⛑️';
+    // Sử dụng equipmentIcon nếu có
+    if (typeof equipmentIcon === 'function') {
+      return equipmentIcon(cat);
+    }
     
-    return '🎯';
+    // Fallback icons
+    if (cat === 'Sword') return '<i class="ra ra-relic-blade"></i>';
+    if (cat === 'Axe') return '<i class="ra ra-axe"></i>';
+    if (cat === 'Hammer') return '<i class="ra ra-flat-hammer"></i>';
+    if (cat === 'Dagger') return '<i class="ra ra-bowie-knife"></i>';
+    if (cat === 'Flail') return '<i class="ra ra-chain"></i>';
+    if (cat === 'Scythe') return '<i class="ra ra-scythe"></i>';
+    if (cat === 'Plate' || cat === 'Chain' || cat === 'Leather') return '<i class="ra ra-vest"></i>';
+    if (cat === 'Tower') return '<i class="ra ra-shield"></i>';
+    if (cat === 'Kite') return '<i class="ra ra-heavy-shield"></i>';
+    if (cat === 'Buckler') return '<i class="ra ra-round-shield"></i>';
+    if (cat === 'Great Helm') return '<i class="ra ra-knight-helmet"></i>';
+    if (cat === 'Horned Helm') return '<i class="ra ra-helmet"></i>';
+    
+    return '<i class="ra ra-sword"></i>';
   }
 
   // Pick random rarity
@@ -157,15 +166,15 @@
         let statType = statTypes[Math.floor(Math.random() * statTypes.length)];
         let statValue = 0;
         
-        // Tăng baseScaling lên 10 lần
-        const baseScaling = equipment.lvl * 20;
-        const tierBonus = equipment.tier * 5;
+        // HP, ATK, DEF giữ nguyên như cũ
+        const baseScaling = equipment.lvl * 2;
+        const tierBonus = equipment.tier * 2;
         
         if (statType === "hp") {
-            statValue = randomizeNum(baseScaling * 4 + tierBonus * 10, baseScaling * 8 + tierBonus * 20);
+            statValue = randomizeNum(baseScaling * 2 + tierBonus * 2, baseScaling * 4 + tierBonus * 4);
             equipmentValue += statValue;
         } else if (statType === "atk" || statType === "def") {
-            statValue = randomizeNum(baseScaling * 2 + tierBonus * 5, baseScaling * 4 + tierBonus * 10);
+            statValue = randomizeNum(baseScaling + tierBonus, baseScaling * 2 + tierBonus * 2);
             equipmentValue += statValue * 2.5;
         } else if (statType === "atkSpd") {
             statValue = randomizeDecimal(1, 8) + (equipment.tier * 0.5);
@@ -227,46 +236,26 @@
     // Pick rarity
     const rarity = pickRarity();
     
-    // Xác định xem có phải equipment không
-    const isEquipment = ['Epic', 'Legendary', 'Heirloom'].includes(rarity) || Math.random() < 0.35;
+    // Luôn tạo equipment (không còn potion)
+    const equipment = createEquipmentWithRarity(rarity);
+      
+    // Thêm vào inventory
+    if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
+    if (!Array.isArray(player.inventory.equipment)) player.inventory.equipment = [];
     
-    let item;
-    if (isEquipment) {
-      // Tạo equipment
-      const equipment = createEquipmentWithRarity(rarity);
-      
-      // Thêm vào inventory
-      if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
-      if (!Array.isArray(player.inventory.equipment)) player.inventory.equipment = [];
-      
-      player.inventory.equipment.push(JSON.stringify(equipment));
-      
-      // Lưu ngay lập tức
-      if (typeof savePlayerData === 'function') {
-        await savePlayerData(false);
-      }
-      
-      item = {
-        type: 'equipment',
-        rarity: rarity,
-        name: equipment.name || equipment.category || equipment.type || 'Equipment',
-        data: equipment
-      };
-    } else {
-      // Tạo consumable
-      if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
-      if (!Array.isArray(player.inventory.consumables)) player.inventory.consumables = [];
-      
-      const potionId = 'potion_small';
-      player.inventory.consumables.push(potionId);
-      
-      item = {
-        type: 'consumable',
-        rarity: rarity,
-        name: 'Potion nhỏ',
-        data: { id: potionId }
-      };
+    player.inventory.equipment.push(JSON.stringify(equipment));
+    
+    // Lưu ngay lập tức
+    if (typeof savePlayerData === 'function') {
+      await savePlayerData(false);
     }
+    
+    const item = {
+      type: 'equipment',
+      rarity: rarity,
+      name: equipment.name || equipment.category || equipment.type || 'Equipment',
+      data: equipment
+    };
 
     // Save data
     try {
@@ -311,37 +300,21 @@
     // Loop để tạo items
     for (let i = 0; i < count; i++) {
       const rarity = pickRarity();
-      const isEquipment = ['Epic', 'Legendary', 'Heirloom'].includes(rarity) || Math.random() < 0.35;
       
-      let item;
-      if (isEquipment) {
-        const equipment = createEquipmentWithRarity(rarity);
-        
-        if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
-        if (!Array.isArray(player.inventory.equipment)) player.inventory.equipment = [];
-        
-        player.inventory.equipment.push(JSON.stringify(equipment));
-        
-        item = {
-          type: 'equipment',
-          rarity: rarity,
-          name: equipment.name || equipment.category || equipment.type || 'Equipment',
-          data: equipment
-        };
-      } else {
-        if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
-        if (!Array.isArray(player.inventory.consumables)) player.inventory.consumables = [];
-        
-        const potionId = 'potion_small';
-        player.inventory.consumables.push(potionId);
-        
-        item = {
-          type: 'consumable',
-          rarity: rarity,
-          name: 'Potion nhỏ',
-          data: { id: potionId }
-        };
-      }
+      // Luôn tạo equipment
+      const equipment = createEquipmentWithRarity(rarity);
+      
+      if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
+      if (!Array.isArray(player.inventory.equipment)) player.inventory.equipment = [];
+      
+      player.inventory.equipment.push(JSON.stringify(equipment));
+      
+      const item = {
+        type: 'equipment',
+        rarity: rarity,
+        name: equipment.name || equipment.category || equipment.type || 'Equipment',
+        data: equipment
+      };
       
       items.push(item);
     }

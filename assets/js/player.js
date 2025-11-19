@@ -141,6 +141,11 @@ const openInventory = () => {
             defaultModalElement.style.display = "none";
             defaultModalElement.innerHTML = "";
             openInv.style.filter = "brightness(100%)";
+            // Force update inventory display
+            setTimeout(() => {
+                if (typeof showInventory === 'function') showInventory();
+                if (typeof playerLoadStats === 'function') playerLoadStats();
+            }, 100);
         };
         cancel.onclick = function () {
             sfxDecline.play();
