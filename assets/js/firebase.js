@@ -318,8 +318,9 @@ async function savePlayerData(isAutoSave = false) {
             lastUpdated: Date.now()
         });
 
-        // Cập nhật leaderboard
-        if (player && player.name) {
+        // Cập nhật leaderboard CHỈ KHI AUTO-SAVE (giảm tải)
+        // Manual save không update leaderboard để tiết kiệm quota
+        if (isAutoSave && player && player.name) {
             await updateLeaderboard();
         }
     } catch (error) {
@@ -633,9 +634,19 @@ async function deleteAllGameData() {
 
 // ===== Leaderboard Functions =====
 
-// Cập nhật bảng xếp hạng
-async function updateLeaderboard() {
+// Rate limiting cho leaderboard updates
+let lastLeaderboardUpdate = 0;
+const LEADERBOARD_COOLDOWN = 300000; // 5 phút (giảm số lần update)
+
+// Cập nhật bảng xếp hạng (CHỈ KHI CẦN THIẾT)
+async function updateLeaderboard(force = false) {
     if (!currentUser || !player || !player.name) return;
+
+    // Rate limiting - chỉ update mỗi 5 phút (trừ khi force)
+    const now = Date.now();
+    if (!force && lastLeaderboardUpdate > 0 && now - lastLeaderboardUpdate < LEADERBOARD_COOLDOWN) {
+        return; // Skip update để tiết kiệm quota
+    }
 
     try {
         const userId = currentUser.uid;
@@ -644,10 +655,12 @@ async function updateLeaderboard() {
             gold: player.gold || 0,
             level: player.lvl || 1,
             floor: dungeon && dungeon.progress ? dungeon.progress.floor : 1,
-            lastUpdated: Date.now()
+            lastUpdated: now
         };
 
         await database.ref('leaderboard/' + userId).set(leaderboardData);
+        lastLeaderboardUpdate = now;
+        console.log("✓ Đã cập nhật leaderboard");
     } catch (error) {
         console.error("Lỗi cập nhật bảng xếp hạng:", error);
     }
@@ -746,12 +759,14 @@ function showAlert(message) {
 }
 
 // ===== Auto-save =====
-// Tự động lưu mỗi 30 giây
+// Tự động lưu mỗi 2 PHÚT (tối ưu quota Firebase)
+const AUTO_SAVE_INTERVAL = 120000; // 2 phút = 120,000ms (thay vì 30s)
+
 setInterval(() => {
     if (currentUser && player) {
         savePlayerData(true); // Đánh dấu là auto-save
     }
-}, 30000);
+}, AUTO_SAVE_INTERVAL);
 
 // Lưu khi người dùng rời khỏi trang
 window.addEventListener('beforeunload', () => {
