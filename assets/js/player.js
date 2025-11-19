@@ -87,7 +87,7 @@ const playerLoadStats = () => {
 
     // Player Bonus Stats
     document.querySelector("#bonus-stats").innerHTML = `
-    <h4>Thông Số Thêm</h4>
+    <h4>Stats Bonus</h4>
     <p><i class="fas fa-heart"></i>HP+${player.bonusStats.hp.toFixed(2).replace(rx, "$1")}%</p>
     <p><i class="ra ra-sword"></i>ATK+${player.bonusStats.atk.toFixed(2).replace(rx, "$1")}%</p>
     <p><i class="ra ra-round-shield"></i>DEF+${player.bonusStats.def.toFixed(2).replace(rx, "$1")}%</p>

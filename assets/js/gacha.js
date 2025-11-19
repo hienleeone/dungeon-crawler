@@ -560,7 +560,7 @@
 
         // Hiệu ứng đang gacha
         if (resultEl) {
-          resultEl.innerHTML = '<div class="gacha-spinning">✨ Đang quay 10 lần... ✨</div>';
+          resultEl.innerHTML = '<div class="gacha-spinning">✨ Đang quay... ✨</div>';
           resultEl.classList.add('gacha-shake');
         }
 
