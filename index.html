@@ -43,7 +43,10 @@
                 <h1>Dungeon Crawler</h1>
                 <form id="login-form">
                     <input type="email" id="login-email" placeholder="Gmail" autocomplete="email" required>
-                    <input type="password" id="login-password" placeholder="Mật khẩu" autocomplete="current-password" required>
+                    <div style="position: relative;">
+                        <input type="password" id="login-password" placeholder="Mật khẩu" autocomplete="current-password" required>
+                        <i class="fas fa-eye" id="toggle-login-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999;"></i>
+                    </div>
                     <p id="auth-alert" style="color: #ff4444; min-height: 20px;"></p>
                     <div style="display: flex; gap: 10px; width: 100%;">
                         <button type="submit" style="flex: 2;">Đăng Nhập</button>
@@ -56,8 +59,14 @@
                 <h1>Đăng Ký Tài Khoản</h1>
                 <form id="register-form">
                     <input type="email" id="register-email" placeholder="Gmail" autocomplete="email" required>
-                    <input type="password" id="register-password" placeholder="Mật khẩu" autocomplete="new-password" required>
-                    <input type="password" id="register-confirm-password" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required>
+                    <div style="position: relative;">
+                        <input type="password" id="register-password" placeholder="Mật khẩu" autocomplete="new-password" required>
+                        <i class="fas fa-eye" id="toggle-register-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999;"></i>
+                    </div>
+                    <div style="position: relative;">
+                        <input type="password" id="register-confirm-password" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required>
+                        <i class="fas fa-eye" id="toggle-register-confirm-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999;"></i>
+                    </div>
                     <p id="register-alert" style="color: #ff4444; min-height: 20px;"></p>
                     <div style="display: flex; gap: 10px; width: 100%;">
                         <button type="submit" style="flex: 1;">Đồng Ý</button>

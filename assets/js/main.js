@@ -1,4 +1,28 @@
 window.addEventListener("load", function () {
+    // Password visibility toggle functionality
+    const setupPasswordToggle = (inputId, iconId) => {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input && icon) {
+            icon.addEventListener('click', function() {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        }
+    };
+    
+    // Setup password toggles for login and register
+    setupPasswordToggle('login-password', 'toggle-login-password');
+    setupPasswordToggle('register-password', 'toggle-register-password');
+    setupPasswordToggle('register-confirm-password', 'toggle-register-confirm-password');
+    
     // Xử lý đăng nhập/đăng ký
     const loginForm = document.querySelector("#login-form");
     const registerForm = document.querySelector("#register-form");
@@ -238,6 +262,7 @@ window.addEventListener("load", function () {
             <button id="stats">Chỉ Số Chính</button>
             <button id="leaderboard-btn">Xếp Hạng</button>
             <button id="volume-btn">Âm Thanh</button>
+            <button id="change-password-btn">Đổi Mật Khẩu</button>
             <button id="logout-btn">Đăng Xuất</button>
             <button id="quit-run">Xóa Dữ Liệu</button>
         </div>`;
@@ -247,6 +272,7 @@ window.addEventListener("load", function () {
         let runMenu = document.querySelector('#stats');
         let quitRun = document.querySelector('#quit-run');
         let leaderboardBtn = document.querySelector('#leaderboard-btn');
+        let changePasswordBtn = document.querySelector('#change-password-btn');
         let logoutBtn = document.querySelector('#logout-btn');
         let volumeSettings = document.querySelector('#volume-btn');
 
@@ -489,6 +515,129 @@ window.addEventListener("load", function () {
             };
             
             leaderboardClose.onclick = function () {
+                sfxDecline.play();
+                defaultModalElement.style.display = "none";
+                defaultModalElement.innerHTML = "";
+                menuModalElement.style.display = "flex";
+            };
+        };
+
+        // Change Password button
+        changePasswordBtn.onclick = function () {
+            sfxOpen.play();
+            menuModalElement.style.display = "none";
+            defaultModalElement.style.display = "flex";
+            defaultModalElement.innerHTML = `
+            <div class="content">
+                <h3>Đổi Mật Khẩu</h3>
+                <form id="change-password-form" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="position: relative;">
+                        <input type="password" id="current-password" placeholder="Mật khẩu hiện tại" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff;">
+                        <i class="fas fa-eye" id="toggle-current-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999;"></i>
+                    </div>
+                    <div style="position: relative;">
+                        <input type="password" id="new-password" placeholder="Mật khẩu mới" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff;">
+                        <i class="fas fa-eye" id="toggle-new-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999;"></i>
+                    </div>
+                    <div style="position: relative;">
+                        <input type="password" id="confirm-new-password" placeholder="Xác nhận mật khẩu mới" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff;">
+                        <i class="fas fa-eye" id="toggle-confirm-new-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999;"></i>
+                    </div>
+                    <p id="change-password-alert" style="color: #ff4444; min-height: 20px; margin: 5px 0;"></p>
+                    <div class="button-container">
+                        <button type="submit">Đổi Mật Khẩu</button>
+                        <button type="button" id="cancel-change-password">Hủy Bỏ</button>
+                    </div>
+                </form>
+            </div>`;
+            
+            // Toggle password visibility for change password form
+            const togglePasswordVisibility = (inputId, iconId) => {
+                const input = document.getElementById(inputId);
+                const icon = document.getElementById(iconId);
+                if (input && icon) {
+                    icon.onclick = () => {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.remove('fa-eye');
+                            icon.classList.add('fa-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.remove('fa-eye-slash');
+                            icon.classList.add('fa-eye');
+                        }
+                    };
+                }
+            };
+            
+            togglePasswordVisibility('current-password', 'toggle-current-password');
+            togglePasswordVisibility('new-password', 'toggle-new-password');
+            togglePasswordVisibility('confirm-new-password', 'toggle-confirm-new-password');
+            
+            const changePasswordForm = document.getElementById('change-password-form');
+            const cancelBtn = document.getElementById('cancel-change-password');
+            const alertEl = document.getElementById('change-password-alert');
+            
+            changePasswordForm.onsubmit = async function(e) {
+                e.preventDefault();
+                const currentPassword = document.getElementById('current-password').value;
+                const newPassword = document.getElementById('new-password').value;
+                const confirmNewPassword = document.getElementById('confirm-new-password').value;
+                
+                if (newPassword !== confirmNewPassword) {
+                    alertEl.textContent = 'Mật khẩu mới không khớp!';
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                    alertEl.textContent = 'Mật khẩu phải có ít nhất 6 ký tự!';
+                    return;
+                }
+                
+                alertEl.textContent = 'Đang xử lý...';
+                alertEl.style.color = '#ffcc00';
+                
+                try {
+                    // Re-authenticate user
+                    const credential = firebase.auth.EmailAuthProvider.credential(
+                        currentUser.email,
+                        currentPassword
+                    );
+                    await currentUser.reauthenticateWithCredential(credential);
+                    
+                    // Change password
+                    await currentUser.updatePassword(newPassword);
+                    
+                    alertEl.textContent = 'Đổi mật khẩu thành công! Đang đăng xuất...';
+                    alertEl.style.color = '#00ff00';
+                    
+                    // Logout after 2 seconds
+                    setTimeout(async () => {
+                        await logoutUser();
+                        bgmDungeon.stop();
+                        let dimDungeon = document.querySelector('#dungeon-main');
+                        dimDungeon.style.filter = "brightness(100%)";
+                        dimDungeon.style.display = "none";
+                        menuModalElement.style.display = "none";
+                        menuModalElement.innerHTML = "";
+                        defaultModalElement.style.display = "none";
+                        defaultModalElement.innerHTML = "";
+                        clearInterval(dungeonTimer);
+                        clearInterval(playTimer);
+                    }, 2000);
+                } catch (error) {
+                    alertEl.style.color = '#ff4444';
+                    if (error.code === 'auth/wrong-password') {
+                        alertEl.textContent = 'Mật khẩu hiện tại không đúng!';
+                    } else if (error.code === 'auth/too-many-requests') {
+                        alertEl.textContent = 'Quá nhiều yêu cầu! Vui lòng thử lại sau.';
+                    } else {
+                        alertEl.textContent = 'Lỗi: ' + error.message;
+                    }
+                }
+            };
+            
+            cancelBtn.onclick = function () {
                 sfxDecline.play();
                 defaultModalElement.style.display = "none";
                 defaultModalElement.innerHTML = "";
