@@ -198,6 +198,21 @@ const createEquipment = () => {
         }
     }
     equipment.value = Math.round((equipmentValue * 3) / 2);
+    
+    // Đảm bảo giá trị tối thiểu dựa trên rarity
+    const minValueByRarity = {
+        "Common": 50,
+        "Uncommon": 150,
+        "Rare": 500,
+        "Epic": 1500,
+        "Legendary": 5000,
+        "Heirloom": 15000
+    };
+    
+    if (equipment.value < minValueByRarity[equipment.rarity] || equipment.value === 0) {
+        equipment.value = minValueByRarity[equipment.rarity];
+    }
+    
     player.inventory.equipment.push(JSON.stringify(equipment));
 
     saveData();
