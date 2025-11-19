@@ -234,10 +234,9 @@
         <div class="content">
           <div class="content-head">
             <h3>Gacha</h3>
-            <p id="gacha-modal-x"><i class="fa fa-xmark"></i></p>
+            <p id="gacha-modal-x" style="cursor: pointer;"><i class="fas fa-times"></i></p>
           </div>
           <div style="padding:10px;">
-            <p>Giá: <b>${GACHA_COST}</b> vàng / lần</p>
             <button id="gacha-roll-btn" class="gachabtn">Quay 1 lần</button>
             <button id="gacha-roll10-btn" class="gachabtn" style="margin-top:8px;">Quay 10 lần</button>
             <div id="gacha-result" class="gacha-result-area"></div>
@@ -265,33 +264,31 @@
       if (roll10Btn) roll10Btn.textContent = `Quay 10 lần (${cost * 10} Gold)`;
     };
 
-    // Close modal handlers - sử dụng addEventListener với capture phase
-    const closeModal = () => {
-      modal.style.display = 'none';
-      if (resultEl) resultEl.innerHTML = '';
-    };
-
+    // Close modal - sử dụng onclick đơn giản
     if (closeX) {
-      closeX.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeModal();
-      }, true); // capture phase
+      closeX.onclick = () => {
+        modal.style.display = 'none';
+        if (resultEl) resultEl.innerHTML = '';
+      };
     }
     if (closeBtn) {
-      closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeModal();
-      }, true); // capture phase
+      closeBtn.onclick = () => {
+        modal.style.display = 'none';
+        if (resultEl) resultEl.innerHTML = '';
+      };
     }
     
     // Click outside modal to close
-    modal.addEventListener('click', (e) => { 
-      if (e.target === modal) closeModal();
-    });
+    modal.onclick = (e) => { 
+      if (e.target === modal) {
+        modal.style.display = 'none';
+        if (resultEl) resultEl.innerHTML = '';
+      }
+    };
     
     // Ngăn content div đóng modal
     if (contentDiv) {
-      contentDiv.addEventListener('click', (e) => e.stopPropagation());
+      contentDiv.onclick = (e) => e.stopPropagation();
     }
 
     // Quay 1 lần
