@@ -411,7 +411,7 @@ window.addEventListener("load", function () {
                         }
                         
                         list += `<div style="background: rgba(255,255,255,0.15); padding: 6px 8px; margin: 4px 0; border-radius: 5px; ${nameStyle}">`;
-                        list += `${medal}<span style="color: #fff;">${player.name}</span> - <span style="color: ${valueColor}; font-weight: 700; text-shadow: 1px 1px 3px rgba(0,0,0,0.7);">${value}</span>`;
+                        list += `${medal}<span style="color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">${player.name}</span> - <span style="color: ${valueColor}; font-weight: 700; text-shadow: 1px 1px 3px rgba(0,0,0,0.7);">${value}</span>`;
                         list += '</div>';
                     });
                 }
