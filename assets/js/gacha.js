@@ -142,17 +142,37 @@
         return { ok:false, error:'Không đủ vàng' };
       }
       
+      // Trừ toàn bộ gold trước
+      p.gold -= total;
+      
       const results = [];
-      for (let i=0;i<count;i++){
-        // Temporarily unlock for each roll in bulk
-        const wasLocked = isGachaProcessing;
-        isGachaProcessing = false;
-        const r = doGachaRoll(p, costPer);
-        isGachaProcessing = wasLocked;
+      // Thực hiện count lần gacha
+      for (let i = 0; i < count; i++) {
+        // Tạo rarity và reward cho mỗi lần
+        const rarity = pickRarity();
+        let reward = null;
+        const giveEquip = ['Epic','Legendary','Heirloom'].includes(rarity) || Math.random() < 0.35;
         
-        results.push(r);
-        if (!r.ok) break;
+        if (giveEquip) {
+          const equip = createEquipmentForRarity(rarity);
+          if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
+          if (!Array.isArray(p.inventory.equipment)) p.inventory.equipment = [];
+          try { p.inventory.equipment.push(JSON.stringify(equip)); } catch(e){ p.inventory.equipment.push(equip); }
+          reward = { type:'equipment', rarity, data: equip };
+        } else {
+          if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
+          if (!Array.isArray(p.inventory.consumables)) p.inventory.consumables = [];
+          const consId = 'potion_small';
+          p.inventory.consumables.push(consId);
+          reward = { type:'consumable', rarity, data: { id: consId } };
+        }
+        
+        results.push({ ok: true, reward });
       }
+      
+      // Save 1 lần sau khi hoàn tất tất cả
+      try { if (typeof saveData === 'function') saveData(); } catch(e){}
+      try { if (typeof playerLoadStats === 'function') playerLoadStats(); } catch(e){}
       
       // Unlock after bulk complete
       setTimeout(() => { isGachaProcessing = false; }, 500);
