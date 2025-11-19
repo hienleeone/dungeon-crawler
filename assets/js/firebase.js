@@ -63,6 +63,12 @@ async function loginUser(email, password) {
 async function logoutUser() {
     try {
         await savePlayerData();
+        
+        // Cleanup chat system
+        if (typeof window.cleanupChat === 'function') {
+            window.cleanupChat();
+        }
+        
         await auth.signOut();
         currentUser = null;
         player = null;

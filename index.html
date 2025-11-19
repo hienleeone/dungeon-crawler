@@ -175,11 +175,32 @@
                 </div>
 
                 <button id="menu-btn">Menu</button>
-                    <button id="open-gacha" class="modal-btn" style="margin-top:8px; background:#ffd500; color:#000; font-weight:700; width:100%;">✨ Gacha ✨</button>
+                <button id="chat-btn" style="margin-top:8px; background:#0084ff; color:#fff; font-weight:700; width:100%; position:relative;">
+                    <i class="fas fa-comment-dots"></i> Live Chat
+                    <span id="chat-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:#ff0000; color:#fff; border-radius:50%; width:20px; height:20px; font-size:12px; line-height:20px; font-weight:bold;"></span>
+                </button>
+                <button id="open-gacha" class="modal-btn" style="margin-top:8px; background:#ffd500; color:#000; font-weight:700; width:100%;">✨ Gacha ✨</button>
             </div>
         </div>
 
         <!-- ===== Other Modals ===== -->
+        <div class="modal-container" id="chatModal" style="display:none;">
+            <div class="content" style="width:400px; max-width:95%; height:500px; max-height:80vh; display:flex; flex-direction:column;">
+                <div class="content-head">
+                    <h3><i class="fas fa-comment-dots"></i> Live Chat</h3>
+                    <p id="close-chat"><i class="fa fa-xmark"></i></p>
+                </div>
+                <div id="chat-messages" style="flex:1; overflow-y:auto; padding:10px; background:rgba(0,0,0,0.3); border-radius:5px; margin-bottom:10px; display:flex; flex-direction:column; gap:8px;">
+                    <p style="text-align:center; color:#999;">Chào mừng đến với Live Chat!</p>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." style="flex:1; padding:10px; border-radius:5px; border:1px solid #444; background:#222; color:#fff;" maxlength="200">
+                    <button id="chat-send" style="padding:10px 20px; background:#0084ff; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
         <div class="modal-container" id="equipmentInfo"></div>
         <div class="modal-container" id="combatPanel"></div>
         <div class="modal-container" id="lvlupPanel">
@@ -225,6 +246,7 @@
     <script src="./assets/js/enemy.js"></script>
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
+    <script src="./assets/js/chat.js"></script>
 
 </body>
 
