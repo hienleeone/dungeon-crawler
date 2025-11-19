@@ -240,6 +240,7 @@
     const rollBtn = modal.querySelector('#gacha-roll-btn');
     const roll10Btn = modal.querySelector('#gacha-roll10-btn');
     const resultEl = modal.querySelector('#gacha-result');
+    const contentDiv = modal.querySelector('.content');
 
     // Open modal
     openBtn.onclick = () => {
@@ -247,17 +248,22 @@
       if (resultEl) resultEl.innerHTML = '';
     };
 
+    // Ngăn content div đóng modal khi click vào nó
+    if (contentDiv) {
+      contentDiv.onclick = (e) => {
+        e.stopPropagation();
+      };
+    }
+
     // Close modal
     if (closeX) {
-      closeX.onclick = (e) => { 
-        e.stopPropagation(); 
+      closeX.onclick = () => { 
         modal.style.display = 'none'; 
         if (resultEl) resultEl.innerHTML = ''; 
       };
     }
     if (closeBtn) {
-      closeBtn.onclick = (e) => { 
-        e.stopPropagation(); 
+      closeBtn.onclick = () => { 
         modal.style.display = 'none'; 
         if (resultEl) resultEl.innerHTML = ''; 
       };
