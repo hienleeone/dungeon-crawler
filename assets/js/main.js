@@ -438,10 +438,13 @@ window.addEventListener("load", function () {
                 this.style.transform = 'scale(1)';
             };
             toggleBtn.onclick = async function() {
-                leaderboardContent.dataset.expanded = (!isExpanded).toString();
+                // Đọc trạng thái hiện tại
+                const currentExpanded = leaderboardContent.dataset.expanded === 'true';
+                const newExpanded = !currentExpanded;
+                leaderboardContent.dataset.expanded = newExpanded.toString();
                 
                 // Reload dữ liệu
-                const newLimit = !isExpanded ? 10 : 3;
+                const newLimit = newExpanded ? 10 : 3;
                 leaderboardContent.innerHTML = '<p style="text-align: center;">Đang tải...</p>';
                 
                 const [newTopGold, newTopLevel, newTopFloor] = await Promise.all([
@@ -455,7 +458,7 @@ window.addEventListener("load", function () {
                 newContent += createList(newTopLevel, 'level', '⚔️ Top Level', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)');
                 newContent += createList(newTopFloor, 'floor', '🏆 Top Tầng Cao Nhất', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)');
                 
-                const newToggleText = !isExpanded ? 'Thu gọn (Top 3)' : 'Xem thêm (Top 10)';
+                const newToggleText = newExpanded ? 'Thu gọn (Top 3)' : 'Xem thêm (Top 10)';
                 newContent += `<div style="text-align: center; margin-top: 15px;">`;
                 newContent += `<button id="toggle-leaderboard-btn" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #fff; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-size: 0.95em; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;">${newToggleText}</button>`;
                 newContent += '</div>';
