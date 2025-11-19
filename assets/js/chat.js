@@ -40,7 +40,7 @@
 
     // Setup giao diện chat
     function setupChatUI() {
-        const chatBtn = document.getElementById('chat-btn');
+        const chatBtn = document.getElementById('header-chat-btn');
         const chatModal = document.getElementById('chatModal');
         const closeChat = document.getElementById('close-chat');
         const chatInput = document.getElementById('chat-input');
@@ -193,7 +193,7 @@
 
     // Cập nhật badge số tin nhắn chưa đọc
     function updateChatBadge() {
-        const badge = document.getElementById('chat-badge');
+        const badge = document.getElementById('header-chat-badge');
         if (!badge) return;
 
         if (unreadCount > 0) {

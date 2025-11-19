@@ -103,6 +103,10 @@
                 <p id="player-name"></p>
                 <p id="player-exp"></p>
                 <p id="player-gold"></p>
+                <button id="header-chat-btn" style="position: relative; background: #0084ff; margin-right: 8px;">
+                    <i class="fas fa-comment-dots" style="font-size: 1.2rem;"></i>
+                    <span id="header-chat-badge" style="display:none; position:absolute; top:-8px; right:-8px; background:#ff0000; color:#fff; border-radius:50%; width:18px; height:18px; font-size:11px; line-height:18px; font-weight:bold; border: 2px solid #000;"></span>
+                </button>
                 <button onclick="openInventory()">
                     <i class="fas fa-bars" style="font-size: 1.3rem;"></i>
                 </button>
@@ -175,10 +179,6 @@
                 </div>
 
                 <button id="menu-btn">Menu</button>
-                <button id="chat-btn" style="margin-top:8px; background:#0084ff; color:#fff; font-weight:700; width:100%; position:relative;">
-                    <i class="fas fa-comment-dots"></i> Live Chat
-                    <span id="chat-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:#ff0000; color:#fff; border-radius:50%; width:20px; height:20px; font-size:12px; line-height:20px; font-weight:bold;"></span>
-                </button>
                 <button id="open-gacha" class="modal-btn" style="margin-top:8px; background:#ffd500; color:#000; font-weight:700; width:100%;">✨ Gacha ✨</button>
             </div>
         </div>
