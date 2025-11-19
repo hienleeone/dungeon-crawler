@@ -409,8 +409,14 @@ button:focus {
     margin: 0;
 }
 
-.content .content-head p:hover {
+.content .content-head p {
     cursor: pointer;
+    z-index: 1000;
+    position: relative;
+}
+
+.content .content-head p:hover {
+    opacity: 0.7;
 }
 
 /* Battle/Combat Panel */

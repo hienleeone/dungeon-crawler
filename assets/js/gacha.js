@@ -264,32 +264,19 @@
       if (roll10Btn) roll10Btn.textContent = `Quay 10 lần (${cost * 10} Gold)`;
     };
 
-    // Close modal - sử dụng onclick đơn giản
-    if (closeX) {
-      closeX.onclick = () => {
-        modal.style.display = 'none';
-        if (resultEl) resultEl.innerHTML = '';
-      };
-    }
-    if (closeBtn) {
-      closeBtn.onclick = () => {
-        modal.style.display = 'none';
-        if (resultEl) resultEl.innerHTML = '';
-      };
-    }
-    
-    // Click outside modal to close
-    modal.onclick = (e) => { 
-      if (e.target === modal) {
-        modal.style.display = 'none';
-        if (resultEl) resultEl.innerHTML = '';
-      }
+    // Close handlers - đơn giản nhất có thể
+    const doClose = () => {
+      modal.style.display = 'none';
+      if (resultEl) resultEl.innerHTML = '';
     };
+
+    if (closeX) closeX.onclick = doClose;
+    if (closeBtn) closeBtn.onclick = doClose;
     
-    // Ngăn content div đóng modal
-    if (contentDiv) {
-      contentDiv.onclick = (e) => e.stopPropagation();
-    }
+    // Click outside to close
+    modal.onclick = (e) => { 
+      if (e.target === modal) doClose();
+    };
 
     // Quay 1 lần
     if (rollBtn) {
