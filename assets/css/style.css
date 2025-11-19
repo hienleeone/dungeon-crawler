@@ -890,6 +890,7 @@ header button i {
 .gachabtn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(212, 175, 55, 0.5);
+  background: linear-gradient(135deg, #e0c050 0%, #fff8dc 50%, #e0c050 100%);
 }
 .gachabtn:active { transform: scale(0.98); }
 .modal-btn { width:100%; padding:8px 10px; border-radius:6px; border:none; cursor:pointer; }

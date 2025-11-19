@@ -431,8 +431,8 @@
       if (resultEl) resultEl.innerHTML = '';
       // Cập nhật giá trên button
       const cost = getGachaCost();
-      if (rollBtn) rollBtn.innerHTML = `<span style="color: #333; font-weight: 500;">Quay 1 lần với:</span> <span style="color: #fff; font-weight: 700;">${nFormatter(cost)}</span> <i class="fas fa-coins" style="color: #FFD700; text-shadow: 0 0 8px rgba(255,215,0,0.9), 0 0 3px rgba(255,215,0,0.6); filter: drop-shadow(0 1px 2px #000);"></i>`;
-      if (roll10Btn) roll10Btn.innerHTML = `<span style="color: #333; font-weight: 500;">Quay 10 lần với:</span> <span style="color: #fff; font-weight: 700;">${nFormatter(cost * 10)}</span> <i class="fas fa-coins" style="color: #FFD700; text-shadow: 0 0 8px rgba(255,215,0,0.9), 0 0 3px rgba(255,215,0,0.6); filter: drop-shadow(0 1px 2px #000);"></i>`;
+      if (rollBtn) rollBtn.innerHTML = `<span style="color: rgba(0,0,0,0.7); font-weight: 500;">Quay 1 lần với:</span> <span style="color: #000; font-weight: 800; text-shadow: 0 0 3px rgba(255,255,255,0.5);">${nFormatter(cost)}</span> <i class="fas fa-coins" style="color: #b8860b; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));"></i>`;
+      if (roll10Btn) roll10Btn.innerHTML = `<span style="color: rgba(0,0,0,0.7); font-weight: 500;">Quay 10 lần với:</span> <span style="color: #000; font-weight: 800; text-shadow: 0 0 3px rgba(255,255,255,0.5);">${nFormatter(cost * 10)}</span> <i class="fas fa-coins" style="color: #b8860b; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));"></i>`;
     };
 
     // Close modal handlers
