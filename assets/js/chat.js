@@ -199,18 +199,21 @@
             ${isMyMessage ? 'text-align: right;' : 'text-align: left;'}
         `;
         header.innerHTML = isMyMessage 
-            ? `<span style="color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);">Bạn</span> <span style="margin-left: 3px; ${levelIconGlow}">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span>`
-            : `<span style="margin-left: 3px; ${levelIconGlow}">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span> <span style="color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(message.userName)}</span>`;
+            ? `<span style="color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);">Bạn</span> <span style="margin-left: 8px; ${levelIconGlow}">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span>`
+            : `<span style="margin-left: 8px; ${levelIconGlow}">${levelIcon}</span> <span style="font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};">Lv.${message.userLevel}</span> <span style="color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(message.userName)}</span>`;
 
         const bubble = document.createElement('div');
         bubble.style.cssText = `
             background: ${isMyMessage ? 'linear-gradient(135deg, #0084ff, #00a8ff)' : 'rgba(60,60,60,0.9)'};
             color: #fff;
-            padding: 10px 14px;
-            border-radius: 18px;
+            font-size: 0.95rem;
+            padding: 8px 14px;
+            border-radius: 16px;
             max-width: 70%;
             word-wrap: break-word;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-left: ${isMyMessage ? '0' : '8px'};
+            margin-right: ${isMyMessage ? '8px' : '0'};
             ${isMyMessage ? 'border-bottom-right-radius: 4px;' : 'border-bottom-left-radius: 4px;'}
             ${bubbleGlow}
         `;
