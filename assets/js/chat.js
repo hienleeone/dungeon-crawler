@@ -199,8 +199,8 @@
             ${isMyMessage ? 'text-align: right;' : 'text-align: left;'}
         `;
         header.innerHTML = isMyMessage 
-            ? `<span style=\"color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);\">Bạn</span> <span style=\"margin-left: 0; margin-right: 4px; ${levelIconGlow}\">${levelIcon}</span> <span style=\"font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};\">Lv.${message.userLevel}</span>`
-            : `<span style=\"margin-left: 0; margin-right: 4px; ${levelIconGlow}\">${levelIcon}</span> <span style=\"font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};\">Lv.${message.userLevel}</span> <span style=\"color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);\">${escapeHtml(message.userName)}</span>`;
+            ? `<span style=\"color: #66b3ff; font-weight: bold; text-shadow: 0 0 5px rgba(102, 179, 255, 0.5);\">Bạn</span> <span style=\"margin-left: 0; margin-right: 2px; ${levelIconGlow}\">${levelIcon}</span><span style=\"font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};\">Lv.${message.userLevel}</span>`
+            : `<span style=\"margin-left: 0; margin-right: 2px; ${levelIconGlow}\">${levelIcon}</span><span style=\"font-size: 0.9em; color: ${levelColor}; font-weight: bold; text-shadow: 0 0 5px ${levelColor};\">Lv.${message.userLevel}</span> <span style=\"color: #e0e0e0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);\">${escapeHtml(message.userName)}</span>`;
 
         const bubble = document.createElement('div');
         bubble.style.cssText = `
