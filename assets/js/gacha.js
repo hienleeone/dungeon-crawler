@@ -467,6 +467,7 @@
 
         const result = await doSingleGacha();
 
+        // Giảm delay để nhanh hơn (600ms thay vì 1200ms)
         setTimeout(() => {
           if (!result.success) {
             if (resultEl) resultEl.innerHTML = `<span style="color:red">${result.error}</span>`;
@@ -493,8 +494,8 @@
             rollBtn.disabled = false;
             rollBtn.style.opacity = '1';
             isProcessing = false;
-          }, 300);
-        }, 1200);
+          }, 200);
+        }, 600); // Giảm từ 1200ms xuống 600ms
       };
     }
 
@@ -525,6 +526,7 @@
 
         const result = await doBulkGacha(10);
 
+        // Giảm delay để nhanh hơn (800ms thay vì 1500ms)
         setTimeout(() => {
           if (!result.success) {
             if (resultEl) resultEl.innerHTML = `<span style="color:red">${result.error}</span>`;
@@ -543,7 +545,7 @@
                 setTimeout(() => {
                   row.style.animation = 'gachaPop 0.4s ease-out forwards';
                   row.style.opacity = '1';
-                }, 100 + idx * 60);
+                }, 50 + idx * 40); // Giảm delay giữa các items
               });
               
               // Cập nhật UI
@@ -556,8 +558,8 @@
             roll10Btn.disabled = false;
             roll10Btn.style.opacity = '1';
             isProcessing = false;
-          }, 500);
-        }, 1500);
+          }, 300); // Giảm delay cuối
+        }, 800); // Giảm từ 1500ms xuống 800ms
       };
     }
   }
