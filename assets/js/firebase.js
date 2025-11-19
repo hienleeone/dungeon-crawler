@@ -502,27 +502,33 @@ async function registerPlayerName(playerName) {
         const nameRef = database.ref('playerNames/' + playerName);
         
         // Sử dụng transaction để đảm bảo atomic operation
-        const result = await nameRef.transaction((currentValue) => {
-            if (currentValue === null) {
-                // Tên chưa tồn tại, đăng ký
-                return userId;
-            } else if (currentValue === userId) {
-                // Tên này đã thuộc về user hiện tại, cho phép giữ lại
-                return userId;
-            } else {
-                // Tên đã được người khác sử dụng, abort transaction
-                return undefined; // abort
-            }
+        return new Promise((resolve, reject) => {
+            nameRef.transaction((currentValue) => {
+                if (currentValue === null) {
+                    // Tên chưa tồn tại, đăng ký
+                    return userId;
+                } else if (currentValue === userId) {
+                    // Tên này đã thuộc về user hiện tại, cho phép giữ lại
+                    return userId;
+                } else {
+                    // Tên đã được người khác sử dụng, abort transaction
+                    return undefined; // abort
+                }
+            }, (error, committed, snapshot) => {
+                if (error) {
+                    console.error("Lỗi transaction:", error);
+                    alert("Lỗi kết nối Firebase. Vui lòng thử lại!");
+                    resolve(false);
+                } else if (committed) {
+                    console.log("Đăng ký tên thành công:", playerName);
+                    resolve(true);
+                } else {
+                    console.error("Tên đã được sử dụng bởi người khác!");
+                    alert("Tên này đã có người sử dụng! Vui lòng chọn tên khác.");
+                    resolve(false);
+                }
+            });
         });
-        
-        if (result.committed) {
-            console.log("Đăng ký tên thành công:", playerName);
-            return true;
-        } else {
-            console.error("Tên đã được sử dụng bởi người khác!");
-            alert("Tên này đã có người sử dụng! Vui lòng chọn tên khác.");
-            return false;
-        }
     } catch (error) {
         console.error("Lỗi đăng ký tên:", error);
         alert("Lỗi kết nối Firebase. Vui lòng thử lại!");
