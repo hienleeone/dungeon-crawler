@@ -156,8 +156,13 @@ window.addEventListener("load", function () {
                     inCombat: false
                 };
                 
-                // Đăng ký tên người chơi
-                await registerPlayerName(playerName);
+                // Đăng ký tên người chơi với transaction (tránh race condition)
+                const registered = await registerPlayerName(playerName);
+                if (!registered) {
+                    // Đăng ký thất bại (tên đã bị chiếm trong lúc đó)
+                    document.querySelector("#alert").innerHTML = "Tên này vừa được người khác sử dụng! Vui lòng chọn tên khác.";
+                    return;
+                }
                 
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
