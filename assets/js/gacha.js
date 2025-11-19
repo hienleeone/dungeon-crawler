@@ -286,7 +286,7 @@
       // Vòng quay rỗng - không thêm gì vào inventory
       item = {
         type: 'empty',
-        rarity: 'Common',
+        rarity: 'empty',
         name: 'Vòng quay rỗng',
         data: null
       };
@@ -356,7 +356,7 @@
         // Vòng quay rỗng
         item = {
           type: 'empty',
-          rarity: 'Common',
+          rarity: 'empty',
           name: 'Vòng quay rỗng',
           data: null
         };
@@ -498,15 +498,28 @@
             
             // Format: (icon) (loại) (tên vật phẩm)
             const typeText = item.data ? (item.data.type || '') : '';
-            row.innerHTML = `
-              <div style="display:flex; align-items:center; gap:8px; width:100%;">
-                <span style="font-size:1.5em;">${icon}</span>
-                <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
-                  <div style="font-weight:700; font-size:0.95em;" class="${item.rarity}">${item.rarity}</div>
-                  <div style="font-size:0.9em; opacity:0.9;">${typeText ? typeText + ' - ' : ''}${item.name}</div>
+            
+            // Nếu là vòng quay rỗng, chỉ hiển thị icon và tên, không có rarity
+            if (item.type === 'empty') {
+              row.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                  <span style="font-size:1.5em;">${icon}</span>
+                  <div style="flex:1;">
+                    <div style="font-size:0.95em; color:#888;">${item.name}</div>
+                  </div>
                 </div>
-              </div>
-            `;
+              `;
+            } else {
+              row.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                  <span style="font-size:1.5em;">${icon}</span>
+                  <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
+                    <div style="font-weight:700; font-size:0.95em;" class="${item.rarity}">${item.rarity}</div>
+                    <div style="font-size:0.9em; opacity:0.9;">${typeText ? typeText + ' - ' : ''}${item.name}</div>
+                  </div>
+                </div>
+              `;
+            }
             resultEl.innerHTML = '';
             resultEl.appendChild(row);
             setTimeout(() => row.classList.add('gacha-pop', 'gacha-flash'), 50);
@@ -579,15 +592,28 @@
               
               // Format: (icon) (loại) (tên vật phẩm) - không có số thứ tự
               const typeText = item.data ? (item.data.type || '') : '';
-              row.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px; width:100%;">
-                  <span style="font-size:1.5em;">${icon}</span>
-                  <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
-                    <div style="font-weight:700; font-size:0.95em;" class="${item.rarity}">${item.rarity}</div>
-                    <div style="font-size:0.9em; opacity:0.9;">${typeText ? typeText + ' - ' : ''}${item.name}</div>
+              
+              // Nếu là vòng quay rỗng, chỉ hiển thị icon và tên, không có rarity
+              if (item.type === 'empty') {
+                row.innerHTML = `
+                  <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                    <span style="font-size:1.5em;">${icon}</span>
+                    <div style="flex:1;">
+                      <div style="font-size:0.95em; color:#888;">${item.name}</div>
+                    </div>
                   </div>
-                </div>
-              `;
+                `;
+              } else {
+                row.innerHTML = `
+                  <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                    <span style="font-size:1.5em;">${icon}</span>
+                    <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
+                      <div style="font-weight:700; font-size:0.95em;" class="${item.rarity}">${item.rarity}</div>
+                      <div style="font-size:0.9em; opacity:0.9;">${typeText ? typeText + ' - ' : ''}${item.name}</div>
+                    </div>
+                  </div>
+                `;
+              }
               resultEl.appendChild(row);
               setTimeout(() => row.classList.add('gacha-pop', 'gacha-flash'), 150 + idx * 60);
             });

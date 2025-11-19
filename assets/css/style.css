@@ -1066,6 +1066,11 @@ header button i {
   border: 2px solid #bfbfbf; 
   background: linear-gradient(135deg, rgba(191,191,191,0.08) 0%, rgba(191,191,191,0.02) 100%);
 }
+
+.r-empty {
+  border: 2px solid #555;
+  background: linear-gradient(135deg, rgba(85,85,85,0.08) 0%, rgba(85,85,85,0.02) 100%);
+}
 .r-Uncommon { 
   border: 2px solid #1eff00; 
   background: linear-gradient(135deg, rgba(30,255,0,0.08) 0%, rgba(30,255,0,0.02) 100%);
