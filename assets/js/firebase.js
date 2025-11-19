@@ -480,10 +480,13 @@ async function checkPlayerNameExists(playerName) {
         }
         
         // Tên thuộc về người khác
+        console.log("Tên đã được sử dụng bởi user:", ownerUserId);
         return true;
     } catch (error) {
         console.error("Lỗi kiểm tra tên:", error);
-        return false;
+        // NẾU CÓ LỖI, CHẶN ĐỂ AN TOÀN (không cho vào cho đến khi Firebase hoạt động)
+        alert("Lỗi kết nối Firebase. Vui lòng thử lại!");
+        return true; // Chặn vào game
     }
 }
 

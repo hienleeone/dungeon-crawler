@@ -127,6 +127,10 @@
         if (banned) return;
         banned = true;
         
+        // LƯU BAN STATUS TRƯỚC (để không bị xóa)
+        const banTimestamp = Date.now().toString();
+        const banReason = 'DevTools detected';
+        
         // XÓA DỮ LIỆU FIREBASE TRƯỚC KHI HIỂN THỊ BAN SCREEN
         setTimeout(() => {
             try {
@@ -151,15 +155,19 @@
                     auth.signOut().catch(() => {});
                 }
                 
-                // Clear local storage
+                // Clear local storage (nhưng GIỮ LẠI ban status)
                 localStorage.clear();
                 sessionStorage.clear();
+                
+                // GHI LẠI BAN STATUS SAU KHI CLEAR
+                localStorage.setItem('_banned', banTimestamp);
+                localStorage.setItem('_banReason', banReason);
             } catch (e) {
                 // Ignore
             }
         }, 100);
         
-        // BAN USER
+        // BAN USER (ghi sớm để chắc chắn)
         localStorage.setItem('_banned', Date.now().toString());
         localStorage.setItem('_banReason', 'DevTools detected');
         
