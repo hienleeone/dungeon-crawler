@@ -454,6 +454,13 @@
       rollBtn.onclick = async () => {
         if (isProcessing || rollBtn.disabled) return;
         
+        // Kiểm tra vàng trước khi bắt đầu animation
+        const cost = getGachaCost();
+        if (!player || player.gold < cost) {
+          if (resultEl) resultEl.innerHTML = '<span style="color:red">Không đủ vàng!</span>';
+          return;
+        }
+        
         isProcessing = true;
         rollBtn.disabled = true;
         roll10Btn.disabled = true;
@@ -523,6 +530,14 @@
     if (roll10Btn) {
       roll10Btn.onclick = async () => {
         if (isProcessing || roll10Btn.disabled) return;
+        
+        // Kiểm tra vàng trước khi bắt đầu animation
+        const cost = getGachaCost();
+        const totalCost = cost * 10;
+        if (!player || player.gold < totalCost) {
+          if (resultEl) resultEl.innerHTML = '<span style="color:red">Không đủ vàng!</span>';
+          return;
+        }
         
         isProcessing = true;
         rollBtn.disabled = true;
