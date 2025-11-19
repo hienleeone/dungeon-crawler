@@ -1,4 +1,11 @@
 (function(){
+  // Ngăn chặn khởi tạo nhiều lần
+  if (window._gachaInitialized) {
+    console.warn("Gacha đã được khởi tạo rồi!");
+    return;
+  }
+  window._gachaInitialized = true;
+  
   const GACHA_COST = 1000;
   
   // Anti-spam protection
@@ -226,7 +233,11 @@
     const resultEl = modal.querySelector('#gacha-result');
 
     if (btnOpen) {
-      btnOpen.addEventListener('click', ()=> {
+      // Xóa event listener cũ trước khi thêm mới
+      const newBtnOpen = btnOpen.cloneNode(true);
+      btnOpen.parentNode.replaceChild(newBtnOpen, btnOpen);
+      
+      newBtnOpen.addEventListener('click', ()=> {
         modal.style.display = 'flex';
         if (resultEl) resultEl.innerHTML = '';
         const content = modal.querySelector('.content');
@@ -260,7 +271,12 @@
       rollBtn.style.opacity = '0.5';
       rollBtn.style.cursor = 'not-allowed';
       
+      console.log("🎰 Bắt đầu gacha 1 lần...");
+      
       const res = doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
+      
+      console.log("🎰 Kết quả gacha:", res);
+      
       if (!res.ok) { 
         if (resultEl) resultEl.innerHTML = `<span style="color:red">${res.error}</span>`; 
         setTimeout(() => { 
@@ -290,6 +306,8 @@
         setTimeout(()=> row.classList.add('gacha-pop'), 260);
       }
       
+      console.log("✅ Gacha hoàn tất");
+      
       // Re-enable button after animation
       setTimeout(() => { 
         rollBtn.disabled = false; 
@@ -297,7 +315,7 @@
         rollBtn.style.cursor = 'pointer';
         spamAttempts = 0; // Reset counter
       }, 1000);
-    });
+    }, { once: false }); // Chỉ đăng ký 1 lần
 
     if (roll10Btn) roll10Btn.addEventListener('click', ()=> {
       // Prevent multiple clicks - check if already disabled
@@ -318,7 +336,12 @@
       roll10Btn.style.opacity = '0.5';
       roll10Btn.style.cursor = 'not-allowed';
       
+      console.log("🎰 Bắt đầu gacha 10 lần...");
+      
       const bulk = doGachaBulk(10, GACHA_COST, typeof player !== 'undefined' ? player : null);
+      
+      console.log("🎰 Kết quả bulk gacha:", bulk);
+      
       if (!bulk.ok) { 
         if (resultEl) resultEl.innerHTML = `<span style="color:red">${bulk.error}</span>`; 
         setTimeout(() => { 
@@ -342,6 +365,8 @@
         });
       }
       
+      console.log("✅ Bulk gacha hoàn tất, tổng items:", bulk.results.length);
+      
       // Re-enable button after all animations
       setTimeout(() => { 
         roll10Btn.disabled = false; 
@@ -349,7 +374,7 @@
         roll10Btn.style.cursor = 'pointer';
         spamAttempts = 0; // Reset counter
       }, 2500);
-    });
+    }, { once: false }); // Chỉ đăng ký 1 lần
 
   }
 
