@@ -1,5 +1,10 @@
 (function(){
   const GACHA_COST = 1000;
+  
+  // Anti-spam protection
+  let isGachaProcessing = false;
+  let lastGachaTime = 0;
+  const GACHA_COOLDOWN = 300; // 300ms cooldown between rolls
 
   const GACHA_RARITIES = [
     { key: "Common", chance: 60 },
@@ -38,47 +43,106 @@
   }
 
   function doGachaRoll(playerObj, cost = GACHA_COST) {
-    const p = playerObj || (typeof player !== 'undefined' ? player : null);
-    if (!p) return { ok:false, error:'Player object not found' };
-    if (typeof p.gold !== 'number') p.gold = 0;
-    if (p.gold < cost) return { ok:false, error:'Không đủ vàng' };
-
-    p.gold -= cost;
-    const rarity = pickRarity();
-    let reward = null;
-    const giveEquip = ['Epic','Legendary','Heirloom'].includes(rarity) || Math.random() < 0.35;
-    if (giveEquip) {
-      const equip = createEquipmentForRarity(rarity);
-      if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
-      if (!Array.isArray(p.inventory.equipment)) p.inventory.equipment = [];
-      try { p.inventory.equipment.push(JSON.stringify(equip)); } catch(e){ p.inventory.equipment.push(equip); }
-      reward = { type:'equipment', rarity, data: equip };
-    } else {
-      if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
-      if (!Array.isArray(p.inventory.consumables)) p.inventory.consumables = [];
-      const consId = 'potion_small';
-      p.inventory.consumables.push(consId);
-      reward = { type:'consumable', rarity, data: { id: consId } };
+    // Anti-spam check
+    const now = Date.now();
+    if (isGachaProcessing) {
+      console.warn("Gacha đang xử lý, vui lòng chờ...");
+      return { ok:false, error:'Đang xử lý, vui lòng chờ...' };
     }
+    if (now - lastGachaTime < GACHA_COOLDOWN) {
+      console.warn("Gacha cooldown...");
+      return { ok:false, error:'Vui lòng chờ giây lát...' };
+    }
+    
+    // Lock gacha
+    isGachaProcessing = true;
+    lastGachaTime = now;
+    
+    try {
+      const p = playerObj || (typeof player !== 'undefined' ? player : null);
+      if (!p) {
+        isGachaProcessing = false;
+        return { ok:false, error:'Player object not found' };
+      }
+      if (typeof p.gold !== 'number') p.gold = 0;
+      if (p.gold < cost) {
+        isGachaProcessing = false;
+        return { ok:false, error:'Không đủ vàng' };
+      }
 
-    try { if (typeof saveData === 'function') saveData(); } catch(e){}
-    try { if (typeof playerLoadStats === 'function') playerLoadStats(); } catch(e){}
+      p.gold -= cost;
+      const rarity = pickRarity();
+      let reward = null;
+      const giveEquip = ['Epic','Legendary','Heirloom'].includes(rarity) || Math.random() < 0.35;
+      if (giveEquip) {
+        const equip = createEquipmentForRarity(rarity);
+        if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
+        if (!Array.isArray(p.inventory.equipment)) p.inventory.equipment = [];
+        try { p.inventory.equipment.push(JSON.stringify(equip)); } catch(e){ p.inventory.equipment.push(equip); }
+        reward = { type:'equipment', rarity, data: equip };
+      } else {
+        if (!p.inventory) p.inventory = { consumables: [], equipment: [] };
+        if (!Array.isArray(p.inventory.consumables)) p.inventory.consumables = [];
+        const consId = 'potion_small';
+        p.inventory.consumables.push(consId);
+        reward = { type:'consumable', rarity, data: { id: consId } };
+      }
 
-    return { ok:true, reward };
+      try { if (typeof saveData === 'function') saveData(); } catch(e){}
+      try { if (typeof playerLoadStats === 'function') playerLoadStats(); } catch(e){}
+
+      // Unlock gacha after short delay
+      setTimeout(() => { isGachaProcessing = false; }, 100);
+      
+      return { ok:true, reward };
+    } catch(error) {
+      console.error("Gacha error:", error);
+      isGachaProcessing = false;
+      return { ok:false, error:'Lỗi gacha' };
+    }
   }
 
   function doGachaBulk(count = 10, costPer = GACHA_COST, playerObj) {
-    const p = playerObj || (typeof player !== 'undefined' ? player : null);
-    if (!p) return { ok:false, error:'Player object not found' };
-    const total = count * costPer;
-    if (p.gold < total) return { ok:false, error:'Không đủ vàng' };
-    const results = [];
-    for (let i=0;i<count;i++){
-      const r = doGachaRoll(p, costPer);
-      results.push(r);
-      if (!r.ok) break;
+    // Anti-spam check for bulk
+    if (isGachaProcessing) {
+      return { ok:false, error:'Đang xử lý, vui lòng chờ...' };
     }
-    return { ok:true, results };
+    
+    isGachaProcessing = true;
+    
+    try {
+      const p = playerObj || (typeof player !== 'undefined' ? player : null);
+      if (!p) {
+        isGachaProcessing = false;
+        return { ok:false, error:'Player object not found' };
+      }
+      const total = count * costPer;
+      if (p.gold < total) {
+        isGachaProcessing = false;
+        return { ok:false, error:'Không đủ vàng' };
+      }
+      
+      const results = [];
+      for (let i=0;i<count;i++){
+        // Temporarily unlock for each roll in bulk
+        const wasLocked = isGachaProcessing;
+        isGachaProcessing = false;
+        const r = doGachaRoll(p, costPer);
+        isGachaProcessing = wasLocked;
+        
+        results.push(r);
+        if (!r.ok) break;
+      }
+      
+      // Unlock after bulk complete
+      setTimeout(() => { isGachaProcessing = false; }, 500);
+      
+      return { ok:true, results };
+    } catch(error) {
+      console.error("Bulk gacha error:", error);
+      isGachaProcessing = false;
+      return { ok:false, error:'Lỗi gacha' };
+    }
   }
 
   window.doGacha = function(arg1,arg2){
@@ -138,8 +202,16 @@
     });
 
     if (rollBtn) rollBtn.addEventListener('click', ()=> {
+      // Disable button temporarily
+      if (rollBtn.disabled) return;
+      rollBtn.disabled = true;
+      
       const res = doGachaRoll(typeof player !== 'undefined' ? player : null, GACHA_COST);
-      if (!res.ok) { if (resultEl) resultEl.innerHTML = `<span style="color:red">${res.error}</span>`; return; }
+      if (!res.ok) { 
+        if (resultEl) resultEl.innerHTML = `<span style="color:red">${res.error}</span>`; 
+        setTimeout(() => { rollBtn.disabled = false; }, 500);
+        return; 
+      }
       const r = res.reward;
       const name = r.data && (r.data.name || r.data.type || r.data.category || r.data.id) || 'Vật phẩm';
       const contentEl = modal.querySelector('.content');
@@ -159,11 +231,22 @@
         resultEl.appendChild(row);
         setTimeout(()=> row.classList.add('gacha-pop'), 260);
       }
+      
+      // Re-enable button after animation
+      setTimeout(() => { rollBtn.disabled = false; }, 800);
     });
 
     if (roll10Btn) roll10Btn.addEventListener('click', ()=> {
+      // Disable button temporarily
+      if (roll10Btn.disabled) return;
+      roll10Btn.disabled = true;
+      
       const bulk = doGachaBulk(10, GACHA_COST, typeof player !== 'undefined' ? player : null);
-      if (!bulk.ok) { if (resultEl) resultEl.innerHTML = `<span style="color:red">${bulk.error}</span>`; return; }
+      if (!bulk.ok) { 
+        if (resultEl) resultEl.innerHTML = `<span style="color:red">${bulk.error}</span>`; 
+        setTimeout(() => { roll10Btn.disabled = false; }, 1000);
+        return; 
+      }
       if (resultEl) {
         resultEl.innerHTML = '';
         bulk.results.forEach((it, idx) => {
@@ -177,6 +260,9 @@
           setTimeout(()=> row.classList.add('gacha-pop'), 180 + idx*60);
         });
       }
+      
+      // Re-enable button after all animations
+      setTimeout(() => { roll10Btn.disabled = false; }, 2000);
     });
 
   }
