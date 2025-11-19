@@ -6,7 +6,7 @@
   }
   window._gachaSystem = true;
 
-  const GACHA_COST = 1000;
+  const BASE_GACHA_COST = 1000;
   const GACHA_RARITIES = [
     { key: "Common", chance: 60 },
     { key: "Uncommon", chance: 20 },
@@ -15,6 +15,17 @@
     { key: "Legendary", chance: 1.8 },
     { key: "Heirloom", chance: 0.2 }
   ];
+
+  // Tính giá gacha dựa vào cấp độ Lời Nguyền
+  function getGachaCost() {
+    if (!dungeon || !dungeon.settings || !dungeon.settings.enemyScaling) {
+      return BASE_GACHA_COST;
+    }
+    const curseLvl = Math.round((dungeon.settings.enemyScaling - 1) * 10);
+    // Công thức: base * (1 + curseLvl * 0.5)
+    // Curse 0: 1000, Curse 10: 6000, Curse 20: 11000
+    return Math.floor(BASE_GACHA_COST * (1 + curseLvl * 0.5));
+  }
 
   // Anti-spam
   let isProcessing = false;
@@ -56,12 +67,13 @@
       return { success: false, error: 'Player data không hợp lệ' };
     }
     
-    if (player.gold < GACHA_COST) {
+    const cost = getGachaCost();
+    if (player.gold < cost) {
       return { success: false, error: 'Không đủ vàng' };
     }
 
     // Trừ vàng
-    player.gold -= GACHA_COST;
+    player.gold -= cost;
 
     // Pick rarity
     const rarity = pickRarity();
@@ -131,7 +143,8 @@
       return { success: false, error: 'Player data không hợp lệ' };
     }
     
-    const totalCost = count * GACHA_COST;
+    const cost = getGachaCost();
+    const totalCost = count * cost;
     if (player.gold < totalCost) {
       return { success: false, error: 'Không đủ vàng' };
     }
@@ -246,34 +259,40 @@
     openBtn.onclick = () => {
       modal.style.display = 'flex';
       if (resultEl) resultEl.innerHTML = '';
+      // Cập nhật giá trên button
+      const cost = getGachaCost();
+      if (rollBtn) rollBtn.textContent = `Quay 1 lần (${cost} Gold)`;
+      if (roll10Btn) roll10Btn.textContent = `Quay 10 lần (${cost * 10} Gold)`;
     };
 
-    // Ngăn content div đóng modal khi click vào nó
-    if (contentDiv) {
-      contentDiv.onclick = (e) => {
-        e.stopPropagation();
-      };
-    }
+    // Close modal handlers - sử dụng addEventListener với capture phase
+    const closeModal = () => {
+      modal.style.display = 'none';
+      if (resultEl) resultEl.innerHTML = '';
+    };
 
-    // Close modal
     if (closeX) {
-      closeX.onclick = () => { 
-        modal.style.display = 'none'; 
-        if (resultEl) resultEl.innerHTML = ''; 
-      };
+      closeX.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeModal();
+      }, true); // capture phase
     }
     if (closeBtn) {
-      closeBtn.onclick = () => { 
-        modal.style.display = 'none'; 
-        if (resultEl) resultEl.innerHTML = ''; 
-      };
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeModal();
+      }, true); // capture phase
     }
-    modal.onclick = (e) => { 
-      if (e.target === modal) { 
-        modal.style.display = 'none'; 
-        if (resultEl) resultEl.innerHTML = ''; 
-      } 
-    };
+    
+    // Click outside modal to close
+    modal.addEventListener('click', (e) => { 
+      if (e.target === modal) closeModal();
+    });
+    
+    // Ngăn content div đóng modal
+    if (contentDiv) {
+      contentDiv.addEventListener('click', (e) => e.stopPropagation());
+    }
 
     // Quay 1 lần
     if (rollBtn) {
