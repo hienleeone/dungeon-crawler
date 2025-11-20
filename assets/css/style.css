@@ -200,10 +200,29 @@ main {
 }
 
 #playerEquipment {
-    display: flex;
+    /* Use a 3-column grid so equipment slots render 3 per row */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
-    flex-flow: row wrap;
     margin-left: 0.5rem;
+}
+
+/* Ensure items inside equipment area are square buttons matching empty-slot appearance */
+#playerEquipment .items {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#playerEquipment .items button {
+    width: 2.6rem;
+    height: 2.6rem;
+    padding: 0;
+    border-radius: 0.4rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
 }
 
 #playerEquipment i {
