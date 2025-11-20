@@ -214,18 +214,18 @@ main {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 2.6rem; /* reserve a bit of vertical space for consistency */
+    min-height: 3.6rem; /* reserve vertical space to match square buttons */
 }
 
 #playerEquipment .items button {
-    width: 2.8rem; /* slightly narrower to save space */
-    height: 2.4rem;
+    width: 3rem; /* match user's red frame: square-ish */
+    height: 3rem;
     padding: 0;
     border-radius: 0.4rem;
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
 }
 
 /* Price tooltip/span: hidden until hover */
