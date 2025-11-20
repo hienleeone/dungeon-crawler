@@ -301,9 +301,10 @@ const showItemInfo = (item, icon, type, i) => {
     unEquip.onclick = function () {
         if (type == "Sử Dụng") {
             // Remove the item from the inventory and add it to the equipment
-            if (player.equipped.length >= 6) {
-                sfxDeny.play();
-            } else {
+            const maxSlotsAllowed = Number(player.maxEquippedSlots) || 6;
+            if (player.equipped.length >= maxSlotsAllowed) {
+                    sfxDeny.play();
+                } else {
                 sfxEquip.play();
 
                 // Equip the item
@@ -417,29 +418,104 @@ const showInventory = () => {
 
 // Show equipment
 const showEquipment = () => {
-    // Clear the inventory container
+    // Constants
+    const MAX_EQUIP_SLOTS = 9;
+    const EXTRA_SLOT_PRICES = [5000, 10000, 20000]; // Prices for slots 7,8,9 respectively (changeable)
+
+    // Ensure defaults
+    let unlocked = Number(player.maxEquippedSlots) || 6;
+    if (!player.equipped) player.equipped = [];
+
+    // Clear container
     let playerEquipmentList = document.getElementById("playerEquipment");
     playerEquipmentList.innerHTML = "";
 
-    // Show a message if a player has no equipment
-    if (player.equipped.length == 0) {
-        playerEquipmentList.innerHTML = "Không có gì được sử dụng.";
-    }
-
-    for (let i = 0; i < player.equipped.length; i++) {
-        const item = player.equipped[i];
-
-        // Create an element to display the item's name
+    // Render fixed number of visual slots (max 9)
+    for (let i = 0; i < MAX_EQUIP_SLOTS; i++) {
         let equipDiv = document.createElement('div');
-        let icon = equipmentIcon(item.category);
         equipDiv.className = "items";
-        equipDiv.innerHTML = `<button class="${item.rarity}">${icon}</button>`;
-        equipDiv.addEventListener('click', function () {
-            let type = "Tháo Ra";
-            showItemInfo(item, icon, type, i);
-        });
 
-        // Add the equipDiv to the inventory container
+        // Unlocked slots (player can equip into these)
+        if (i < unlocked) {
+            const item = player.equipped[i];
+            if (item) {
+                let icon = equipmentIcon(item.category);
+                equipDiv.innerHTML = `<button class="${item.rarity}">${icon}</button>`;
+                equipDiv.addEventListener('click', function () {
+                    let type = "Tháo Ra";
+                    showItemInfo(item, icon, type, i);
+                });
+            } else {
+                // Empty unlocked slot
+                equipDiv.innerHTML = `<button class="empty-slot">+</button>`;
+                equipDiv.title = 'Ô trống';
+                equipDiv.addEventListener('click', function () {
+                    sfxDeny.play();
+                });
+            }
+        }
+
+        // Locked slots (beyond unlocked). Show buy button only for the next slot to purchase.
+        else {
+            // Next slot available to buy
+            if (i === unlocked && unlocked < MAX_EQUIP_SLOTS) {
+                const priceIndex = i - 6; // slot 6->index0 for price array
+                const price = EXTRA_SLOT_PRICES[priceIndex] || EXTRA_SLOT_PRICES[EXTRA_SLOT_PRICES.length - 1];
+                equipDiv.innerHTML = `<button class="buy-slot">+</button><div style="font-size:0.75em; margin-top:4px; color:#ffd500;">${nFormatter(price)} <i class="fas fa-coins"></i></div>`;
+                equipDiv.title = `Mua ô trang bị (${nFormatter(price)})`;
+                equipDiv.addEventListener('click', function () {
+                    // Show confirmation modal
+                    sfxOpen.play();
+                    dungeon.status.exploring = false;
+                    let dimTarget = document.querySelector('#inventory');
+                    dimTarget.style.filter = "brightness(50%)";
+                    defaultModalElement.style.display = "flex";
+                    defaultModalElement.innerHTML = `
+                    <div class="content">
+                        <p>Bạn muốn mua thêm ô vật phẩm? (Giá: ${nFormatter(price)} <i class="fas fa-coins"></i>)</p>
+                        <div class="button-container">
+                            <button id="buy-slot-confirm">Mua</button>
+                            <button id="buy-slot-cancel">Hủy</button>
+                        </div>
+                    </div>`;
+                    let confirm = document.querySelector('#buy-slot-confirm');
+                    let cancel = document.querySelector('#buy-slot-cancel');
+                    confirm.onclick = function () {
+                        if (Number(player.gold) >= price) {
+                            sfxEquip.play();
+                            player.gold -= price;
+                            player.maxEquippedSlots = unlocked + 1;
+                            defaultModalElement.style.display = "none";
+                            defaultModalElement.innerHTML = "";
+                            dimTarget.style.filter = "brightness(100%)";
+                            playerLoadStats();
+                            showInventory();
+                            showEquipment();
+                            if (typeof savePlayerData === 'function') {
+                                savePlayerData(false);
+                            } else if (typeof saveData === 'function') {
+                                saveData();
+                            }
+                        } else {
+                            sfxDeny.play();
+                        }
+                    };
+                    cancel.onclick = function () {
+                        sfxDecline.play();
+                        defaultModalElement.style.display = "none";
+                        defaultModalElement.innerHTML = "";
+                        dimTarget.style.filter = "brightness(100%)";
+                    };
+                });
+            }
+            // Further locked slots (not yet purchasable) show key icon
+            else {
+                equipDiv.innerHTML = `<button class="locked-slot"><i class="fa fa-key"></i></button>`;
+                equipDiv.title = 'Ô khóa - mua ô trước đó để mở';
+                equipDiv.addEventListener('click', function () { sfxDeny.play(); });
+            }
+        }
+
         playerEquipmentList.appendChild(equipDiv);
     }
 }

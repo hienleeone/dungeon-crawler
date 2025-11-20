@@ -177,6 +177,8 @@ window.addEventListener("load", function () {
                         equipment: []
                     },
                     equipped: [],
+                    // Số ô trang bị người chơi được phép sử dụng (mặc định 6, tối đa 9)
+                    maxEquippedSlots: 6,
                     gold: 0,
                     playtime: 0,
                     kills: 0,
