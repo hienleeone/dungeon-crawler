@@ -269,12 +269,31 @@ main {
 
 /* Ensure item rarity colors remain visible when an item is placed in a slot.
    Use higher specificity so these colors win over general button hover rules. */
-#playerEquipment .items button .Common { color: #ffffff !important; }
-#playerEquipment .items button .Uncommon { color: #1eff00 !important; }
-#playerEquipment .items button .Rare { color: #0070dd !important; }
-#playerEquipment .items button .Epic { color: #a335ee !important; }
-#playerEquipment .items button .Legendary { color: #ffd700 !important; }
-#playerEquipment .items button .Heirloom { color: #e30b5c !important; }
+/* Rarity classes may be applied on the button itself (e.g. <button class="Rare">).
+    Target the button and any icon/image inside so the rarity color shows when equipped. */
+#playerEquipment .items button.Common,
+#playerEquipment .items button.Common i,
+#playerEquipment .items button.Common img { color: #ffffff !important; }
+
+#playerEquipment .items button.Uncommon,
+#playerEquipment .items button.Uncommon i,
+#playerEquipment .items button.Uncommon img { color: #1eff00 !important; }
+
+#playerEquipment .items button.Rare,
+#playerEquipment .items button.Rare i,
+#playerEquipment .items button.Rare img { color: #0070dd !important; }
+
+#playerEquipment .items button.Epic,
+#playerEquipment .items button.Epic i,
+#playerEquipment .items button.Epic img { color: #a335ee !important; }
+
+#playerEquipment .items button.Legendary,
+#playerEquipment .items button.Legendary i,
+#playerEquipment .items button.Legendary img { color: #ffd700 !important; }
+
+#playerEquipment .items button.Heirloom,
+#playerEquipment .items button.Heirloom i,
+#playerEquipment .items button.Heirloom img { color: #e30b5c !important; }
 
 /* Some icons use classes on the button itself (r- prefixes or rarity classes).
    Keep borders/glow for those too when present. */
