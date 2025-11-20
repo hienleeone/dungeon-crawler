@@ -215,6 +215,11 @@ main {
     justify-content: center;
     align-items: center;
     min-height: 3.6rem; /* reserve vertical space to match square buttons */
+    /* Red frame around each slot to match reference */
+    border: 2px solid #c62828;
+    border-radius: 6px;
+    padding: 2px;
+    box-sizing: border-box;
 }
 
 #playerEquipment .items button {
