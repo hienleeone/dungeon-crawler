@@ -268,7 +268,7 @@
     let item;
     if (isEquipment) {
       // Tạo equipment
-      const equipment = createEquipmentWithRarity(rarity);
+      const equipment = (typeof createEquipmentRaw === 'function') ? createEquipmentRaw(rarity) : createEquipmentWithRarity(rarity);
       
       // Thêm vào inventory
       if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
@@ -339,7 +339,7 @@
       
       let item;
       if (isEquipment) {
-        const equipment = createEquipmentWithRarity(rarity);
+        const equipment = (typeof createEquipmentRaw === 'function') ? createEquipmentRaw(rarity) : createEquipmentWithRarity(rarity);
         
         if (!player.inventory) player.inventory = { consumables: [], equipment: [] };
         if (!Array.isArray(player.inventory.equipment)) player.inventory.equipment = [];
