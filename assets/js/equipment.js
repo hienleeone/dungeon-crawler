@@ -448,8 +448,8 @@ const showEquipment = () => {
                     showItemInfo(item, icon, type, i);
                 });
             } else {
-                // Empty unlocked slot (show +)
-                equipDiv.innerHTML = `<button class="empty-slot">+</button><span class="slot-price"></span>`;
+                // Empty unlocked slot (show empty placeholder, no +)
+                equipDiv.innerHTML = `<button class="empty-slot"></button><span class="slot-price"></span>`;
                 equipDiv.addEventListener('click', function () {
                     sfxDeny.play();
                 });
@@ -474,7 +474,7 @@ const showEquipment = () => {
                     defaultModalElement.innerHTML = `
                     <div class="content">
                         <p>Bạn muốn mua thêm ô vật phẩm?</p>
-                        <div style="margin-top:8px; color: #ffd500; font-weight:700;">${nFormatter(price)} <i class="fas fa-coins" style="color:#ffd500;"></i></div>
+                        <div style="margin-top:8px; color: #ffd500; font-weight:700;">Giá mua: ${nFormatter(price)} <i class="fas fa-coins" style="color:#ffd500;"></i></div>
                         <div class="button-container">
                             <button id="buy-slot-confirm">Mua</button>
                             <button id="buy-slot-cancel">Hủy</button>
