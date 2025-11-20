@@ -203,10 +203,11 @@ main {
     /* Use a 3-column grid so equipment slots render 3 per row */
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    /* row-gap column-gap: reduce vertical space between rows, keep horizontal gap */
-    gap: 0.06rem 0.15rem;
+    /* row-gap column-gap: keep horizontal gap, tighten vertical spacing */
+    gap: 0.04rem 0.15rem;
     margin: 0; /* center within box padding */
     justify-items: center;
+    align-items: center;
 }
 
 /* Ensure items inside equipment area are square buttons matching empty-slot appearance */
@@ -215,7 +216,8 @@ main {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 3.6rem; /* reserve vertical space */
+    /* reduce reserved vertical space so rows sit closer together */
+    min-height: 2.6rem;
     padding: 0;
     box-sizing: border-box;
 }
@@ -234,6 +236,29 @@ main {
     box-sizing: border-box;
     border: 1px solid rgba(255,255,255,0.9); /* restore white border look */
     background: transparent;
+}
+
+/* Keep icons visible when hovering equipment slots and avoid inverting colors */
+#playerEquipment .items button i,
+#playerEquipment .items button img {
+    color: #fff;
+    opacity: 1;
+    visibility: visible;
+}
+
+#playerEquipment .items button:hover {
+    /* avoid the site-wide button:hover inversion (white bg / black text)
+       so equipment slots don't visually disappear */
+    background-color: rgba(255,255,255,0.04);
+    color: inherit;
+}
+
+#playerEquipment .items button:hover i,
+#playerEquipment .items button:hover img {
+    color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    filter: none !important;
 }
 
 /* Price tooltip/span: hidden until hover */
