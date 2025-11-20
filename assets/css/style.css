@@ -203,7 +203,8 @@ main {
     /* Use a 3-column grid so equipment slots render 3 per row */
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.15rem; /* tighten spacing between slots */
+    /* row-gap column-gap: reduce vertical space between rows, keep horizontal gap */
+    gap: 0.06rem 0.15rem;
     margin: 0; /* center within box padding */
     justify-items: center;
 }
