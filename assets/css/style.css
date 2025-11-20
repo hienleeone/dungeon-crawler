@@ -215,22 +215,25 @@ main {
     justify-content: center;
     align-items: center;
     min-height: 3.6rem; /* reserve vertical space to match square buttons */
-    /* Red frame around each slot to match reference */
-    border: 2px solid #c62828;
-    border-radius: 6px;
-    padding: 2px;
-    box-sizing: border-box;
+    /* Buttons will match the red frame size — keep cell neutral (no visible frame) */
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-sizing: content-box;
 }
 
+/* Make the button itself match the red frame size the user highlighted */
 #playerEquipment .items button {
-    width: 3rem; /* match user's red frame: square-ish */
-    height: 3rem;
+    width: 3.4rem; /* adjust to match red frame (tweak if needed) */
+    height: 3.4rem;
     padding: 0;
     border-radius: 0.4rem;
     display: inline-flex;
     justify-content: center;
     align-items: center;
     font-size: 1.15rem;
+    box-sizing: border-box;
+    border: 2px solid rgba(255,255,255,0.08); /* subtle frame by default */
 }
 
 /* Price tooltip/span: hidden until hover */
