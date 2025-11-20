@@ -512,7 +512,7 @@ const showEquipment = () => {
             }
             // Further locked slots (not yet purchasable) show key icon and keep alignment with empty slot-price
             else {
-                equipDiv.innerHTML = `<button class="locked-slot"><i class="fa fa-key"></i></button><span class="slot-price"></span>`;
+                equipDiv.innerHTML = `<button class="locked-slot"><i class="fa fa-lock"></i></button><span class="slot-price"></span>`;
                 equipDiv.addEventListener('click', function () { sfxDeny.play(); });
             }
         }
