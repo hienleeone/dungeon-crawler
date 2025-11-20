@@ -473,8 +473,8 @@ const showEquipment = () => {
                     defaultModalElement.style.display = "flex";
                     defaultModalElement.innerHTML = `
                     <div class="content">
-                        <p>Bạn muốn mua thêm ô vật phẩm?</p>
-                        <div style="margin-top:8px; color: #ffd500; font-weight:700;">Giá mua: ${nFormatter(price)} <i class="fas fa-coins" style="color:#ffd500;"></i></div>
+                        <p style="text-align:center; color:#ffffff;">Bạn muốn mua thêm ô vật phẩm?</p>
+                        <div style="margin-top:8px; text-align:center;"><span style="color:#ffffff; margin-right:6px;">Giá mua:</span><span style="color:#ffd500; font-weight:700;">${nFormatter(price)} <i class="fas fa-coins" style="color:#ffd500;"></i></span></div>
                         <div class="button-container">
                             <button id="buy-slot-confirm">Mua</button>
                             <button id="buy-slot-cancel">Hủy</button>

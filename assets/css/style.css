@@ -203,7 +203,7 @@ main {
     /* Use a 3-column grid so equipment slots render 3 per row */
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.25rem; /* tighten spacing between slots */
+    gap: 0.15rem; /* tighten spacing between slots */
     margin: 0; /* center within box padding */
     justify-items: center;
 }
@@ -214,12 +214,12 @@ main {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 3.2rem; /* reserve a bit of vertical space for consistency */
+    min-height: 2.6rem; /* reserve a bit of vertical space for consistency */
 }
 
 #playerEquipment .items button {
-    width: 3.4rem; /* slightly wider to match original feel */
-    height: 2.8rem;
+    width: 2.8rem; /* slightly narrower to save space */
+    height: 2.4rem;
     padding: 0;
     border-radius: 0.4rem;
     display: inline-flex;
