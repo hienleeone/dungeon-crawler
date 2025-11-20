@@ -307,8 +307,9 @@ async function savePlayerData(isAutoSave = false) {
         const enemyData = JSON.stringify(enemy);
         const volumeData = JSON.stringify(volume);
         
-        // Tạo checksum cho dữ liệu đã sanitize
+        // Tạo checksum cho dữ liệu đã sanitize - BAO GỒM CẢ TÊN để chống giả mạo
         const criticalData = {
+            name: sanitizedPlayer.name,
             gold: sanitizedPlayer.gold,
             level: sanitizedPlayer.lvl,
             stats: sanitizedPlayer.stats
@@ -349,6 +350,7 @@ async function loadPlayerData() {
             // Kiểm tra checksum nếu có
             if (data.checksum) {
                 const criticalData = {
+                    name: loadedPlayer.name,
                     gold: loadedPlayer.gold,
                     level: loadedPlayer.lvl,
                     stats: loadedPlayer.stats
@@ -383,7 +385,13 @@ async function loadPlayerData() {
             
             // ⚠️ QUAN TRỌNG: Verify và claim lại tên khi load game
             if (player && player.name) {
-                await verifyAndClaimPlayerName(player.name);
+                const nameVerified = await verifyAndClaimPlayerName(player.name);
+                
+                // Nếu verify thất bại, dừng load game
+                if (!nameVerified) {
+                    console.error("❌ Name verification failed - stopping game load");
+                    return; // Dừng load, user phải đổi tên
+                }
             }
             
             // Áp dụng protection sau khi load
@@ -549,7 +557,7 @@ async function registerPlayerName(playerName) {
     }
 }
 
-// Verify và claim lại tên khi load game (chỉ claim nếu bị mất)
+// Verify và claim lại tên khi load game (chỉ claim nếu bị mất) - SỬ DỤNG TRANSACTION ĐỂ BẢO MẬT
 async function verifyAndClaimPlayerName(playerName) {
     if (!currentUser) {
         console.error("Chưa đăng nhập!");
@@ -570,22 +578,65 @@ async function verifyAndClaimPlayerName(playerName) {
             return true;
         }
         
-        // Nếu tên đã bị xóa/mất (null) - claim lại
+        // Nếu tên đã bị xóa/mất (null) - SỬ DỤNG TRANSACTION để claim lại an toàn
         if (currentValue === null) {
-            console.log("Claiming lại tên đã mất:", playerName);
-            await nameRef.set(userId);
-            return true;
+            console.log("Claiming lại tên đã mất bằng transaction:", playerName);
+            
+            const result = await nameRef.transaction((current) => {
+                // CHỈ claim nếu vẫn còn null (tránh race condition)
+                if (current !== null) {
+                    console.error("Transaction abort: Tên đã bị claim bởi:", current);
+                    return; // abort - tên đã có người claim
+                }
+                
+                // Tên vẫn null, claim nó
+                return userId;
+            });
+            
+            // Kiểm tra kết quả transaction
+            if (result.committed) {
+                // Verify lại để chắc chắn
+                const verifySnapshot = await nameRef.once('value');
+                if (verifySnapshot.val() === userId) {
+                    console.log("✓ Re-claim thành công và đã verify:", playerName);
+                    return true;
+                } else {
+                    console.error("✗ Re-claim thất bại - không thể verify!");
+                    // QUAN TRỌNG: Tên không thuộc về mình - đổi tên bắt buộc
+                    alert("⚠️ Lỗi bảo mật!\n\nTên nhân vật của bạn đã bị xung đột.\nVui lòng đổi tên nhân vật!");
+                    await forcePlayerRename();
+                    return false;
+                }
+            } else {
+                console.error("✗ Transaction không committed - tên đã bị claim");
+                // Tên đã có người khác sở hữu
+                alert("⚠️ Lỗi bảo mật!\n\nTên nhân vật của bạn đã bị chiếm bởi người khác.\nVui lòng đổi tên nhân vật!");
+                await forcePlayerRename();
+                return false;
+            }
         }
         
-        // Nếu tên bị người khác chiếm - KHÔNG BAO GIỜ XẢY RA trong trường hợp bình thường
-        // Vì khi tạo nhân vật đã claim tên rồi
-        console.error("⚠️ BẤT THƯỜNG: Tên bị chiếm bởi uid khác:", currentValue);
-        // Vẫn cho load game, không block user
-        return true;
+        // Nếu tên bị người khác chiếm - PHÁT HIỆN GIAN LẬN
+        console.error("🚨 PHÁT HIỆN GIAN LẬN: Tên bị chiếm bởi uid khác:", currentValue);
+        alert("🚨 PHÁT HIỆN GIAN LẬN!\n\nTên nhân vật này đã thuộc về người chơi khác.\nHệ thống sẽ buộc bạn đổi tên.");
+        
+        // Log incident cho admin
+        await database.ref('security_logs').push({
+            type: 'NAME_CONFLICT',
+            userId: userId,
+            attemptedName: playerName,
+            actualOwner: currentValue,
+            timestamp: Date.now()
+        }).catch(() => {});
+        
+        // Force đổi tên
+        await forcePlayerRename();
+        return false;
         
     } catch (error) {
         console.error("Lỗi verify tên:", error);
-        // Nếu có lỗi network, vẫn cho load game
+        // Nếu có lỗi network, vẫn cho load game nhưng cảnh báo
+        alert("⚠️ Không thể xác minh tên nhân vật do lỗi mạng.\nNếu có vấn đề, vui lòng báo admin.");
         return true;
     }
 }
@@ -598,6 +649,124 @@ async function removePlayerName(playerName) {
     } catch (error) {
         console.error("Lỗi xóa tên:", error);
         return false;
+    }
+}
+
+// Force người chơi đổi tên do xung đột
+async function forcePlayerRename() {
+    if (!player) return;
+    
+    try {
+        // Xóa tên cũ khỏi Firebase (nếu có)
+        if (player.name) {
+            await database.ref('playerNames/' + player.name).transaction((current) => {
+                // Chỉ xóa nếu nó thuộc về mình
+                if (current === currentUser.uid) {
+                    return null; // Xóa
+                }
+                return current; // Giữ nguyên nếu không phải của mình
+            });
+        }
+        
+        // Generate tên tạm thời với UID để đảm bảo unique
+        const tempName = `Player_${currentUser.uid.substring(0, 8)}`;
+        
+        // Đặt tên mới
+        player.name = tempName;
+        
+        // Claim tên mới với transaction
+        await registerPlayerName(tempName);
+        
+        // Lưu dữ liệu
+        await savePlayerData(true);
+        
+        // Hiển thị modal bắt buộc đổi tên
+        showForceRenameModal();
+        
+    } catch (error) {
+        console.error("Lỗi force rename:", error);
+        alert("Không thể đổi tên tự động. Vui lòng logout và đăng nhập lại!");
+    }
+}
+
+// Hiển thị modal bắt buộc đổi tên
+function showForceRenameModal() {
+    const modal = document.querySelector('#defaultModal');
+    if (!modal) return;
+    
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="content" style="max-width: 400px;">
+            <h2 style="color: #ff4444;">⚠️ Bắt buộc đổi tên</h2>
+            <p style="margin: 20px 0;">Tên nhân vật của bạn đã bị xung đột. Vui lòng chọn tên mới:</p>
+            <form id="rename-form">
+                <input type="text" id="new-name-input" placeholder="Tên mới (3-15 ký tự)" 
+                    minlength="3" maxlength="15" required autocomplete="off"
+                    style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 2px solid #444;">
+                <p id="rename-alert" style="color: #ff4444; min-height: 20px;"></p>
+                <button type="submit" style="width: 100%; padding: 12px; background: #00ff00; color: #000; font-weight: bold;">
+                    Xác nhận đổi tên
+                </button>
+            </form>
+            <p style="font-size: 0.85em; color: #999; margin-top: 15px;">
+                Bạn không thể tiếp tục chơi cho đến khi đổi tên thành công.
+            </p>
+        </div>
+    `;
+    
+    const form = document.querySelector('#rename-form');
+    const input = document.querySelector('#new-name-input');
+    const alert = document.querySelector('#rename-alert');
+    
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const newName = input.value.trim();
+            
+            // Validate
+            if (newName.length < 3 || newName.length > 15) {
+                alert.textContent = 'Tên phải từ 3-15 ký tự!';
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9_]+$/.test(newName)) {
+                alert.textContent = 'Tên chỉ được chứa chữ cái, số và dấu gạch dưới!';
+                return;
+            }
+            
+            // Kiểm tra tên đã tồn tại
+            const exists = await checkPlayerNameExists(newName);
+            if (exists) {
+                alert.textContent = 'Tên này đã được sử dụng!';
+                return;
+            }
+            
+            // Đổi tên
+            const oldName = player.name;
+            player.name = newName;
+            
+            // Đăng ký tên mới
+            const registered = await registerPlayerName(newName);
+            if (!registered) {
+                alert.textContent = 'Không thể đăng ký tên mới. Vui lòng thử tên khác!';
+                player.name = oldName;
+                return;
+            }
+            
+            // Xóa tên cũ
+            if (oldName) {
+                await removePlayerName(oldName);
+            }
+            
+            // Lưu dữ liệu
+            await savePlayerData(true);
+            
+            // Đóng modal và reload
+            modal.style.display = 'none';
+            alert('✓ Đổi tên thành công!\n\nGame sẽ tải lại...');
+            setTimeout(() => location.reload(), 1000);
+        };
     }
 }
 
