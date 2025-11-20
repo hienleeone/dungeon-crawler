@@ -95,6 +95,7 @@ MIT License - Xem file LICENSE để biết thêm chi tiết
 - Added Leaderboard
 - Added Multi-device sync
 - Removed localStorage (security improvement)
+- Backup!
 
 **v1.0.0** - Initial Release
 - Basic game mechanics
