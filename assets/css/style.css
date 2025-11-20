@@ -238,6 +238,22 @@ main {
     background: transparent;
 }
 
+/* Make the plus in the buy-slot more prominent */
+#playerEquipment .items button.buy-slot {
+    font-size: 1.6rem; /* larger + */
+    font-weight: 700;
+    line-height: 1;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Slightly increase empty-slot symbol size if used */
+#playerEquipment .items button.empty-slot {
+    font-size: 1.1rem;
+}
+
 /* Keep icons visible when hovering equipment slots and avoid inverting colors */
 #playerEquipment .items button i,
 #playerEquipment .items button img {
