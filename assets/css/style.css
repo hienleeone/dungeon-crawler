@@ -261,6 +261,31 @@ main {
     filter: none !important;
 }
 
+/* Make hover a bit brighter so slot clearly lights up */
+#playerEquipment .items button:hover {
+    background-color: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,1);
+}
+
+/* Ensure item rarity colors remain visible when an item is placed in a slot.
+   Use higher specificity so these colors win over general button hover rules. */
+#playerEquipment .items button .Common { color: #ffffff !important; }
+#playerEquipment .items button .Uncommon { color: #1eff00 !important; }
+#playerEquipment .items button .Rare { color: #0070dd !important; }
+#playerEquipment .items button .Epic { color: #a335ee !important; }
+#playerEquipment .items button .Legendary { color: #ffd700 !important; }
+#playerEquipment .items button .Heirloom { color: #e30b5c !important; }
+
+/* Some icons use classes on the button itself (r- prefixes or rarity classes).
+   Keep borders/glow for those too when present. */
+#playerEquipment .items button.r-Rare,
+#playerEquipment .items button.r-Uncommon,
+#playerEquipment .items button.r-Epic,
+#playerEquipment .items button.r-Legendary,
+#playerEquipment .items button.r-Heirloom {
+    box-shadow: none;
+}
+
 /* Price tooltip/span: hidden until hover */
 /* Price tooltip/span: hidden until hover (shown as yellow text under button)
    Always reserve the vertical space to avoid layout shifts. */
