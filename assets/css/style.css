@@ -203,7 +203,7 @@ main {
     /* Use a 3-column grid so equipment slots render 3 per row */
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.4rem; /* tighten spacing between slots */
+    gap: 0.25rem; /* tighten spacing between slots */
     margin: 0; /* center within box padding */
     justify-items: center;
 }
@@ -214,12 +214,12 @@ main {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 3.6rem; /* reserve space for price under the button */
+    min-height: 3.2rem; /* reserve a bit of vertical space for consistency */
 }
 
 #playerEquipment .items button {
-    width: 2.6rem;
-    height: 2.6rem;
+    width: 3.4rem; /* slightly wider to match original feel */
+    height: 2.8rem;
     padding: 0;
     border-radius: 0.4rem;
     display: inline-flex;
@@ -231,18 +231,9 @@ main {
 /* Price tooltip/span: hidden until hover */
 /* Price tooltip/span: hidden until hover (shown as yellow text under button)
    Always reserve the vertical space to avoid layout shifts. */
+/* Hide hover price: modal shows price on click, so no hover price needed */
 #playerEquipment .slot-price {
-    font-size: 0.75rem;
-    margin-top: 4px;
-    color: #ffd500;
-    opacity: 0;
-    transition: opacity 0.12s ease-in-out;
-    height: 1em; /* reserve same height for all cells */
-    display: inline-block;
-}
-
-#playerEquipment .items:hover .slot-price {
-    opacity: 1;
+    display: none;
 }
 
 /* Cursor for interactive buttons */

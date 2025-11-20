@@ -465,7 +465,7 @@ const showEquipment = () => {
                 // Buy slot: show + and a .slot-price element beneath (hidden until hover)
                 equipDiv.innerHTML = `<button class="buy-slot">+</button><span class="slot-price" data-price="${nFormatter(price)}">${nFormatter(price)} <i class="fas fa-coins"></i></span>`;
                 equipDiv.addEventListener('click', function () {
-                    // Show confirmation modal
+                    // Show confirmation modal with price on its own row and yellow coin
                     sfxOpen.play();
                     dungeon.status.exploring = false;
                     let dimTarget = document.querySelector('#inventory');
@@ -473,7 +473,8 @@ const showEquipment = () => {
                     defaultModalElement.style.display = "flex";
                     defaultModalElement.innerHTML = `
                     <div class="content">
-                        <p>Bạn muốn mua thêm ô vật phẩm? (Giá: ${nFormatter(price)} <i class="fas fa-coins"></i>)</p>
+                        <p>Bạn muốn mua thêm ô vật phẩm?</p>
+                        <div style="margin-top:8px; color: #ffd500; font-weight:700;">${nFormatter(price)} <i class="fas fa-coins" style="color:#ffd500;"></i></div>
                         <div class="button-container">
                             <button id="buy-slot-confirm">Mua</button>
                             <button id="buy-slot-cancel">Hủy</button>
