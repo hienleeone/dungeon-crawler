@@ -427,6 +427,7 @@
 
     // Open modal
     openBtn.onclick = () => {
+      try { if (typeof sfxOpen !== 'undefined' && sfxOpen && typeof sfxOpen.play === 'function') sfxOpen.play(); } catch(e){}
       modal.style.display = 'flex';
       if (resultEl) resultEl.innerHTML = '';
       // Cập nhật giá trên button
@@ -441,12 +442,12 @@
       if (resultEl) resultEl.innerHTML = '';
     };
 
-    if (closeX) closeX.onclick = closeModal;
-    if (closeBtn) closeBtn.onclick = closeModal;
+    if (closeX) closeX.onclick = () => { try { if (typeof sfxDecline !== 'undefined' && sfxDecline && typeof sfxDecline.play === 'function') sfxDecline.play(); } catch(e){}; closeModal(); };
+    if (closeBtn) closeBtn.onclick = () => { try { if (typeof sfxDecline !== 'undefined' && sfxDecline && typeof sfxDecline.play === 'function') sfxDecline.play(); } catch(e){}; closeModal(); };
     
     // Click outside modal to close
     modal.onclick = (e) => { 
-      if (e.target === modal) closeModal();
+      if (e.target === modal) { try { if (typeof sfxDecline !== 'undefined' && sfxDecline && typeof sfxDecline.play === 'function') sfxDecline.play(); } catch(e){}; closeModal(); }
     };
 
     // Quay 1 lần
@@ -457,9 +458,13 @@
         // Kiểm tra vàng trước khi bắt đầu animation
         const cost = getGachaCost();
         if (!player || player.gold < cost) {
+          try { if (typeof sfxDeny !== 'undefined' && sfxDeny && typeof sfxDeny.play === 'function') sfxDeny.play(); } catch(e){}
           if (resultEl) resultEl.innerHTML = '<span style="color:red">Không đủ vàng!</span>';
           return;
         }
+
+        // Play click/confirm sound for starting the gacha
+        try { if (typeof sfxConfirm !== 'undefined' && sfxConfirm && typeof sfxConfirm.play === 'function') sfxConfirm.play(); } catch(e){}
         
         isProcessing = true;
         rollBtn.disabled = true;
@@ -548,9 +553,13 @@
         const cost = getGachaCost();
         const totalCost = cost * 10;
         if (!player || player.gold < totalCost) {
+          try { if (typeof sfxDeny !== 'undefined' && sfxDeny && typeof sfxDeny.play === 'function') sfxDeny.play(); } catch(e){}
           if (resultEl) resultEl.innerHTML = '<span style="color:red">Không đủ vàng!</span>';
           return;
         }
+
+        // Play click/confirm sound for starting the bulk gacha
+        try { if (typeof sfxConfirm !== 'undefined' && sfxConfirm && typeof sfxConfirm.play === 'function') sfxConfirm.play(); } catch(e){}
         
         isProcessing = true;
         rollBtn.disabled = true;
