@@ -204,14 +204,17 @@ main {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
-    margin-left: 0.5rem;
+    margin: 0; /* center within box padding */
+    justify-items: center;
 }
 
 /* Ensure items inside equipment area are square buttons matching empty-slot appearance */
 #playerEquipment .items {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    min-height: 3.8rem; /* reserve space for price under the button */
 }
 
 #playerEquipment .items button {
@@ -223,6 +226,29 @@ main {
     justify-content: center;
     align-items: center;
     font-size: 1.1rem;
+}
+
+/* Price tooltip/span: hidden until hover */
+#playerEquipment .slot-price {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    color: #ffd500;
+    opacity: 0;
+    transition: opacity 0.12s ease-in-out;
+}
+
+#playerEquipment .items:hover .slot-price {
+    opacity: 1;
+}
+
+/* Cursor for interactive buttons */
+#playerEquipment .items button.buy-slot,
+#playerEquipment .items button.empty-slot {
+    cursor: pointer;
+}
+
+#playerEquipment .items button.locked-slot {
+    cursor: default;
 }
 
 #playerEquipment i {

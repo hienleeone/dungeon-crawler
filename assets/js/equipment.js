@@ -461,7 +461,7 @@ const showEquipment = () => {
             if (i === unlocked && unlocked < MAX_EQUIP_SLOTS) {
                 const priceIndex = i - 6; // slot 6->index0 for price array
                 const price = EXTRA_SLOT_PRICES[priceIndex] || EXTRA_SLOT_PRICES[EXTRA_SLOT_PRICES.length - 1];
-                equipDiv.innerHTML = `<button class="buy-slot">+</button><div style="font-size:0.75em; margin-top:4px; color:#ffd500;">${nFormatter(price)} <i class="fas fa-coins"></i></div>`;
+                equipDiv.innerHTML = `<button class="buy-slot">+</button><span class="slot-price" data-price="${nFormatter(price)}">${nFormatter(price)} <i class="fas fa-coins"></i></span>`;
                 equipDiv.title = `Mua ô trang bị (${nFormatter(price)})`;
                 equipDiv.addEventListener('click', function () {
                     // Show confirmation modal
