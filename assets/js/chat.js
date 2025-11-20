@@ -26,7 +26,14 @@
             const message = snapshot.val();
             if (message) {
                 displayMessage(message);
-                
+
+                // Play incoming message sfx for other users
+                try {
+                    if (message.userId !== currentUser?.uid) {
+                        if (typeof sfxItem !== 'undefined' && sfxItem && typeof sfxItem.play === 'function') sfxItem.play();
+                    }
+                } catch (e) {}
+
                 // Tăng badge nếu chat đang đóng và không phải tin nhắn của mình
                 if (!isChatOpen && message.userId !== currentUser?.uid) {
                     unreadCount++;
@@ -50,6 +57,7 @@
 
         // Mở chat
         chatBtn.onclick = () => {
+            try { if (typeof sfxOpen !== 'undefined' && sfxOpen && typeof sfxOpen.play === 'function') sfxOpen.play(); } catch (e) {}
             if (!currentUser || !player) {
                 alert('Vui lòng đăng nhập để sử dụng chat!');
                 return;
@@ -70,6 +78,7 @@
         // Đóng chat
         if (closeChat) {
             closeChat.onclick = () => {
+                try { if (typeof sfxDecline !== 'undefined' && sfxDecline && typeof sfxDecline.play === 'function') sfxDecline.play(); } catch (e) {}
                 chatModal.style.display = 'none';
                 isChatOpen = false;
             };
@@ -78,6 +87,7 @@
         // Click outside to close
         chatModal.onclick = (e) => {
             if (e.target === chatModal) {
+                try { if (typeof sfxDecline !== 'undefined' && sfxDecline && typeof sfxDecline.play === 'function') sfxDecline.play(); } catch (e) {}
                 chatModal.style.display = 'none';
                 isChatOpen = false;
             }
@@ -115,9 +125,11 @@
             };
 
             chatRef.push(messageData).then(() => {
+                try { if (typeof sfxConfirm !== 'undefined' && sfxConfirm && typeof sfxConfirm.play === 'function') sfxConfirm.play(); } catch (e) {}
                 chatInput.value = '';
                 lastMessageTime = now;
             }).catch((error) => {
+                try { if (typeof sfxDeny !== 'undefined' && sfxDeny && typeof sfxDeny.play === 'function') sfxDeny.play(); } catch (e) {}
                 console.error('Lỗi gửi tin nhắn:', error);
                 alert('Không thể gửi tin nhắn!');
             });
