@@ -5,38 +5,6 @@ Người chơi sẽ bước vào **một hầm ngục ngẫu nhiên** được t
 
 ---
 
-## 🔥 **MỚI! Firebase Integration**
-
-Game đã được nâng cấp với hệ thống lưu trữ cloud và xác thực người dùng!
-
-### ✨ Tính Năng Mới:
-- 🔐 **Đăng nhập/Đăng ký** an toàn với Email & Password
-- ☁️ **Lưu trữ dữ liệu trên cloud** - không còn lo mất dữ liệu
-- 🌍 **Đồng bộ đa thiết bị** - chơi ở đâu cũng được
-- 🏆 **Bảng xếp hạng** - Top 3 Vàng, Level, Tầng
-- 🛡️ **Chống gian lận** - dữ liệu được bảo vệ bởi Firebase
-- 👥 **Tên duy nhất** - không ai có thể trùng tên với bạn
-
-### 📚 Hướng Dẫn Cài Đặt:
-1. **Quick Start**: Đọc [QUICKSTART.md](QUICKSTART.md) - Setup trong 10 phút
-2. **Chi Tiết**: Đọc [FIREBASE_SETUP.md](FIREBASE_SETUP.md) - Hướng dẫn đầy đủ
-3. **So Sánh**: Đọc [COMPARISON.md](COMPARISON.md) - Trước vs Sau Firebase
-4. **Testing**: Đọc [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) - Kiểm tra đầy đủ
-
-### ⚡ Bắt Đầu Nhanh:
-```bash
-# 1. Clone repository
-git clone https://github.com/hienleeone/dungeon-crawler.git
-
-# 2. Tạo Firebase project tại https://console.firebase.google.com/
-
-# 3. Cập nhật firebaseConfig trong assets/js/firebase.js
-
-# 4. Mở index.html và chơi!
-```
-
----
-
 ## 🕹️ Cơ Chế Trò Chơi
 
 - Lối chơi **roguelite**: Tiến trình sẽ đặt lại khi người chơi chết, nhưng **trang bị vẫn được giữ lại**.  
@@ -91,36 +59,6 @@ Cạnh tranh với người chơi khác trong 3 hạng mục:
 - 💰 **Top Vàng** - Ai giàu nhất?
 - ⭐ **Top Level** - Ai mạnh nhất?
 - 🎯 **Top Tầng** - Ai đi sâu nhất?
-
----
-
-## 📁 Cấu Trúc Project
-
-```
-dungeon-crawler/
-├── index.html                  # Main game file
-├── assets/
-│   ├── js/
-│   │   ├── firebase.js        # 🔥 NEW! Firebase integration
-│   │   ├── main.js            # Game logic
-│   │   ├── player.js          # Player management
-│   │   ├── dungeon.js         # Dungeon generation
-│   │   ├── combat.js          # Combat system
-│   │   ├── enemy.js           # Enemy AI
-│   │   ├── equipment.js       # Equipment system
-│   │   └── ...
-│   ├── css/
-│   │   └── style.css          # Game styling
-│   ├── sprites/               # Game graphics
-│   ├── sfx/                   # Sound effects
-│   └── bgm/                   # Background music
-├── QUICKSTART.md              # 🔥 NEW! Quick setup guide
-├── FIREBASE_SETUP.md          # 🔥 NEW! Detailed Firebase setup
-├── CHANGELOG.md               # 🔥 NEW! Change log
-├── COMPARISON.md              # 🔥 NEW! Before vs After
-├── TESTING_CHECKLIST.md       # 🔥 NEW! Testing guide
-└── README.md                  # This file
-```
 
 ---
 
