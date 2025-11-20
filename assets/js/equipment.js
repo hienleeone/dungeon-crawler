@@ -420,7 +420,8 @@ const showInventory = () => {
 const showEquipment = () => {
     // Constants
     const MAX_EQUIP_SLOTS = 9;
-    const EXTRA_SLOT_PRICES = [5000, 10000, 20000]; // Prices for slots 7,8,9 respectively (changeable)
+    // Prices for extra slots 7,8,9 (in game gold)
+    const EXTRA_SLOT_PRICES = [150000, 500000, 1000000]; // 150k, 500k, 1m
 
     // Ensure defaults
     let unlocked = Number(player.maxEquippedSlots) || 6;
@@ -440,15 +441,15 @@ const showEquipment = () => {
             const item = player.equipped[i];
             if (item) {
                 let icon = equipmentIcon(item.category);
-                equipDiv.innerHTML = `<button class="${item.rarity}">${icon}</button>`;
+                // include an empty slot-price span to keep cells aligned
+                equipDiv.innerHTML = `<button class="${item.rarity}">${icon}</button><span class="slot-price"></span>`;
                 equipDiv.addEventListener('click', function () {
                     let type = "Tháo Ra";
                     showItemInfo(item, icon, type, i);
                 });
             } else {
-                // Empty unlocked slot
-                equipDiv.innerHTML = `<button class="empty-slot">+</button>`;
-                equipDiv.title = 'Ô trống';
+                // Empty unlocked slot (show +)
+                equipDiv.innerHTML = `<button class="empty-slot">+</button><span class="slot-price"></span>`;
                 equipDiv.addEventListener('click', function () {
                     sfxDeny.play();
                 });
@@ -461,8 +462,8 @@ const showEquipment = () => {
             if (i === unlocked && unlocked < MAX_EQUIP_SLOTS) {
                 const priceIndex = i - 6; // slot 6->index0 for price array
                 const price = EXTRA_SLOT_PRICES[priceIndex] || EXTRA_SLOT_PRICES[EXTRA_SLOT_PRICES.length - 1];
+                // Buy slot: show + and a .slot-price element beneath (hidden until hover)
                 equipDiv.innerHTML = `<button class="buy-slot">+</button><span class="slot-price" data-price="${nFormatter(price)}">${nFormatter(price)} <i class="fas fa-coins"></i></span>`;
-                equipDiv.title = `Mua ô trang bị (${nFormatter(price)})`;
                 equipDiv.addEventListener('click', function () {
                     // Show confirmation modal
                     sfxOpen.play();
@@ -508,10 +509,9 @@ const showEquipment = () => {
                     };
                 });
             }
-            // Further locked slots (not yet purchasable) show key icon
+            // Further locked slots (not yet purchasable) show key icon and keep alignment with empty slot-price
             else {
-                equipDiv.innerHTML = `<button class="locked-slot"><i class="fa fa-key"></i></button>`;
-                equipDiv.title = 'Ô khóa - mua ô trước đó để mở';
+                equipDiv.innerHTML = `<button class="locked-slot"><i class="fa fa-key"></i></button><span class="slot-price"></span>`;
                 equipDiv.addEventListener('click', function () { sfxDeny.play(); });
             }
         }
