@@ -1,16 +1,19 @@
 // ===== Daily Reward System =====
 
-// Khởi tạo dữ liệu daily reward nếu chưa có
-if (!player.dailyReward) {
-    player.dailyReward = {
-        lastClaimDate: null,
-        streak: 0,
-        totalDays: 0
-    };
+// Hàm khởi tạo dữ liệu daily reward nếu chưa có
+function initDailyRewardData() {
+    if (!player.dailyReward) {
+        player.dailyReward = {
+            lastClaimDate: null,
+            streak: 0,
+            totalDays: 0
+        };
+    }
 }
 
 // Hàm kiểm tra xem có thể nhận thưởng hôm nay không
 function canClaimDailyReward() {
+    initDailyRewardData();
     if (!player.dailyReward.lastClaimDate) return true;
     
     const today = new Date();
@@ -24,6 +27,7 @@ function canClaimDailyReward() {
 
 // Hàm tính streak (chuỗi đăng nhập liên tiếp)
 function calculateStreak() {
+    initDailyRewardData();
     if (!player.dailyReward.lastClaimDate) return 1;
     
     const today = new Date();
@@ -315,8 +319,14 @@ function checkExpiredBuffs() {
     }
 }
 
-// Kiểm tra buffs mỗi phút
-setInterval(checkExpiredBuffs, 60000);
+// Kiểm tra buffs mỗi phút (chỉ chạy khi player đã có)
+function startBuffChecker() {
+    setInterval(() => {
+        if (typeof player !== 'undefined' && player) {
+            checkExpiredBuffs();
+        }
+    }, 60000);
+}
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
@@ -328,6 +338,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Hàm khởi động daily reward khi load game
 function initDailyReward() {
+    if (typeof player === 'undefined' || !player) {
+        console.log('Player not loaded yet, skipping daily reward');
+        return;
+    }
+    
+    // Khởi tạo dữ liệu nếu chưa có
+    initDailyRewardData();
+    
+    // Bắt đầu kiểm tra buffs
+    startBuffChecker();
+    
     // Kiểm tra buffs còn hiệu lực
     if (player.buffs && player.buffs.length > 0) {
         checkExpiredBuffs();
