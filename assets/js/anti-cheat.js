@@ -817,40 +817,6 @@ const ANTI_CHEAT_CONFIG = {
         return canvas.toDataURL();
     };
 
-    // ===== CHECK BAN STATUS KHI LOAD TRANG =====
-    const checkBanStatus = () => {
-        // Kiểm tra ban vĩnh viễn (lần 3)
-        const bannedPermanent = localStorage.getItem('_banned_permanent');
-        if (bannedPermanent) {
-            showBanScreen(3, null);
-            throw new Error("Permanent Ban - Access Denied");
-        }
-        
-        // Kiểm tra ban tạm thời (lần 2)
-        const bannedUntil = localStorage.getItem('_banned_until');
-        if (bannedUntil) {
-            const banTime = parseInt(bannedUntil);
-            const now = Date.now();
-            
-            if (now < banTime) {
-                // Vẫn còn trong thời gian ban
-                showBanScreen(2, banTime);
-                throw new Error("Temporary Ban - Access Denied");
-            } else {
-                // Hết thời gian ban - xóa ban status
-                localStorage.removeItem('_banned_until');
-                localStorage.removeItem('_ban_reason');
-                console.log('✓ Hết thời gian ban tạm thời - được phép vào game');
-            }
-        }
-        
-        // Hiển thị số lần vi phạm hiện tại (nếu có)
-        const violations = parseInt(localStorage.getItem('_devtools_violations') || '0');
-        if (violations > 0) {
-            console.warn(`⚠️ Bạn đã có ${violations} lần vi phạm. Cảnh báo: Lần ${3 - violations} nữa sẽ bị ban!`);
-        }
-    };
-
     // ===== INITIALIZATION =====
     const init = () => {
         // CHECK BAN ĐẦU TIÊN - NẾU BỊ BAN THÌ DỪNG NGAY
