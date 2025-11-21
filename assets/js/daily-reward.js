@@ -137,21 +137,11 @@ function showDailyRewardModal() {
     
     // Cập nhật UI
     document.getElementById('daily-streak').textContent = currentStreak;
-    document.getElementById('gold-amount').textContent = rewards.gold;
     
-    // Hiển thị phần thưởng
-    document.getElementById('gold-reward').style.display = 'flex';
-    document.getElementById('item-reward').style.display = 'none';
-    document.getElementById('buff-reward').style.display = 'none';
-    
-    if (rewards.items.length > 0) {
-        document.getElementById('item-reward').style.display = 'flex';
-        document.getElementById('item-name').textContent = rewards.items[0].name || 'Vật phẩm ngẫu nhiên';
-    }
-    
-    if (rewards.buffs.length > 0) {
-        document.getElementById('buff-reward').style.display = 'flex';
-        document.getElementById('buff-description').textContent = rewards.buffs[0].name;
+    // Ẩn phần hiển thị thưởng cho đến khi nhận
+    const rewardDisplay = document.querySelector('.reward-display');
+    if (rewardDisplay) {
+        rewardDisplay.style.display = 'none';
     }
     
     // Cập nhật calendar
@@ -189,27 +179,31 @@ function addTooltipToDay(dayElement, dayNum) {
         oldTooltip.remove();
     }
     
-    // Tạo nội dung tooltip dựa vào ngày (không hiển thị số cụ thể)
+    // Tạo nội dung tooltip dựa vào ngày
     let tooltipContent = '';
+    const baseGold = 500 * dayNum;
+    const minGold = baseGold;
+    const maxGold = Math.floor(baseGold + baseGold * 0.8);
     
     tooltipContent += `<div class="reward-info">`;
     
     if (dayNum === 1 || dayNum === 2 || dayNum === 4 || dayNum === 6) {
         // Chỉ có vàng
-        tooltipContent += `<span class="gold">💰 Vàng</span>`;
+        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
     } else if (dayNum === 3) {
         // Vàng + Item
-        tooltipContent += `<span class="gold">💰 Vàng</span>`;
-        tooltipContent += `<span class="item">📦 Item Ngẫu Nhiên</span>`;
+        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
+        tooltipContent += `<span class="item">📦 Item Rare/Epic</span>`;
     } else if (dayNum === 5) {
         // Vàng + Buff
-        tooltipContent += `<span class="gold">💰 Vàng</span>`;
-        tooltipContent += `<span class="buff">✨ Phước Lành</span>`;
+        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
+        tooltipContent += `<span class="buff">✨ Buff +20% (2h)</span>`;
     } else if (dayNum === 7) {
         // Phần thưởng đặc biệt
-        tooltipContent += `<span class="gold">💰 Vàng Khủng</span>`;
+        const specialGold = maxGold * 3;
+        tooltipContent += `<span class="gold">💰 ${specialGold} Vàng</span>`;
         tooltipContent += `<span class="item">⭐ Legendary Item</span>`;
-        tooltipContent += `<span class="buff">🌟 Super Buff</span>`;
+        tooltipContent += `<span class="buff">🌟 Super Buff +25% (3h)</span>`;
     }
     
     tooltipContent += `</div>`;
@@ -242,6 +236,37 @@ async function claimDailyReward() {
     try {
         const rewards = JSON.parse(modal.dataset.rewards);
         const currentStreak = calculateStreak();
+        
+        // Hiệu ứng hiển thị phần thưởng (giống gacha)
+        const rewardDisplay = document.querySelector('.reward-display');
+        if (rewardDisplay) {
+            rewardDisplay.style.display = 'flex';
+            
+            // Hiển thị vàng với animation
+            setTimeout(() => {
+                document.getElementById('gold-reward').style.display = 'flex';
+                document.getElementById('gold-amount').textContent = rewards.gold;
+            }, 100);
+            
+            // Hiển thị item nếu có
+            if (rewards.items.length > 0) {
+                setTimeout(() => {
+                    document.getElementById('item-reward').style.display = 'flex';
+                    document.getElementById('item-name').textContent = rewards.items[0].name || 'Vật phẩm hiếm';
+                }, 300);
+            }
+            
+            // Hiển thị buff nếu có
+            if (rewards.buffs.length > 0) {
+                setTimeout(() => {
+                    document.getElementById('buff-reward').style.display = 'flex';
+                    document.getElementById('buff-description').textContent = rewards.buffs[0].name;
+                }, 500);
+            }
+        }
+        
+        // Đợi một chút để hiệu ứng chạy xong
+        await new Promise(resolve => setTimeout(resolve, 800));
         
         // Thêm vàng
         player.gold += rewards.gold;
@@ -297,12 +322,21 @@ async function claimDailyReward() {
             playerLoadStats();
         }
         
-        // Đóng modal sau 1.5 giây
+        // Đóng modal sau 2.5 giây
         setTimeout(() => {
             modal.style.display = 'none';
             claimBtn.disabled = false;
             claimBtn.innerHTML = '<i class="fas fa-hand-holding-heart"></i> Nhận Thưởng';
-        }, 1500);
+            
+            // Reset hiển thị cho lần sau
+            const rewardDisplay = document.querySelector('.reward-display');
+            if (rewardDisplay) {
+                rewardDisplay.style.display = 'none';
+            }
+            document.getElementById('gold-reward').style.display = 'none';
+            document.getElementById('item-reward').style.display = 'none';
+            document.getElementById('buff-reward').style.display = 'none';
+        }, 2500);
         
     } catch (error) {
         console.error('Error claiming daily reward:', error);
