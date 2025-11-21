@@ -4,8 +4,8 @@
 // ===== CÀI ĐÁT: Hệ thống cảnh báo 3 cấp độ =====
 const ANTI_CHEAT_CONFIG = {
     ENABLE_DEVTOOLS_DETECTION: true,  // Có phát hiện DevTools không
-    WINDOW_SIZE_THRESHOLD: 160,  // Ngưỡng phát hiện DevTools (px) - giảm xuống 160 để nhạy hơn
-    REQUIRE_BOTH_DIMENSIONS: false,  // CHỈ cần 1 trong 2 vượt threshold là đủ (nhạy hơn)
+    WINDOW_SIZE_THRESHOLD: 200,  // Ngưỡng 200px - cân bằng giữa phát hiện DevTools và tránh false positive
+    REQUIRE_BOTH_DIMENSIONS: false,  // CHỈ cần 1 trong 2 vượt threshold (nhưng check thêm điều kiện)
     WARNING_SYSTEM: {
         LEVEL_1: 'WARNING_LOGOUT',      // Lần 1: Cảnh báo + logout
         LEVEL_2: 'LOGOUT_BAN',          // Lần 2: Logout + ban tạm thời
@@ -79,17 +79,22 @@ const ANTI_CHEAT_CONFIG = {
         
         // KHÔNG check window size trên mobile (dễ false positive)
         if (!isMobile && ANTI_CHEAT_CONFIG.ENABLE_DEVTOOLS_DETECTION) {
-            // TĂNG threshold lên 300px để tránh false positive khi resize window bình thường
             const threshold = ANTI_CHEAT_CONFIG.WINDOW_SIZE_THRESHOLD;
-            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            const widthDiff = window.outerWidth - window.innerWidth;
+            const heightDiff = window.outerHeight - window.innerHeight;
             
-            // Kiểm tra dựa trên config
-            const shouldTrigger = ANTI_CHEAT_CONFIG.REQUIRE_BOTH_DIMENSIONS 
-                ? (widthThreshold && heightThreshold)  // CẢ 2 phải vượt threshold
-                : (widthThreshold || heightThreshold); // 1 trong 2 vượt là đủ
+            // LOGIC THÔNG MINH HƠN: Chỉ trigger khi có dấu hiệu rõ ràng của DevTools
+            // DevTools thường tạo gap lớn ở 1 chiều, còn resize window thì cân đối
+            const widthThreshold = widthDiff > threshold;
+            const heightThreshold = heightDiff > threshold;
             
-            if (shouldTrigger) {
+            // Kiểm tra xem có phải DevTools không (gap quá lớn bất thường)
+            const isDevToolsLikely = (widthDiff > threshold + 100) || (heightDiff > threshold + 100);
+            
+            // CHỈ trigger nếu:
+            // 1. Có 1 chiều vượt threshold VÀ
+            // 2. Gap đủ lớn để chắc chắn là DevTools (không phải chỉ resize window)
+            if ((widthThreshold || heightThreshold) && isDevToolsLikely) {
                 if (!devtoolsOpen) {
                     devtoolsOpen = true;
                     handleDevToolsOpen();
