@@ -4,7 +4,7 @@
 // ===== CÀI ĐÁT: Hệ thống cảnh báo 3 cấp độ =====
 const ANTI_CHEAT_CONFIG = {
     ENABLE_DEVTOOLS_DETECTION: true,  // Có phát hiện DevTools không
-    WINDOW_SIZE_THRESHOLD: 200,  // Ngưỡng 200px - cân bằng giữa phát hiện DevTools và tránh false positive
+    WINDOW_SIZE_THRESHOLD: 250,  // Ngưỡng 250px - tránh false positive khi resize
     REQUIRE_BOTH_DIMENSIONS: false,  // CHỈ cần 1 trong 2 vượt threshold (nhưng check thêm điều kiện)
     WARNING_SYSTEM: {
         LEVEL_1: 'WARNING_LOGOUT',      // Lần 1: Cảnh báo + logout
@@ -20,17 +20,21 @@ const ANTI_CHEAT_CONFIG = {
     // Backup console gốc nếu cần debug
     const _originalConsole = window.console;
     
-    // ===== 1. DISABLE CONSOLE MẠNH MẼ HƠN =====
+    // ===== 1. DISABLE CONSOLE VÀ PHÁT HIỆN BYPASS =====
     const disableConsole = () => {
         // Vô hiệu hóa tất cả console methods
         const methods = ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace', 'dir', 'dirxml', 'group', 'groupCollapsed', 'groupEnd', 'clear', 'count', 'countReset', 'assert', 'profile', 'profileEnd', 'time', 'timeLog', 'timeEnd', 'timeStamp'];
         
-        // Tạo fake console với proxy để chặn mọi truy cập
+        // Tạo fake console với proxy để chặn mọi truy cập VÀ PHÁT HIỆN BYPASS
         const handler = {
             get: function(target, prop) {
                 if (methods.includes(prop)) {
-                    return function() {
-                        // Không làm gì cả - im lặng hoàn toàn
+                    return function(...args) {
+                        // PHÁT HIỆN BYPASS: Nếu có bất cứ input nào vào console
+                        if (args && args.length > 0) {
+                            console.warn('⚠️ PHÁT HIỆN BYPASS CONSOLE - XÓA DỮ LIỆU!');
+                            handleConsoleBypass();
+                        }
                         return undefined;
                     };
                 }
@@ -68,6 +72,8 @@ const ANTI_CHEAT_CONFIG = {
     // ===== 2. DETECT DEVTOOLS =====
     let devtoolsOpen = false;
     let banned = false;
+    let lastDetectionTime = 0; // Thêm biến track thời gian detection cuối
+    const DETECTION_COOLDOWN = 5000; // 5 giây cooldown giữa các lần detection
     
     // Phát hiện mobile để tránh false positive
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
@@ -76,6 +82,12 @@ const ANTI_CHEAT_CONFIG = {
     
     const devtoolsChecker = () => {
         if (banned) return;
+        
+        // COOLDOWN: Chỉ cho phép detection mỗi 5 giây
+        const now = Date.now();
+        if (now - lastDetectionTime < DETECTION_COOLDOWN) {
+            return; // Skip detection nếu vẫn trong cooldown
+        }
         
         // KHÔNG check window size trên mobile (dễ false positive)
         if (!isMobile && ANTI_CHEAT_CONFIG.ENABLE_DEVTOOLS_DETECTION) {
@@ -88,8 +100,9 @@ const ANTI_CHEAT_CONFIG = {
             const widthThreshold = widthDiff > threshold;
             const heightThreshold = heightDiff > threshold;
             
-            // Kiểm tra xem có phải DevTools không (gap quá lớn bất thường)
-            const isDevToolsLikely = (widthDiff > threshold + 100) || (heightDiff > threshold + 100);
+            // Kiểm tra xem có phải DevTools không (gap phải RẤT LỚN mới chắc chắn)
+            // Tăng margin lên 150px để tránh resize window bình thường
+            const isDevToolsLikely = (widthDiff > threshold + 150) || (heightDiff > threshold + 150);
             
             // CHỈ trigger nếu:
             // 1. Có 1 chiều vượt threshold VÀ
@@ -97,9 +110,19 @@ const ANTI_CHEAT_CONFIG = {
             if ((widthThreshold || heightThreshold) && isDevToolsLikely) {
                 if (!devtoolsOpen) {
                     devtoolsOpen = true;
+                    lastDetectionTime = now; // Cập nhật thời gian detection
                     handleDevToolsOpen();
                 }
                 return;
+            } else {
+                // DevTools đã đóng - reset flag và xóa grace period
+                if (devtoolsOpen) {
+                    console.log('✓ DevTools đã đóng - reset detection');
+                    devtoolsOpen = false;
+                    banned = false;
+                    // Xóa grace period vì đã đóng DevTools
+                    localStorage.removeItem('_last_warning_time');
+                }
             }
         }
         
@@ -152,35 +175,52 @@ const ANTI_CHEAT_CONFIG = {
         
         // ===== HỆ THỐNG CẢNH BÁO 3 CẤP ĐỘ =====
         
+        // Kiểm tra grace period - nếu vừa mới bị cảnh báo thì skip
+        const lastWarningTime = parseInt(localStorage.getItem('_last_warning_time') || '0');
+        const gracePeriod = 30000; // 30 giây grace period
+        const now = Date.now();
+        
+        if (now - lastWarningTime < gracePeriod) {
+            console.log('⏰ Trong grace period - bỏ qua detection');
+            // Reset banned flag để có thể check lại sau
+            setTimeout(() => {
+                banned = false;
+                devtoolsOpen = false;
+            }, 5000);
+            return;
+        }
+        
         // Đọc số lần vi phạm từ localStorage
         let violationCount = parseInt(localStorage.getItem('_devtools_violations') || '0');
         violationCount++;
         localStorage.setItem('_devtools_violations', violationCount.toString());
+        localStorage.setItem('_last_warning_time', now.toString());
         
-        console.warn(`⚠️ VI PHẠM LỦI THỨ ${violationCount} - DevTools detected`);
+        console.warn(`⚠️ VI PHẠM LẦN THỨ ${violationCount} - DevTools detected`);
         
-        // ===== LẦN 1: CẢNH BÁO + LOGOUT =====
+        // ===== LẦN 1: LOGOUT + CẢNH BÁO =====
         if (violationCount === 1) {
             alert(
                 '⚠️ CẢNH BÁO LẦN 1!\n\n' +
                 'Đã phát hiện Developer Tools đang mở.\n\n' +
                 '❌ Hành động: Game sẽ LOGOUT tài khoản của bạn.\n' +
                 '⚠️ Cảnh báo: Nếu tiếp tục vi phạm:\n' +
-                '   • Lần 2: Logout + Ban tạm thời\n' +
+                '   • Lần 2: Logout + Ban tạm thời 24h\n' +
                 '   • Lần 3: Ban vĩnh viễn + XÓA TÀI KHOẢN\n\n' +
-                'Vui lòng đóng DevTools và chơi game công bằng!'
+                'Nhấn OK để đóng game.'
             );
             
-            // Logout nhưng KHÔNG xóa dữ liệu
+            // Logout
             if (typeof auth !== 'undefined' && auth && auth.signOut) {
-                auth.signOut().then(() => {
-                    location.reload();
-                }).catch(() => {
-                    location.reload();
-                });
-            } else {
-                location.reload();
+                auth.signOut().catch(() => {});
             }
+            
+            // Chuyển sang about:blank rồi redirect
+            document.body.innerHTML = '';
+            window.location.href = 'about:blank';
+            setTimeout(() => {
+                window.location.href = 'https://soulmc.vn';
+            }, 100);
             return;
         }
         
@@ -198,19 +238,20 @@ const ANTI_CHEAT_CONFIG = {
                 '   • BAN TẠM THỜI 24 giờ\n\n' +
                 '⚠️ CẢNH BÁO CUỐI CÙNG:\n' +
                 '   Lần 3 sẽ BAN VĨNH VIỄN và XÓA TOÀN BỘ TÀI KHOẢN!\n\n' +
-                'Hãy chơi game công bằng!'
+                'Nhấn OK để đóng game.'
             );
             
             // Logout
             if (typeof auth !== 'undefined' && auth && auth.signOut) {
-                auth.signOut().then(() => {
-                    showBanScreen(2, banUntil);
-                }).catch(() => {
-                    showBanScreen(2, banUntil);
-                });
-            } else {
-                showBanScreen(2, banUntil);
+                auth.signOut().catch(() => {});
             }
+            
+            // Chuyển sang about:blank rồi redirect
+            document.body.innerHTML = '';
+            window.location.href = 'about:blank';
+            setTimeout(() => {
+                window.location.href = 'https://soulmc.vn';
+            }, 100);
             return;
         }
         
@@ -228,7 +269,8 @@ const ANTI_CHEAT_CONFIG = {
                 '   • XÓA TOÀN BỘ DỮ LIỆU TÀI KHOẢN\n' +
                 '   • XÓA TÊN NHÂN VẬT\n' +
                 '   • XÓA BẢNG XẾP HẠNG\n\n' +
-                'Tài khoản của bạn đã bị khóa vĩnh viễn!'
+                'Tài khoản của bạn đã bị khóa vĩnh viễn!\n\n' +
+                'Nhấn OK để đóng game.'
             );
             
             // XÓA DỮ LIỆU FIREBASE
@@ -295,12 +337,109 @@ const ANTI_CHEAT_CONFIG = {
                 console.error('Lỗi tổng thể khi xóa dữ liệu:', e);
             }
             
-            // Hiển thị màn hình ban vĩnh viễn
-            showBanScreen(3, null);
+            // Chuyển sang about:blank rồi redirect
+            document.body.innerHTML = '';
+            window.location.href = 'about:blank';
+            setTimeout(() => {
+                window.location.href = 'https://soulmc.vn';
+            }, 100);
         }, 100);
     }
     
-    // ===== HÀM HIỂN THỊ MÀN HÌNH BAN =====
+    // ===== HÀM XÓA DỮ LIỆU KHI BYPASS CONSOLE =====
+    async function handleConsoleBypass() {
+        alert(
+            '🚨 PHÁT HIỆN BYPASS CONSOLE!\n\n' +
+            '❌ Hành động:\n' +
+            '   • XÓA TOÀN BỘ DỮ LIỆU TÀI KHOẢN\n' +
+            '   • BAN VĨNH VIỄN\n\n' +
+            'Nhấn OK để đóng game.'
+        );
+        
+        // Set permanent ban
+        localStorage.setItem('_banned_permanent', Date.now().toString());
+        localStorage.setItem('_ban_reason', 'Console bypass detected');
+        localStorage.setItem('_devtools_violations', '99');
+        
+        // Xóa dữ liệu Firebase
+        try {
+            if (typeof currentUser !== 'undefined' && currentUser && typeof database !== 'undefined') {
+                const userId = currentUser.uid;
+                
+                // Xóa player name
+                if (typeof player !== 'undefined' && player && player.name) {
+                    await database.ref('playerNames/' + player.name).remove();
+                }
+                
+                // Xóa user data
+                await database.ref('users/' + userId).remove();
+                
+                // Xóa leaderboard
+                await database.ref('leaderboard/' + userId).remove();
+            }
+            
+            // Logout
+            if (typeof auth !== 'undefined' && auth && auth.signOut) {
+                await auth.signOut();
+            }
+        } catch (e) {
+            console.error('Lỗi xóa dữ liệu:', e);
+        }
+        
+        // Clear storage
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('_banned_permanent', Date.now().toString());
+        
+        // Redirect
+        document.body.innerHTML = '';
+        window.location.href = 'about:blank';
+        setTimeout(() => {
+            window.location.href = 'https://soulmc.vn';
+        }, 100);
+    }
+    
+    // ===== KIỂM TRA BAN KHI RELOAD TRANG =====
+    function checkBanStatus() {
+        // Kiểm tra ban vĩnh viễn
+        const permanentBan = localStorage.getItem('_banned_permanent');
+        if (permanentBan) {
+            alert(
+                '🚨 TÀI KHOẢN ĐÃ BỊ BAN VĨNH VIỄN!\n\n' +
+                'Tài khoản của bạn đã bị khóa vĩnh viễn.\n' +
+                'Toàn bộ dữ liệu đã bị xóa.\n\n' +
+                'Nhấn OK để đóng.'
+            );
+            document.body.innerHTML = '';
+            window.location.href = 'about:blank';
+            setTimeout(() => {
+                window.location.href = 'https://soulmc.vn';
+            }, 100);
+            return true;
+        }
+        
+        // Kiểm tra ban tạm thời
+        const banUntil = parseInt(localStorage.getItem('_banned_until') || '0');
+        if (banUntil > Date.now()) {
+            const remainingHours = Math.ceil((banUntil - Date.now()) / (60 * 60 * 1000));
+            alert(
+                '🚫 TÀI KHOẢN BỊ BAN TẠM THỜI!\n\n' +
+                `Thời gian còn lại: ${remainingHours} giờ\n\n` +
+                '⚠️ CẢNH BÁO: Vi phạm thêm 1 lần nữa sẽ BAN VĨNH VIỄN!\n\n' +
+                'Nhấn OK để đóng.'
+            );
+            document.body.innerHTML = '';
+            window.location.href = 'about:blank';
+            setTimeout(() => {
+                window.location.href = 'https://soulmc.vn';
+            }, 100);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // ===== HÀM HIỂN THỊ MÀN HÌNH BAN (DEPRECATED - GIỮ LẠI ĐỂ BACKWARD COMPATIBLE) =====
     function showBanScreen(level, banUntil) {
         let title, message, canReturn;
         
@@ -714,8 +853,10 @@ const ANTI_CHEAT_CONFIG = {
 
     // ===== INITIALIZATION =====
     const init = () => {
-        // CHECK BAN ĐẦU TIÊN
-        checkBanStatus();
+        // CHECK BAN ĐẦU TIÊN - NẾU BỊ BAN THÌ DỪNG NGAY
+        if (checkBanStatus()) {
+            return; // Đã bị ban, không load game nữa
+        }
         
         // CHECK DEVTOOLS NGAY KHI INIT (để catch trường hợp DevTools đã mở)
         devtoolsChecker();
