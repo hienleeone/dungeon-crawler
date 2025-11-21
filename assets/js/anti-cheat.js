@@ -399,42 +399,6 @@ const ANTI_CHEAT_CONFIG = {
             };
         }
     }
-                            2. Xóa dữ liệu trang web<br>
-                            3. Sử dụng trình duyệt khác<br>
-                            4. CAM KẾT không mở DevTools nữa!
-                        </p>
-                    </div>
-                    
-                    <p style="font-size: 0.85rem; color: #888; margin-top: 30px;">
-                        Hệ thống anti-cheat đã ghi nhận vi phạm này.<br>
-                        Đã xử lý xóa toàn bộ dữ liệu người chơi.<br>
-                        Thời gian: ${new Date().toLocaleString('vi-VN')}
-                    </p>
-                </div>
-            </div>
-        `;
-        
-        // Clear tất cả intervals và timeouts
-        const highestTimeoutId = setTimeout(";");
-        for (let i = 0; i < highestTimeoutId; i++) {
-            clearTimeout(i);
-        }
-        
-        const highestIntervalId = setInterval(";");
-        for (let i = 0; i < highestIntervalId; i++) {
-            clearInterval(i);
-        }
-        
-        // Disable tất cả interactions
-        document.body.style.pointerEvents = 'none';
-        
-        // Prevent reload
-        window.onbeforeunload = function() {
-            return "Bạn đã bị cấm truy cập!";
-        };
-        
-        throw new Error("Access Banned - DevTools detected!");
-    };
 
     // ===== 3. DISABLE RIGHT CLICK =====
     document.addEventListener('contextmenu', e => {
