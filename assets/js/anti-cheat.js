@@ -1,8 +1,20 @@
 // ===== ADVANCED ANTI-CHEAT SYSTEM =====
 // Hệ thống chống gian lận toàn diện - Chặn hoàn toàn console
 
+// ===== CÀI ĐÁT: Hệ thống cảnh báo 3 cấp độ =====
+const ANTI_CHEAT_CONFIG = {
+    ENABLE_DEVTOOLS_DETECTION: true,  // Có phát hiện DevTools không
+    WINDOW_SIZE_THRESHOLD: 300,  // Ngưỡng phát hiện DevTools (px) - cao hơn = ít false positive
+    REQUIRE_BOTH_DIMENSIONS: true,  // Phải cả width VÀ height vượt threshold mới kích hoạt
+    WARNING_SYSTEM: {
+        LEVEL_1: 'WARNING_LOGOUT',      // Lần 1: Cảnh báo + logout
+        LEVEL_2: 'LOGOUT_BAN',          // Lần 2: Logout + ban tạm thời
+        LEVEL_3: 'BAN_DELETE'           // Lần 3: Ban vĩnh viễn + xóa tài khoản
+    }
+};
+
 (function() {
-    'use strict';
+    'use strict;
 
     // ===== 0. CHẶN NGAY TỪ ĐẦU (TRƯỚC KHI DEVTOOLS MỞ) =====
     // Backup console gốc nếu cần debug
@@ -66,12 +78,18 @@
         if (banned) return;
         
         // KHÔNG check window size trên mobile (dễ false positive)
-        if (!isMobile) {
-            const threshold = 160;
+        if (!isMobile && ANTI_CHEAT_CONFIG.ENABLE_DEVTOOLS_DETECTION) {
+            // TĂNG threshold lên 300px để tránh false positive khi resize window bình thường
+            const threshold = ANTI_CHEAT_CONFIG.WINDOW_SIZE_THRESHOLD;
             const widthThreshold = window.outerWidth - window.innerWidth > threshold;
             const heightThreshold = window.outerHeight - window.innerHeight > threshold;
             
-            if (widthThreshold || heightThreshold) {
+            // Kiểm tra dựa trên config
+            const shouldTrigger = ANTI_CHEAT_CONFIG.REQUIRE_BOTH_DIMENSIONS 
+                ? (widthThreshold && heightThreshold)  // CẢ 2 phải vượt threshold
+                : (widthThreshold || heightThreshold); // 1 trong 2 vượt là đủ
+            
+            if (shouldTrigger) {
                 if (!devtoolsOpen) {
                     devtoolsOpen = true;
                     handleDevToolsOpen();
@@ -127,51 +145,179 @@
         if (banned) return;
         banned = true;
         
-        // LƯU BAN STATUS TRƯỚC (để không bị xóa)
-        const banTimestamp = Date.now().toString();
-        const banReason = 'DevTools detected';
+        // ===== HỆ THỐNG CẢNH BÁO 3 CẤP ĐỘ =====
         
-        // XÓA DỮ LIỆU FIREBASE TRƯỚC KHI HIỂN THỊ BAN SCREEN
-        setTimeout(() => {
+        // Đọc số lần vi phạm từ localStorage
+        let violationCount = parseInt(localStorage.getItem('_devtools_violations') || '0');
+        violationCount++;
+        localStorage.setItem('_devtools_violations', violationCount.toString());
+        
+        console.warn(`⚠️ VI PHẠM LỦI THỨ ${violationCount} - DevTools detected`);
+        
+        // ===== LẦN 1: CẢNH BÁO + LOGOUT =====
+        if (violationCount === 1) {
+            alert(
+                '⚠️ CẢNH BÁO LẦN 1!\n\n' +
+                'Đã phát hiện Developer Tools đang mở.\n\n' +
+                '❌ Hành động: Game sẽ LOGOUT tài khoản của bạn.\n' +
+                '⚠️ Cảnh báo: Nếu tiếp tục vi phạm:\n' +
+                '   • Lần 2: Logout + Ban tạm thời\n' +
+                '   • Lần 3: Ban vĩnh viễn + XÓA TÀI KHOẢN\n\n' +
+                'Vui lòng đóng DevTools và chơi game công bằng!'
+            );
+            
+            // Logout nhưng KHÔNG xóa dữ liệu
+            if (typeof auth !== 'undefined' && auth && auth.signOut) {
+                auth.signOut().then(() => {
+                    location.reload();
+                }).catch(() => {
+                    location.reload();
+                });
+            } else {
+                location.reload();
+            }
+            return;
+        }
+        
+        // ===== LẦN 2: LOGOUT + BAN TẠM THỜI =====
+        if (violationCount === 2) {
+            const banUntil = Date.now() + (24 * 60 * 60 * 1000); // Ban 24 giờ
+            localStorage.setItem('_banned_until', banUntil.toString());
+            localStorage.setItem('_ban_reason', 'DevTools detected - 2nd violation');
+            
+            alert(
+                '🚫 CẢNH BÁO LẦN 2!\n\n' +
+                'Bạn đã vi phạm lần thứ 2!\n\n' +
+                '❌ Hành động: \n' +
+                '   • LOGOUT tài khoản\n' +
+                '   • BAN TẠM THỜI 24 giờ\n\n' +
+                '⚠️ CẢNH BÁO CUỐI CÙNG:\n' +
+                '   Lần 3 sẽ BAN VĨNH VIỄN và XÓA TOÀN BỘ TÀI KHOẢN!\n\n' +
+                'Hãy chơi game công bằng!'
+            );
+            
+            // Logout
+            if (typeof auth !== 'undefined' && auth && auth.signOut) {
+                auth.signOut().then(() => {
+                    showBanScreen(2, banUntil);
+                }).catch(() => {
+                    showBanScreen(2, banUntil);
+                });
+            } else {
+                showBanScreen(2, banUntil);
+            }
+            return;
+        }
+        
+        // ===== LẦN 3: BAN VĨNH VIỄN + XÓA TÀI KHOẢN =====
+        if (violationCount >= 3) {
+            const banTimestamp = Date.now().toString();
+            localStorage.setItem('_banned_permanent', banTimestamp);
+            localStorage.setItem('_ban_reason', 'DevTools detected - 3rd violation - PERMANENT BAN');
+            
+            alert(
+                '🚨 BAN VĨNH VIỄN!\n\n' +
+                'Bạn đã vi phạm lần thứ 3!\n\n' +
+                '❌ Hành động:\n' +
+                '   • BAN VĨNH VIỄN\n' +
+                '   • XÓA TOÀN BỘ DỮ LIỆU TÀI KHOẢN\n' +
+                '   • XÓA TÊN NHÂN VẬT\n' +
+                '   • XÓA BẢNG XẾP HẠNG\n\n' +
+                'Tài khoản của bạn đã bị khóa vĩnh viễn!'
+            );
+            
+            // XÓA DỮ LIỆU FIREBASE
+            deleteUserDataPermanently();
+            return;
+        }
+    };
+    
+    // ===== HÀM XÓA DỮ LIỆU VĨNH VIỄN (LẦN 3) =====
+    async function deleteUserDataPermanently() {
+        setTimeout(async () => {
             try {
-                // Xóa dữ liệu Firebase
+                // Xóa dữ liệu Firebase - SỬ DỤNG AWAIT để đảm bảo hoàn tất
                 if (typeof currentUser !== 'undefined' && currentUser && typeof database !== 'undefined') {
                     const userId = currentUser.uid;
                     
-                    // Xóa player name
+                    // Xóa player name - AWAIT để chắc chắn xóa xong
                     if (typeof player !== 'undefined' && player && player.name) {
-                        database.ref('playerNames/' + player.name).remove().catch(() => {});
+                        try {
+                            await database.ref('playerNames/' + player.name).remove();
+                            console.log('✓ Đã xóa playerName:', player.name);
+                        } catch (err) {
+                            console.error('Lỗi xóa playerName:', err);
+                        }
                     }
                     
                     // Xóa user data
-                    database.ref('users/' + userId).remove().catch(() => {});
+                    try {
+                        await database.ref('users/' + userId).remove();
+                        console.log('✓ Đã xóa user data:', userId);
+                    } catch (err) {
+                        console.error('Lỗi xóa user data:', err);
+                    }
                     
                     // Xóa leaderboard
-                    database.ref('leaderboard/' + userId).remove().catch(() => {});
+                    try {
+                        await database.ref('leaderboard/' + userId).remove();
+                        console.log('✓ Đã xóa leaderboard:', userId);
+                    } catch (err) {
+                        console.error('Lỗi xóa leaderboard:', err);
+                    }
                 }
                 
                 // Logout Firebase
                 if (typeof auth !== 'undefined' && auth && auth.signOut) {
-                    auth.signOut().catch(() => {});
+                    try {
+                        await auth.signOut();
+                        console.log('✓ Đã logout');
+                    } catch (err) {
+                        console.error('Lỗi logout:', err);
+                    }
                 }
                 
-                // Clear local storage (nhưng GIỮ LẠI ban status)
+                // Clear local storage
+                const violations = localStorage.getItem('_devtools_violations');
                 localStorage.clear();
                 sessionStorage.clear();
                 
-                // GHI LẠI BAN STATUS SAU KHI CLEAR
-                localStorage.setItem('_banned', banTimestamp);
-                localStorage.setItem('_banReason', banReason);
+                // GHI LẠI BAN STATUS VÀ VIOLATIONS
+                localStorage.setItem('_banned_permanent', Date.now().toString());
+                localStorage.setItem('_ban_reason', 'DevTools - 3rd violation - PERMANENT');
+                localStorage.setItem('_devtools_violations', violations);
             } catch (e) {
-                // Ignore
+                console.error('Lỗi tổng thể khi xóa dữ liệu:', e);
             }
+            
+            // Hiển thị màn hình ban vĩnh viễn
+            showBanScreen(3, null);
         }, 100);
+    }
+    
+    // ===== HÀM HIỂN THỊ MÀN HÌNH BAN =====
+    function showBanScreen(level, banUntil) {
+        let title, message, canReturn;
         
-        // BAN USER (ghi sớm để chắc chắn)
-        localStorage.setItem('_banned', Date.now().toString());
-        localStorage.setItem('_banReason', 'DevTools detected');
+        if (level === 2) {
+            // Ban tạm thời 24h
+            const remainingHours = Math.ceil((banUntil - Date.now()) / (60 * 60 * 1000));
+            title = '🚫 BAN TẠM THỜI';
+            message = `
+                <p style="font-size: 1.3rem; margin: 10px 0;"><strong>Lý do:</strong> Developer Tools - Vi phạm lần 2</p>
+                <p style="font-size: 1.1rem; margin: 10px 0; color: #ffaaaa;">Thời gian ban: <strong>${remainingHours} giờ</strong></p>
+            `;
+            canReturn = true;
+        } else if (level === 3) {
+            // Ban vĩnh viễn
+            title = '⛔ BAN VĨNH VIỄN';
+            message = `
+                <p style="font-size: 1.3rem; margin: 10px 0;"><strong>Lý do:</strong> Developer Tools - Vi phạm lần 3</p>
+                <p style="font-size: 1.1rem; margin: 10px 0; color: #ffaaaa;">Tài khoản đã bị xóa hoàn toàn</p>
+            `;
+            canReturn = false;
+        }
         
-        // Hiển thị màn hình BAN vĩnh viễn
         document.body.innerHTML = `
             <div style="
                 display: flex;
@@ -193,8 +339,7 @@
                     border: 3px solid #ff0000;
                     box-shadow: 0 0 50px rgba(255,0,0,0.5);
                 ">
-                    <h1 style="color: #ff0000; font-size: 4rem; margin: 0; text-shadow: 0 0 20px #ff0000;">⛔ THÔNG BÁO</h1>
-                    <h2 style="color: #ff4444; font-size: 2rem; margin: 20px 0;">BẠN ĐÃ BỊ CẤM</h2>
+                    <h1 style="color: #ff0000; font-size: 4rem; margin: 0; text-shadow: 0 0 20px #ff0000;">${title}</h1>
                     
                     <div style="
                         background: rgba(255,0,0,0.1);
@@ -203,8 +348,7 @@
                         margin: 30px 0;
                         border-left: 5px solid #ff0000;
                     ">
-                        <p style="font-size: 1.3rem; margin: 10px 0;"><strong>Lý do:</strong> Phát hiện Developer Tools</p>
-                        <p style="font-size: 1.1rem; margin: 10px 0; color: #ffaaaa;">Hành vi vi phạm chính sách chống gian lận</p>
+                        ${message}
                     </div>
                     
                     <div style="
@@ -214,18 +358,47 @@
                         border-radius: 10px;
                         margin: 20px 0;
                     ">
-                        <p style="font-size: 1rem; margin: 10px 0;">🚫 Bạn không thể:</p>
+                        <p style="font-size: 1rem; margin: 10px 0;">📋 Hành động đã thực hiện:</p>
                         <ul style="font-size: 0.95rem; line-height: 1.8; color: #ffcccc;">
-                            <li>+ Truy cập game từ trình duyệt này</li>
-                            <li>+ Tạo tài khoản mới trên thiết bị này</li>
-                            <li>+ Sử dụng DevTools khi chơi game</li>
+                            <li>✓ Logout tài khoản</li>
+                            ${level === 2 ? '<li>✓ Ban tạm thời 24 giờ</li>' : ''}
+                            ${level === 3 ? '<li>✓ Ban vĩnh viễn</li><li>✓ Xóa toàn bộ dữ liệu</li><li>✓ Xóa tên nhân vật</li>' : ''}
                         </ul>
                     </div>
                     
+                    ${canReturn ? `
                     <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,0,0.1); border-radius: 10px;">
-                        <p style="font-size: 1rem; color: #ffff00;">💡 Muốn chơi lại?</p>
+                        <p style="font-size: 1rem; color: #ffff00;">⏰ Bạn có thể quay lại sau ${Math.ceil((banUntil - Date.now()) / (60 * 60 * 1000))} giờ</p>
                         <p style="font-size: 0.9rem; color: #ffffaa; margin-top: 10px;">
-                            1. Đóng hoàn toàn DevTools<br>
+                            Vui lòng đóng DevTools và chơi game công bằng.
+                        </p>
+                    </div>
+                    ` : `
+                    <div style="margin-top: 30px; padding: 20px; background: rgba(255,0,0,0.2); border-radius: 10px;">
+                        <p style="font-size: 1rem; color: #ff0000;">🚫 Tài khoản đã bị khóa vĩnh viễn</p>
+                        <p style="font-size: 0.9rem; color: #ffaaaa; margin-top: 10px;">
+                            Không thể khôi phục. Vui lòng tạo tài khoản mới và chơi công bằng.
+                        </p>
+                    </div>
+                    `}
+                    
+                    <p style="font-size: 0.85rem; color: #888; margin-top: 30px;">
+                        Thời gian: ${new Date().toLocaleString('vi-VN')}
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        // Disable tất cả interactions
+        document.body.style.pointerEvents = 'none';
+        
+        // Prevent reload nếu ban vĩnh viễn
+        if (!canReturn) {
+            window.onbeforeunload = function() {
+                return "Tài khoản đã bị ban vĩnh viễn!";
+            };
+        }
+    }
                             2. Xóa dữ liệu trang web<br>
                             3. Sử dụng trình duyệt khác<br>
                             4. CAM KẾT không mở DevTools nữa!
@@ -536,66 +709,37 @@
         return canvas.toDataURL();
     };
 
-    // ===== CHECK BAN STATUS =====
+    // ===== CHECK BAN STATUS KHI LOAD TRANG =====
     const checkBanStatus = () => {
-        const banned = localStorage.getItem('_banned');
-        if (banned) {
-            const banTime = parseInt(banned);
-            const banReason = localStorage.getItem('_banReason') || 'Violation detected';
+        // Kiểm tra ban vĩnh viễn (lần 3)
+        const bannedPermanent = localStorage.getItem('_banned_permanent');
+        if (bannedPermanent) {
+            showBanScreen(3, null);
+            throw new Error("Permanent Ban - Access Denied");
+        }
+        
+        // Kiểm tra ban tạm thời (lần 2)
+        const bannedUntil = localStorage.getItem('_banned_until');
+        if (bannedUntil) {
+            const banTime = parseInt(bannedUntil);
+            const now = Date.now();
             
-            // Hiển thị màn hình ban
-            document.body.innerHTML = `
-                <div style="
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    height: 100vh;
-                    background: linear-gradient(135deg, #1a0000 0%, #330000 100%);
-                    color: #fff;
-                    font-family: Arial, sans-serif;
-                    text-align: center;
-                    padding: 20px;
-                ">
-                    <div style="
-                        max-width: 600px;
-                        background: rgba(0,0,0,0.8);
-                        padding: 40px;
-                        border-radius: 20px;
-                        border: 3px solid #ff0000;
-                        box-shadow: 0 0 50px rgba(255,0,0,0.5);
-                    ">
-                        <h1 style="color: #ff0000; font-size: 4rem; margin: 0; text-shadow: 0 0 20px #ff0000;">⛔ BAN ⛔</h1>
-                        <h2 style="color: #ff4444; font-size: 2rem; margin: 20px 0;">TRUY CẬP BỊ CHẶN VĨNH VIỄN</h2>
-                        
-                        <div style="
-                            background: rgba(255,0,0,0.1);
-                            padding: 20px;
-                            border-radius: 10px;
-                            margin: 30px 0;
-                            border-left: 5px solid #ff0000;
-                        ">
-                            <p style="font-size: 1.3rem; margin: 10px 0;"><strong>Lý do:</strong> ${banReason}</p>
-                            <p style="font-size: 1rem; margin: 10px 0; color: #ffaaaa;">Thời gian: ${new Date(banTime).toLocaleString('vi-VN')}</p>
-                        </div>
-                        
-                        <p style="font-size: 1.1rem; color: #ffff00; margin: 20px 0;">
-                            🔒 Thiết bị này đã bị đánh dấu vi phạm và đã bị xóa toàn bộ dữ liệu, tiến trình game. Chúng tôi yêu cầu bạn tuân thủ chính sách và nội quy khi chơi trò chơi trên trang web nhằm xây dựng cộng đồng lành mạnh và môi trường game công bằng!
-                        </p>
-                        
-                        <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,0,0.1); border-radius: 10px;">
-                            <p style="font-size: 1rem; color: #ffff00;">💡 Cách khắc phục:</p>
-                            <p style="font-size: 0.9rem; color: #ffffaa; margin-top: 10px;">
-                                Xóa dữ liệu trang web (Clear Site Data)<br>
-                                hoặc sử dụng trình duyệt/thiết bị khác
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Prevent any action
-            throw new Error("Access Banned");
+            if (now < banTime) {
+                // Vẫn còn trong thời gian ban
+                showBanScreen(2, banTime);
+                throw new Error("Temporary Ban - Access Denied");
+            } else {
+                // Hết thời gian ban - xóa ban status
+                localStorage.removeItem('_banned_until');
+                localStorage.removeItem('_ban_reason');
+                console.log('✓ Hết thời gian ban tạm thời - được phép vào game');
+            }
+        }
+        
+        // Hiển thị số lần vi phạm hiện tại (nếu có)
+        const violations = parseInt(localStorage.getItem('_devtools_violations') || '0');
+        if (violations > 0) {
+            console.warn(`⚠️ Bạn đã có ${violations} lần vi phạm. Cảnh báo: Lần ${3 - violations} nữa sẽ bị ban!`);
         }
     };
 
