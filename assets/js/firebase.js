@@ -357,9 +357,10 @@ async function loadPlayerData() {
         if (data && data.playerData) {
             const loadedPlayer = JSON.parse(data.playerData);
             
-            // Kiểm tra checksum - QUAN TRỌNG cho bảo mật
+            // Kiểm tra checksum - HỖ TRỢ CẢ FORMAT CŨ VÀ MỚI
             if (data.checksum) {
-                const criticalData = {
+                // THỬ FORMAT MỚI TRƯỚC (bảo vệ nhiều field hơn)
+                const criticalDataNew = {
                     gold: loadedPlayer.gold,
                     level: loadedPlayer.lvl,
                     stats: loadedPlayer.stats,
@@ -374,8 +375,24 @@ async function loadPlayerData() {
                     kills: loadedPlayer.kills || 0,
                     deaths: loadedPlayer.deaths || 0
                 };
-                const isValid = await validateDataIntegrity(criticalData, data.checksum);
+                let isValid = await validateDataIntegrity(criticalDataNew, data.checksum);
                 
+                // Nếu format mới fail, THỬ FORMAT CŨ (backward compatibility)
+                if (!isValid) {
+                    console.warn("⚠️ Checksum format mới không khớp - thử format cũ...");
+                    const criticalDataOld = {
+                        gold: loadedPlayer.gold,
+                        level: loadedPlayer.lvl,
+                        stats: loadedPlayer.stats
+                    };
+                    isValid = await validateDataIntegrity(criticalDataOld, data.checksum);
+                    
+                    if (isValid) {
+                        console.log("✓ Checksum format cũ hợp lệ - sẽ tự động nâng cấp khi save");
+                    }
+                }
+                
+                // Nếu CẢ 2 FORMAT đều fail → Dữ liệu thật sự bị chỉnh sửa
                 if (!isValid) {
                     console.error("🚨 CHECKSUM KHÔNG KHỚP - Dữ liệu có thể bị chỉnh sửa!");
                     alert(
@@ -389,9 +406,9 @@ async function loadPlayerData() {
                     await auth.signOut();
                     location.reload();
                     return;
+                } else {
+                    console.log("✓ Checksum hợp lệ - dữ liệu an toàn");
                 }
-                
-                console.log("✓ Checksum hợp lệ - dữ liệu an toàn");
             } else {
                 // Người chơi cũ không có checksum - tạo checksum mới cho lần save sau
                 console.warn("⚠️ Dữ liệu cũ không có checksum - sẽ tự động tạo khi save");
