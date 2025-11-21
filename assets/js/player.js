@@ -335,7 +335,7 @@ const sampleNotifications = [
     // Community & Social
     { text: "💬 Tham gia Live Chat để giao lưu với người chơi khác", type: "success" },
     { text: "🤝 Chia sẻ chiến thuật với cộng đồng để cùng tiến bộ", type: "success" },
-    { text: "📱 Theo dõi fanpage để cập nhật tin tức mới nhất", type: "default" },
+    { text: "📱 Theo dõi discord server để cập nhật tin tức mới nhất", type: "default" },
     { text: "👥 Cùng bạn bè chinh phục dungeon sẽ vui hơn nhiều", type: "success" },
     
     // Warnings & Reminders

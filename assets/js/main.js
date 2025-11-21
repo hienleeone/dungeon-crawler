@@ -795,6 +795,11 @@ const enterDungeon = () => {
     }
     initialDungeonLoad();
     playerLoadStats();
+    
+    // Khởi động hệ thống daily reward
+    if (typeof initDailyReward === 'function') {
+        initDailyReward();
+    }
 }
 
 // Save all the data to Firebase (replacing localStorage)

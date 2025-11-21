@@ -237,6 +237,72 @@
             </div>
         </div>
 
+        <!-- ===== Daily Reward Modal ===== -->
+        <div class="modal-container" id="dailyRewardModal" style="display:none;">
+            <div class="content daily-reward-content">
+                <div class="content-head">
+                    <h3><i class="fas fa-gift"></i> Phần Thưởng Hàng Ngày</h3>
+                </div>
+
+                <div class="daily-reward-body">
+                    <div class="reward-day-info">
+                        <h2>Ngày <span id="daily-streak">1</span></h2>
+                        <p class="reward-subtitle">Đăng nhập liên tiếp</p>
+                    </div>
+
+                    <div class="reward-display">
+                        <div class="reward-item" id="gold-reward">
+                            <i class="fas fa-coins" style="font-size: 3rem; color: #ffd700;"></i>
+                            <p><span id="gold-amount">0</span> <i class="fas fa-coins"></i></p>
+                        </div>
+                        <div class="reward-item" id="item-reward" style="display:none;">
+                            <i class="fas fa-box-open" style="font-size: 3rem; color: #a855f7;"></i>
+                            <p id="item-name">Vật phẩm ngẫu nhiên</p>
+                        </div>
+                        <div class="reward-item" id="buff-reward" style="display:none;">
+                            <i class="fas fa-magic" style="font-size: 3rem; color: #4ade80;"></i>
+                            <p id="buff-description">Phước lành ngẫu nhiên</p>
+                        </div>
+                    </div>
+
+                    <div class="reward-calendar">
+                        <div class="calendar-day" data-day="1">
+                            <span class="day-number">1</span>
+                            <i class="fas fa-coins day-icon"></i>
+                        </div>
+                        <div class="calendar-day" data-day="2">
+                            <span class="day-number">2</span>
+                            <i class="fas fa-coins day-icon"></i>
+                        </div>
+                        <div class="calendar-day" data-day="3">
+                            <span class="day-number">3</span>
+                            <i class="fas fa-box day-icon"></i>
+                        </div>
+                        <div class="calendar-day" data-day="4">
+                            <span class="day-number">4</span>
+                            <i class="fas fa-coins day-icon"></i>
+                        </div>
+                        <div class="calendar-day" data-day="5">
+                            <span class="day-number">5</span>
+                            <i class="fas fa-magic day-icon"></i>
+                        </div>
+                        <div class="calendar-day" data-day="6">
+                            <span class="day-number">6</span>
+                            <i class="fas fa-coins day-icon"></i>
+                        </div>
+                        <div class="calendar-day special" data-day="7">
+                            <span class="day-number">7</span>
+                            <i class="fas fa-star day-icon"></i>
+                        </div>
+                    </div>
+
+                    <button id="claim-daily-reward" class="claim-btn">
+                        <i class="fas fa-hand-holding-heart"></i> Nhận Thưởng
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- ===== Scripts ===== -->
@@ -252,6 +318,7 @@
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/gacha.js"></script>
     <script src="./assets/js/chat.js"></script>
+    <script src="./assets/js/daily-reward.js"></script>
 
 </body>
 
