@@ -307,11 +307,22 @@ async function savePlayerData(isAutoSave = false) {
         const enemyData = JSON.stringify(enemy);
         const volumeData = JSON.stringify(volume);
         
-        // Tạo checksum cho dữ liệu đã sanitize
+        // Tạo checksum cho dữ liệu quan trọng - MỞ RỘNG BẢO VỆ
         const criticalData = {
             gold: sanitizedPlayer.gold,
             level: sanitizedPlayer.lvl,
-            stats: sanitizedPlayer.stats
+            stats: sanitizedPlayer.stats,
+            exp: sanitizedPlayer.exp,
+            bonusStats: sanitizedPlayer.bonusStats,
+            // THÊM: Bảo vệ inventory và equipped để ngăn cheat
+            inventoryCount: sanitizedPlayer.inventory ? {
+                consumables: (sanitizedPlayer.inventory.consumables || []).length,
+                equipment: (sanitizedPlayer.inventory.equipment || []).length
+            } : { consumables: 0, equipment: 0 },
+            equippedCount: (sanitizedPlayer.equipped || []).length,
+            playtime: sanitizedPlayer.playtime || 0,
+            kills: sanitizedPlayer.kills || 0,
+            deaths: sanitizedPlayer.deaths || 0
         };
         const checksum = await generateChecksum(criticalData);
 
@@ -346,27 +357,44 @@ async function loadPlayerData() {
         if (data && data.playerData) {
             const loadedPlayer = JSON.parse(data.playerData);
             
-            // Kiểm tra checksum nếu có
+            // Kiểm tra checksum - QUAN TRỌNG cho bảo mật
             if (data.checksum) {
                 const criticalData = {
                     gold: loadedPlayer.gold,
                     level: loadedPlayer.lvl,
-                    stats: loadedPlayer.stats
+                    stats: loadedPlayer.stats,
+                    exp: loadedPlayer.exp,
+                    bonusStats: loadedPlayer.bonusStats,
+                    inventoryCount: loadedPlayer.inventory ? {
+                        consumables: (loadedPlayer.inventory.consumables || []).length,
+                        equipment: (loadedPlayer.inventory.equipment || []).length
+                    } : { consumables: 0, equipment: 0 },
+                    equippedCount: (loadedPlayer.equipped || []).length,
+                    playtime: loadedPlayer.playtime || 0,
+                    kills: loadedPlayer.kills || 0,
+                    deaths: loadedPlayer.deaths || 0
                 };
                 const isValid = await validateDataIntegrity(criticalData, data.checksum);
                 
                 if (!isValid) {
-                    // ⚠️ PHÁT HIỆN GIAN LẬN - Reset dữ liệu
-                    alert("🚨 Phát hiện dữ liệu đã bị chỉnh sửa!\n\nDữ liệu của bạn đã bị reset về mặc định.\nNếu đây là lỗi, vui lòng liên hệ admin.");
+                    console.error("🚨 CHECKSUM KHÔNG KHỚP - Dữ liệu có thể bị chỉnh sửa!");
+                    alert(
+                        "⚠️ PHÁT HIỆN DỮ LIỆU BẤT THƯỜNG!\n\n" +
+                        "Dữ liệu của bạn có thể đã bị chỉnh sửa bất hợp pháp.\n\n" +
+                        "Để bảo vệ tài khoản của bạn, game sẽ logout.\n" +
+                        "Vui lòng liên hệ admin để kiểm tra."
+                    );
                     
-                    // Xóa dữ liệu trên Firebase
-                    await database.ref('users/' + userId).remove();
-                    
-                    // Đăng xuất và reload
+                    // KHÔNG xóa dữ liệu - chỉ logout để admin kiểm tra
                     await auth.signOut();
                     location.reload();
-                    return; // Dừng load
+                    return;
                 }
+                
+                console.log("✓ Checksum hợp lệ - dữ liệu an toàn");
+            } else {
+                // Người chơi cũ không có checksum - tạo checksum mới cho lần save sau
+                console.warn("⚠️ Dữ liệu cũ không có checksum - sẽ tự động tạo khi save");
             }
             
             // Validate dữ liệu
@@ -475,81 +503,72 @@ function initializeDefaultDungeon() {
     }
 }
 
-// Kiểm tra tên người chơi có bị trùng không
-async function checkPlayerNameExists(playerName) {
-    try {
-        const snapshot = await database.ref('playerNames/' + playerName).once('value');
-        if (!snapshot.exists()) {
-            return false; // Tên chưa tồn tại - có thể sử dụng
-        }
-        
-        const ownerUserId = snapshot.val();
-        
-        // Tên đã tồn tại - kiểm tra xem có phải của user hiện tại không
-        if (currentUser && ownerUserId === currentUser.uid) {
-            console.log("Tên này đã thuộc về bạn");
-            return false; // Cho phép (trường hợp load lại game)
-        }
-        
-        // Tên thuộc về người khác - KHÔNG cho phép
-        console.log("Tên đã được sử dụng bởi user khác:", ownerUserId);
-        return true; // Chặn - tên đã có người dùng
-    } catch (error) {
-        console.error("Lỗi kiểm tra tên:", error);
-        // NẾU CÓ LỖI, CHẶN ĐỂ AN TOÀN
-        alert("Lỗi kết nối Firebase. Vui lòng thử lại!");
-        return true; // Chặn vào game
-    }
-}
-
-// Đăng ký tên người chơi với transaction để ngăn race condition
-async function registerPlayerName(playerName) {
+// ===== FUNCTION MỚI: Kiểm tra VÀ đăng ký tên trong 1 transaction atomic =====
+async function checkAndRegisterPlayerName(playerName) {
     if (!currentUser) {
         console.error("Chưa đăng nhập!");
-        return false;
+        return { success: false, error: "NOT_LOGGED_IN" };
     }
 
     try {
         const userId = currentUser.uid;
         const nameRef = database.ref('playerNames/' + playerName);
         
-        // Sử dụng transaction để đảm bảo atomic operation
+        // Sử dụng transaction để đảm bảo atomic operation - ngăn race condition
         const result = await nameRef.transaction((currentValue) => {
-            // CHỈ cho phép claim nếu tên CHƯA tồn tại
+            // Nếu tên đã tồn tại
             if (currentValue !== null) {
-                // Tên đã có người sử dụng (kể cả chính mình) - KHÔNG cho phép
-                console.error("Transaction abort: Tên đã tồn tại với owner:", currentValue);
-                return; // abort transaction - QUAN TRỌNG: return undefined để abort
+                // Kiểm tra xem có phải của user hiện tại không
+                if (currentValue === userId) {
+                    console.log("Tên này đã thuộc về bạn - cho phép load lại");
+                    return userId; // Giữ nguyên - người chơi đang load lại game
+                }
+                // Tên thuộc về người khác - ABORT transaction
+                console.error("Transaction abort: Tên đã được sử dụng bởi:", currentValue);
+                return; // abort - return undefined
             }
             
-            // Tên chưa tồn tại, claim nó
+            // Tên chưa tồn tại - claim nó
             console.log("Transaction: Claiming tên mới:", playerName);
             return userId;
         });
         
         // Kiểm tra kết quả transaction
-        if (result.committed) {
-            // Verify lại một lần nữa để chắc chắn
-            const snapshot = await nameRef.once('value');
-            if (snapshot.val() === userId) {
-                console.log("✓ Đăng ký tên thành công và đã verify:", playerName);
-                return true;
-            } else {
-                console.error("✗ Verify thất bại - tên không khớp uid!");
-                return false;
-            }
-        } else {
+        if (!result.committed) {
             console.error("✗ Transaction không committed - tên đã bị sử dụng");
-            return false;
+            return { success: false, error: "NAME_TAKEN" };
+        }
+        
+        // Verify lại để chắc chắn
+        const snapshot = await nameRef.once('value');
+        if (snapshot.val() === userId) {
+            console.log("✓ Tên hợp lệ và đã verify:", playerName);
+            return { success: true };
+        } else {
+            console.error("✗ Verify thất bại - tên không khớp uid!");
+            return { success: false, error: "VERIFY_FAILED" };
         }
         
     } catch (error) {
-        console.error("Lỗi đăng ký tên:", error);
-        return false;
+        console.error("Lỗi kiểm tra/đăng ký tên:", error);
+        return { success: false, error: "NETWORK_ERROR" };
     }
 }
 
-// Verify và claim lại tên khi load game (chỉ claim nếu bị mất)
+// ===== GIỮ LẠI 2 FUNCTION CŨ để backward compatibility =====
+async function checkPlayerNameExists(playerName) {
+    console.warn("⚠️ checkPlayerNameExists() đã deprecated - sử dụng checkAndRegisterPlayerName()");
+    const result = await checkAndRegisterPlayerName(playerName);
+    return !result.success && result.error === "NAME_TAKEN";
+}
+
+async function registerPlayerName(playerName) {
+    console.warn("⚠️ registerPlayerName() đã deprecated - sử dụng checkAndRegisterPlayerName()");
+    const result = await checkAndRegisterPlayerName(playerName);
+    return result.success;
+}
+
+// Verify và claim lại tên khi load game - BẢN CẢI TIẾN AN TOÀN
 async function verifyAndClaimPlayerName(playerName) {
     if (!currentUser) {
         console.error("Chưa đăng nhập!");
@@ -564,29 +583,55 @@ async function verifyAndClaimPlayerName(playerName) {
         const snapshot = await nameRef.once('value');
         const currentValue = snapshot.val();
         
-        // Nếu tên vẫn thuộc về mình - OK, không làm gì cả
+        // Nếu tên vẫn thuộc về mình - OK
         if (currentValue === userId) {
             console.log("✓ Tên vẫn thuộc về bạn:", playerName);
             return true;
         }
         
-        // Nếu tên đã bị xóa/mất (null) - claim lại
-        if (currentValue === null) {
-            console.log("Claiming lại tên đã mất:", playerName);
-            await nameRef.set(userId);
-            return true;
+        // Nếu tên đã bị xóa/mất (null) - CHỈ claim lại nếu đây là tên của player
+        if (currentValue === null && player && player.name === playerName) {
+            console.log("Attempting to reclaim lost name:", playerName);
+            // Sử dụng transaction để tránh race condition khi claim lại
+            const result = await nameRef.transaction((val) => {
+                if (val === null) {
+                    return userId;
+                }
+                return; // abort nếu có người khác vừa claim
+            });
+            
+            if (result.committed && result.snapshot.val() === userId) {
+                console.log("✓ Đã claim lại tên thành công");
+                return true;
+            }
+            console.error("✗ Không thể claim lại tên - có người khác đã claim");
         }
         
-        // Nếu tên bị người khác chiếm - KHÔNG BAO GIỜ XẢY RA trong trường hợp bình thường
-        // Vì khi tạo nhân vật đã claim tên rồi
-        console.error("⚠️ BẤT THƯỜNG: Tên bị chiếm bởi uid khác:", currentValue);
-        // Vẫn cho load game, không block user
-        return true;
+        // Nếu tên bị người khác chiếm - ĐÂY LÀ VẤN ĐỀ NGHIÊM TRỌNG
+        console.error("🚨 CẢNH BÁO NGHIÊM TRỌNG: Tên bị chiếm bởi uid khác:", currentValue);
+        console.error("Player name:", playerName, "| Your UID:", userId, "| Owner UID:", currentValue);
+        
+        // KHÔNG cho load game - hiển thị thông báo rõ ràng cho user
+        alert(
+            `⚠️ PHÁT HIỆN XUNG ĐỘT TÊN NHÂN VẬT!\n\n` +
+            `Tên "${playerName}" hiện đang được sử dụng bởi tài khoản khác.\n\n` +
+            `Điều này có thể xảy ra do:\n` +
+            `• Lỗi đồng bộ dữ liệu\n` +
+            `• Xung đột khi tạo nhân vật\n\n` +
+            `Vui lòng liên hệ admin để xử lý.\n` +
+            `Game sẽ tự động logout để bảo vệ dữ liệu của bạn.`
+        );
+        
+        // Logout an toàn để user không mất dữ liệu
+        await auth.signOut();
+        location.reload();
+        return false;
         
     } catch (error) {
         console.error("Lỗi verify tên:", error);
-        // Nếu có lỗi network, vẫn cho load game
-        return true;
+        // Nếu có lỗi network - vẫn cho load nhưng log warning
+        console.warn("⚠️ Không thể verify tên do lỗi network - cho phép load tạm thời");
+        return true; // Cho phép load để không block user do lỗi mạng
     }
 }
 

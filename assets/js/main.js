@@ -111,13 +111,26 @@ window.addEventListener("load", function () {
             if (playerName.length < 3 || playerName.length > 15) {
                 document.querySelector("#alert").innerHTML = "Tên phải dài từ 3-15 ký tự!";
             } else {
-                // Kiểm tra tên có bị trùng không
-                const nameExists = await checkPlayerNameExists(playerName);
-                if (nameExists) {
-                    document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
+                // ===== SỬ DỤNG FUNCTION MỚI: Kiểm tra VÀ đăng ký trong 1 bước =====
+                const result = await checkAndRegisterPlayerName(playerName);
+                
+                if (!result.success) {
+                    // Xử lý lỗi theo từng trường hợp cụ thể
+                    if (result.error === "NAME_TAKEN") {
+                        document.querySelector("#alert").innerHTML = "Đã có người sử dụng tên này!";
+                    } else if (result.error === "NETWORK_ERROR") {
+                        document.querySelector("#alert").innerHTML = "Lỗi kết nối. Vui lòng thử lại!";
+                    } else if (result.error === "VERIFY_FAILED") {
+                        document.querySelector("#alert").innerHTML = "Lỗi xác thực tên. Vui lòng thử tên khác!";
+                    } else if (result.error === "NOT_LOGGED_IN") {
+                        document.querySelector("#alert").innerHTML = "Chưa đăng nhập. Vui lòng đăng nhập lại!";
+                    } else {
+                        document.querySelector("#alert").innerHTML = "Không thể tạo nhân vật. Vui lòng thử lại!";
+                    }
                     return;
                 }
 
+                // ===== TÊN ĐÃ ĐƯỢC ĐĂNG KÝ THÀNH CÔNG - Tạo player object =====
                 player = {
                     name: playerName,
                     lvl: 1,
@@ -185,14 +198,6 @@ window.addEventListener("load", function () {
                     deaths: 0,
                     inCombat: false
                 };
-                
-                // Đăng ký tên người chơi với transaction (tránh race condition)
-                const registered = await registerPlayerName(playerName);
-                if (!registered) {
-                    // Đăng ký thất bại (tên đã bị chiếm trong lúc đó)
-                    document.querySelector("#alert").innerHTML = "Tên này vừa được người khác sử dụng! Vui lòng chọn tên khác.";
-                    return;
-                }
                 
                 calculateStats();
                 player.stats.hp = player.stats.hpMax;
