@@ -189,31 +189,27 @@ function addTooltipToDay(dayElement, dayNum) {
         oldTooltip.remove();
     }
     
-    // Tạo nội dung tooltip dựa vào ngày
+    // Tạo nội dung tooltip dựa vào ngày (không hiển thị số cụ thể)
     let tooltipContent = '';
-    const baseGold = 500 * dayNum;
-    const minGold = baseGold;
-    const maxGold = Math.floor(baseGold + baseGold * 0.8);
     
     tooltipContent += `<div class="reward-info">`;
     
     if (dayNum === 1 || dayNum === 2 || dayNum === 4 || dayNum === 6) {
         // Chỉ có vàng
-        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
+        tooltipContent += `<span class="gold">💰 Vàng</span>`;
     } else if (dayNum === 3) {
         // Vàng + Item
-        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
-        tooltipContent += `<span class="item">📦 Item Rare/Epic</span>`;
+        tooltipContent += `<span class="gold">💰 Vàng</span>`;
+        tooltipContent += `<span class="item">📦 Item Ngẫu Nhiên</span>`;
     } else if (dayNum === 5) {
         // Vàng + Buff
-        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
-        tooltipContent += `<span class="buff">✨ Buff +20% (2h)</span>`;
+        tooltipContent += `<span class="gold">💰 Vàng</span>`;
+        tooltipContent += `<span class="buff">✨ Phước Lành</span>`;
     } else if (dayNum === 7) {
         // Phần thưởng đặc biệt
-        const specialGold = maxGold * 3;
-        tooltipContent += `<span class="gold">💰 ${specialGold} Vàng</span>`;
+        tooltipContent += `<span class="gold">💰 Vàng Khủng</span>`;
         tooltipContent += `<span class="item">⭐ Legendary Item</span>`;
-        tooltipContent += `<span class="buff">🌟 Super Buff +25% (3h)</span>`;
+        tooltipContent += `<span class="buff">🌟 Super Buff</span>`;
     }
     
     tooltipContent += `</div>`;
