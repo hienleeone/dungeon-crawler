@@ -16,10 +16,6 @@ const ANTI_CHEAT_CONFIG = {
 (function() {
     'use strict';
 
-    // ===== 0. CHẶN NGAY TỪ ĐẦU (TRƯỚC KHI DEVTOOLS MỞ) =====
-    // Backup console gốc nếu cần debug
-    const _originalConsole = window.console;
-    
     // ===== 0. BACKUP CONSOLE GỐC TRƯỚC KHI VÔ HIỆU HÓA =====
     const _originalConsole = {
         log: console.log.bind(console),
