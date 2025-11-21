@@ -20,6 +20,13 @@ const ANTI_CHEAT_CONFIG = {
     // Backup console gốc nếu cần debug
     const _originalConsole = window.console;
     
+    // ===== 0. BACKUP CONSOLE GỐC TRƯỚC KHI VÔ HIỆU HÓA =====
+    const _originalConsole = {
+        log: console.log.bind(console),
+        warn: console.warn.bind(console),
+        error: console.error.bind(console)
+    };
+    
     // ===== 1. DISABLE CONSOLE VÀ PHÁT HIỆN BYPASS =====
     const disableConsole = () => {
         // Vô hiệu hóa tất cả console methods
@@ -32,7 +39,7 @@ const ANTI_CHEAT_CONFIG = {
                     return function(...args) {
                         // PHÁT HIỆN BYPASS: Nếu có bất cứ input nào vào console
                         if (args && args.length > 0) {
-                            console.warn('⚠️ PHÁT HIỆN BYPASS CONSOLE - XÓA DỮ LIỆU!');
+                            _originalConsole.warn('⚠️ PHÁT HIỆN BYPASS CONSOLE - XÓA DỮ LIỆU!');
                             handleConsoleBypass();
                         }
                         return undefined;
@@ -66,8 +73,8 @@ const ANTI_CHEAT_CONFIG = {
         } catch (e) {}
     };
     
-    // Chạy disable console NGAY LẬP TỨC
-    disableConsole();
+    // TẠM THỜI TẮT DISABLE CONSOLE để không ảnh hưởng game
+    // disableConsole();
 
     // ===== 2. DETECT DEVTOOLS =====
     let devtoolsOpen = false;
@@ -835,7 +842,7 @@ const ANTI_CHEAT_CONFIG = {
         }, 1000);
         
         // Apply all protections
-        disableConsole();
+        // TẠM TẮT: disableConsole();
         protectGlobalObjects();
         detectExtensions();
         antiDebug();
