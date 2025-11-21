@@ -14,7 +14,7 @@ const ANTI_CHEAT_CONFIG = {
 };
 
 (function() {
-    'use strict;
+    'use strict';
 
     // ===== 0. CHẶN NGAY TỪ ĐẦU (TRƯỚC KHI DEVTOOLS MỞ) =====
     // Backup console gốc nếu cần debug
