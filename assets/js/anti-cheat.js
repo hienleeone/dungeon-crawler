@@ -4,8 +4,8 @@
 // ===== CÀI ĐÁT: Hệ thống cảnh báo 3 cấp độ =====
 const ANTI_CHEAT_CONFIG = {
     ENABLE_DEVTOOLS_DETECTION: true,  // Có phát hiện DevTools không
-    WINDOW_SIZE_THRESHOLD: 300,  // Ngưỡng phát hiện DevTools (px) - cao hơn = ít false positive
-    REQUIRE_BOTH_DIMENSIONS: true,  // Phải cả width VÀ height vượt threshold mới kích hoạt
+    WINDOW_SIZE_THRESHOLD: 160,  // Ngưỡng phát hiện DevTools (px) - giảm xuống 160 để nhạy hơn
+    REQUIRE_BOTH_DIMENSIONS: false,  // CHỈ cần 1 trong 2 vượt threshold là đủ (nhạy hơn)
     WARNING_SYSTEM: {
         LEVEL_1: 'WARNING_LOGOUT',      // Lần 1: Cảnh báo + logout
         LEVEL_2: 'LOGOUT_BAN',          // Lần 2: Logout + ban tạm thời
@@ -715,6 +715,12 @@ const ANTI_CHEAT_CONFIG = {
         // CHECK DEVTOOLS NGAY KHI INIT (để catch trường hợp DevTools đã mở)
         devtoolsChecker();
         detectDevToolsByTiming();
+        
+        // ===== LIÊN TỤC CHECK DEVTOOLS MỖI 1 GIÂY =====
+        setInterval(() => {
+            devtoolsChecker();
+            detectDevToolsByTiming();
+        }, 1000);
         
         // Apply all protections
         disableConsole();
