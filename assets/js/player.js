@@ -381,7 +381,9 @@ function showNotification(text, type = "default") {
     else if (type === "error") icon = "fa-times-circle";
     else if (type === "legendary") icon = "fa-star";
     
-    notification.innerHTML = `<i class="fas ${icon}"></i>${text}`;
+    // Loại bỏ emoji hoặc icon đầu dòng (ký tự đặc biệt hoặc emoji, hoặc ký tự + khoảng trắng)
+    let cleanText = text.replace(/^\s*([\p{Emoji}\p{So}\p{Sk}\p{P}\p{S}]{1,2})\s*/u, '');
+    notification.innerHTML = `<i class="fas ${icon}"></i>${cleanText}`;
     
     container.appendChild(notification);
     
