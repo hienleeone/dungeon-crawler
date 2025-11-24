@@ -377,18 +377,7 @@ function showNotification(text, type = "default") {
 
     const notification = document.createElement("div");
     notification.className = `notification-item ${type}`;
-
-    // Icon dựa trên loại thông báo
-    let icon = "fa-bell";
-    if (type === "success") icon = "fa-check-circle";
-    else if (type === "warning") icon = "fa-exclamation-triangle";
-    else if (type === "error") icon = "fa-times-circle";
-    else if (type === "legendary") icon = "fa-star";
-
-    // Loại bỏ emoji hoặc icon đầu dòng (ký tự đặc biệt hoặc emoji, hoặc ký tự + khoảng trắng)
-    let cleanText = text.replace(/^\s*([\p{Emoji}\p{So}\p{Sk}\p{P}\p{S}]{1,2})\s*/u, '');
-    notification.innerHTML = `<i class="fas ${icon}"></i>${cleanText}`;
-
+    notification.innerHTML = text; // Giữ nguyên icon/emoji đầu dòng nếu có
     container.appendChild(notification);
 
     // Tự động xóa sau 5 giây
