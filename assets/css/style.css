@@ -1332,6 +1332,10 @@ header button i {
     pointer-events: none;
 }
 
+.notification-move-down {
+    margin-top: 120px !important;
+}
+
 .notification-item {
     background: linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(15, 15, 15, 0.95) 100%);
     border: 2px solid #ffd700;

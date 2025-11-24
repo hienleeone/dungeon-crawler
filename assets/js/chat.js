@@ -67,7 +67,8 @@
             isChatOpen = true;
             unreadCount = 0;
             updateChatBadge();
-            
+            // Move notification down
+            if (typeof moveNotificationForLiveChat === 'function') moveNotificationForLiveChat(true);
             // Scroll to bottom
             setTimeout(() => {
                 const messagesDiv = document.getElementById('chat-messages');
@@ -81,6 +82,8 @@
                 try { if (typeof sfxDecline !== 'undefined' && sfxDecline && typeof sfxDecline.play === 'function') sfxDecline.play(); } catch (e) {}
                 chatModal.style.display = 'none';
                 isChatOpen = false;
+                // Reset notification position
+                if (typeof moveNotificationForLiveChat === 'function') moveNotificationForLiveChat(false);
             };
         }
 
@@ -90,6 +93,8 @@
                 try { if (typeof sfxDecline !== 'undefined' && sfxDecline && typeof sfxDecline.play === 'function') sfxDecline.play(); } catch (e) {}
                 chatModal.style.display = 'none';
                 isChatOpen = false;
+                // Reset notification position
+                if (typeof moveNotificationForLiveChat === 'function') moveNotificationForLiveChat(false);
             }
         };
 
