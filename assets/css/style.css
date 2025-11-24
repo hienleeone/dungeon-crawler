@@ -1324,10 +1324,8 @@ header button i {
 
 /* Notification System */
 #notification-container {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: static;
+    margin: 0 auto 10px auto;
     width: 90%;
     max-width: 500px;
     z-index: 1000;
