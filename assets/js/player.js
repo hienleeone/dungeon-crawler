@@ -108,8 +108,6 @@ const openInventory = () => {
     openInv.style.display = "flex";
     dimDungeon.style.filter = "brightness(50%)";
     
-    // Bắt đầu hệ thống thông báo khi mở inventory
-    startNotificationSystem();
 
     sellAllElement.onclick = function () {
         sfxOpen.play();
@@ -176,8 +174,6 @@ const closeInventory = () => {
     dimDungeon.style.filter = "brightness(100%)";
     inventoryOpen = false;
     
-    // Dừng hệ thống thông báo khi đóng inventory
-    stopNotificationSystem();
     
     if (!dungeon.status.paused) {
         dungeon.status.exploring = true;
