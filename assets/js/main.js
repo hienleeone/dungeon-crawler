@@ -795,7 +795,12 @@ const enterDungeon = () => {
     }
     initialDungeonLoad();
     playerLoadStats();
-    
+
+    // Khởi động hệ thống thông báo ngoài giao diện chính
+    if (typeof startNotificationSystem === 'function') {
+        startNotificationSystem();
+    }
+
     // Khởi động hệ thống daily reward
     if (typeof initDailyReward === 'function') {
         initDailyReward();
