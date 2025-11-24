@@ -465,7 +465,7 @@ button:focus {
     align-items: center;
     justify-content: center;
     position: fixed;
-    z-index: 1;
+    z-index: 1002;
     width: 100vw;
     height: 100vh;
 }
@@ -1328,7 +1328,7 @@ header button i {
     margin: 0 auto 0 auto;
     width: 98%;
     max-width: 900px;
-    z-index: 10;
+    z-index: 1;
     pointer-events: none;
 }
 
