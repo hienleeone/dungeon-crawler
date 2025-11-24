@@ -1325,10 +1325,10 @@ header button i {
 /* Notification System */
 #notification-container {
     position: static;
-    margin: 0 auto 0.5px auto;
+    margin: 0 auto 0 auto;
     width: 98%;
     max-width: 900px;
-    z-index: 1000;
+    z-index: 10;
     pointer-events: none;
 }
 
@@ -1337,7 +1337,7 @@ header button i {
     border: 2px solid #ffd700;
     border-radius: 8px;
     padding: 5px 14px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
     box-shadow: 
         0 0 20px rgba(255, 215, 0, 0.3),
         inset 0 0 20px rgba(255, 215, 0, 0.1),
