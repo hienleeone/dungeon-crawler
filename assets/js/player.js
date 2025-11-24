@@ -371,34 +371,32 @@ function showNotification(text, type = "default") {
     const container = document.getElementById("notification-container");
     if (!container) return;
 
+    // Xóa notification cũ nếu có (chỉ giữ 1 notification)
+    const oldNotifications = container.querySelectorAll('.notification-item');
+    oldNotifications.forEach(n => n.remove());
+
     const notification = document.createElement("div");
     notification.className = `notification-item ${type}`;
-    
+
     // Icon dựa trên loại thông báo
     let icon = "fa-bell";
     if (type === "success") icon = "fa-check-circle";
     else if (type === "warning") icon = "fa-exclamation-triangle";
     else if (type === "error") icon = "fa-times-circle";
     else if (type === "legendary") icon = "fa-star";
-    
+
     // Loại bỏ emoji hoặc icon đầu dòng (ký tự đặc biệt hoặc emoji, hoặc ký tự + khoảng trắng)
     let cleanText = text.replace(/^\s*([\p{Emoji}\p{So}\p{Sk}\p{P}\p{S}]{1,2})\s*/u, '');
     notification.innerHTML = `<i class="fas ${icon}"></i>${cleanText}`;
-    
+
     container.appendChild(notification);
-    
+
     // Tự động xóa sau 5 giây
     setTimeout(() => {
         if (notification.parentNode) {
             notification.remove();
         }
     }, 5000);
-    
-    // Giới hạn số lượng thông báo hiển thị
-    const notifications = container.querySelectorAll(".notification-item");
-    if (notifications.length > 3) {
-        notifications[0].remove();
-    }
 }
 
 function startNotificationSystem() {
