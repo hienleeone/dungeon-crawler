@@ -50,52 +50,21 @@ function calculateStreak() {
 
 // Hàm tạo phần thưởng dựa trên ngày
 function generateDailyReward(day) {
+    // Chỉ nhận vàng, random số vàng mỗi ngày
     const rewards = {
         gold: 0,
         items: [],
         buffs: []
     };
-    
-    // Vàng cơ bản tăng theo ngày (tăng gấp 5 lần)
     const baseGold = 500 * day;
     const randomBonus = Math.floor(Math.random() * baseGold * 0.8);
-    rewards.gold = baseGold + randomBonus;
-    
-    // Ngày 3: Vật phẩm ngẫu nhiên (tăng độ hiếm)
-    if (day === 3) {
-        const rarities = ['Uncommon', 'Rare', 'Epic'];
-        const rarity = rarities[Math.floor(Math.random() * rarities.length)];
-        const item = generateRandomItem(rarity);
-        rewards.items.push(item);
-    }
-    
-    // Ngày 5: Phước lành (buff mạnh hơn và lâu hơn)
-    if (day === 5) {
-        const buffTypes = [
-            { stat: 'atk', value: 20, duration: 7200000, name: 'Sức Mạnh Tạm Thời' }, // 2 giờ
-            { stat: 'def', value: 20, duration: 7200000, name: 'Giáp Bảo Vệ' },
-            { stat: 'vamp', value: 10, duration: 7200000, name: 'Ma Cà Rồng' },
-            { stat: 'critRate', value: 15, duration: 7200000, name: 'Chí Mạng Gia Tăng' }
-        ];
-        const buff = buffTypes[Math.floor(Math.random() * buffTypes.length)];
-        rewards.buffs.push(buff);
-    }
-    
-    // Ngày 7: Phần thưởng đặc biệt (siêu hấp dẫn)
+    // Ngày 7 nhận vàng gấp 3 lần
     if (day === 7) {
-        rewards.gold *= 3;
-        const legendaryItem = generateRandomItem('Legendary');
-        rewards.items.push(legendaryItem);
-        
-        const superBuff = {
-            stat: 'all',
-            value: 25,
-            duration: 10800000, // 3 giờ
-            name: 'Phước Lành Tối Thượng'
-        };
-        rewards.buffs.push(superBuff);
+        rewards.gold = (baseGold + randomBonus) * 3;
+    } else {
+        rewards.gold = baseGold + randomBonus;
     }
-    
+    // Không còn item hay buff nữa
     return rewards;
 }
 
@@ -187,23 +156,12 @@ function addTooltipToDay(dayElement, dayNum) {
     
     tooltipContent += `<div class="reward-info">`;
     
-    if (dayNum === 1 || dayNum === 2 || dayNum === 4 || dayNum === 6) {
-        // Chỉ có vàng
-        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
-    } else if (dayNum === 3) {
-        // Vàng + Item
-        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
-        tooltipContent += `<span class="item">📦 Item Rare/Epic</span>`;
-    } else if (dayNum === 5) {
-        // Vàng + Buff
-        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
-        tooltipContent += `<span class="buff">✨ Buff +20% (2h)</span>`;
-    } else if (dayNum === 7) {
-        // Phần thưởng đặc biệt
+    if (dayNum === 7) {
+        // Ngày 7: vàng gấp 3 lần
         const specialGold = maxGold * 3;
         tooltipContent += `<span class="gold">💰 ${specialGold} Vàng</span>`;
-        tooltipContent += `<span class="item">⭐ Legendary Item</span>`;
-        tooltipContent += `<span class="buff">🌟 Super Buff +25% (3h)</span>`;
+    } else {
+        tooltipContent += `<span class="gold">💰 ${minGold}-${maxGold} Vàng</span>`;
     }
     
     tooltipContent += `</div>`;
