@@ -1325,9 +1325,9 @@ header button i {
 /* Notification System */
 #notification-container {
     position: static;
-    margin: 0 auto 0.5rem auto;
-    width: 60%;
-    max-width: 340px;
+    margin: 0 auto 2px auto;
+    width: 90%;
+    max-width: 600px;
     z-index: 1000;
     pointer-events: none;
 }
