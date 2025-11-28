@@ -176,8 +176,8 @@
                 message: filteredMessage,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             };
-
-            chatRef.push(messageData).then(() => {
+            // Gửi vào ref gốc vì chatRef là Query (không có push)
+            firebase.database().ref('globalChat').push(messageData).then(() => {
                 try { if (typeof sfxConfirm !== 'undefined' && sfxConfirm && typeof sfxConfirm.play === 'function') sfxConfirm.play(); } catch (e) {}
                 chatInput.value = '';
                 lastMessageTime = now;
