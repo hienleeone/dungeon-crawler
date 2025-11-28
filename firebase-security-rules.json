@@ -49,12 +49,18 @@
         "inventoryOps": {
           ".write": "auth != null && auth.uid == $uid",
           "$opId": {
+            ".write": "auth != null && auth.uid == $uid && (!root.child('users').child($uid).child('lastInvOpTime').exists() || now - root.child('users').child($uid).child('lastInvOpTime').val() >= 500)",
             ".validate": "newData.hasChildren(['op','loc','itemJson','timestamp'])",
             "op": { ".validate": "newData.isString() && (newData.val() == 'sell')" },
             "loc": { ".validate": "newData.isString() && (newData.val() == 'inventory' || newData.val() == 'equipped')" },
             "itemJson": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 5000" },
             "timestamp": { ".validate": "newData.isNumber() && newData.val() <= now + 1000" }
           }
+        }
+        ,
+        "lastInvOpTime": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".validate": "newData.isNumber() && newData.val() <= now + 1000"
         }
       }
     },

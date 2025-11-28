@@ -435,16 +435,33 @@ async function savePlayerData(isAutoSave = false) {
         };
         const checksum = await generateChecksum(criticalData);
 
+        const saveTime = Date.now();
         await database.ref('users/' + userId).set({
             playerData: playerData,
             dungeonData: dungeonData,
             enemyData: enemyData,
             volumeData: volumeData,
             checksum: checksum,
-            lastUpdated: Date.now()
+            lastUpdated: saveTime
         });
         // Xóa fallback cục bộ vì full save đã ghi lại trạng thái
         clearLocalQuickSave(userId);
+
+        // Prune inventoryOps đã cũ (timestamp <= thời điểm full save)
+        try {
+            const opsSnap = await database.ref('users/' + userId + '/inventoryOps')
+                .orderByChild('timestamp')
+                .endAt(saveTime)
+                .once('value');
+            const ops = opsSnap.val() || {};
+            const del = {};
+            Object.keys(ops).forEach((key) => {
+                del['users/' + userId + '/inventoryOps/' + key] = null;
+            });
+            if (Object.keys(del).length) {
+                await database.ref().update(del);
+            }
+        } catch (_) {}
 
         // Cập nhật leaderboard CHỈ KHI AUTO-SAVE (giảm tải)
         // Manual save không update leaderboard để tiết kiệm quota
@@ -1063,7 +1080,12 @@ function recordInventoryOp(op, loc, itemObjOrJson) {
             timestamp: Date.now()
         };
         writeLocalInvOp(userId, payload);
-        database.ref('users/' + userId + '/inventoryOps').push(payload);
+        const opsRef = database.ref('users/' + userId + '/inventoryOps');
+        const newKey = opsRef.push().key;
+        const updates = {};
+        updates['users/' + userId + '/inventoryOps/' + newKey] = payload;
+        updates['users/' + userId + '/lastInvOpTime'] = payload.timestamp;
+        database.ref().update(updates);
     } catch (_) {}
 }
 
