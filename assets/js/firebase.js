@@ -1103,8 +1103,8 @@ function setIndicator(text, cls) {
     if (_saveIndicatorHideTimer) { clearTimeout(_saveIndicatorHideTimer); _saveIndicatorHideTimer = null; }
     el.classList.remove('success', 'error');
     if (cls) el.classList.add(cls);
-    el.style.display = 'inline-flex';
-    el.innerHTML = `<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span class="label">${text}</span>`;
+        el.style.display = 'inline-flex';
+        el.innerHTML = `<span class="dots"><span class="dot"></span></span><span class="label">${text}</span>`;
 }
 function showSaving() {
     _savingStatusMode = 'saving';
