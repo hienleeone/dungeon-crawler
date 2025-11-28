@@ -447,7 +447,20 @@ async function savePlayerData(isAutoSave = false) {
         
         // Lưu sanitizedPlayer thay vì player gốc
         let playerData = JSON.stringify(sanitizedPlayer);
-        let dungeonData = JSON.stringify(dungeon ?? {});
+        // Chuẩn hóa dungeon để tránh vượt rule 100000: cắt backlog về 50 bản ghi mới nhất
+        const dungeonForSave = (() => {
+            try {
+                const d = JSON.parse(JSON.stringify(dungeon ?? {}));
+                if (Array.isArray(d.backlog) && d.backlog.length > 50) {
+                    d.backlog = d.backlog.slice(-50);
+                }
+                return d;
+            } catch (_) {
+                return dungeon ?? {};
+            }
+        })();
+        let dungeonData = JSON.stringify(dungeonForSave);
+        // Enemy và volume thường nhỏ, nhưng vẫn đảm bảo stringify an toàn
         let enemyData = JSON.stringify(enemy ?? {});
         let volumeData = JSON.stringify(volume ?? {});
 
@@ -461,11 +474,33 @@ async function savePlayerData(isAutoSave = false) {
                 lvl: sanitizedPlayer.lvl,
                 stats: sanitizedPlayer.stats,
                 exp: sanitizedPlayer.exp,
-                bonusStats: sanitizedPlayer.bonusStats,
-                equipped: sanitizedPlayer.equipped,
+                // Bỏ bonusStats và các mảng lớn nếu cần
+                equipped: sanitizedPlayer.equipped
             };
             // Không lưu inventory đầy đủ nếu quá lớn
             playerData = JSON.stringify(minimalPlayer);
+            // Nếu vẫn vượt, rút gọn thêm
+            if (playerData.length >= 100000) {
+                const moreMinimal = {
+                    name: sanitizedPlayer.name,
+                    gold: sanitizedPlayer.gold,
+                    lvl: sanitizedPlayer.lvl,
+                    exp: sanitizedPlayer.exp
+                };
+                playerData = JSON.stringify(moreMinimal);
+            }
+        }
+
+        // Đảm bảo dungeonData không vượt rule
+        if (dungeonData.length >= 100000) {
+            console.warn("⚠️ dungeonData quá lớn (>=100000). Đang rút gọn backlog.");
+            try {
+                const d = JSON.parse(dungeonData);
+                d.backlog = [];
+                dungeonData = JSON.stringify(d);
+            } catch (_) {
+                dungeonData = JSON.stringify({});
+            }
         }
         
         // Tạo checksum cho dữ liệu quan trọng - MỞ RỘNG BẢO VỆ
