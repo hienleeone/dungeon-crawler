@@ -245,16 +245,7 @@
                 lastMessageTime = now;
                 // Bắt đầu cooldown 5s sau khi gửi
                 startChatCooldown(5);
-                // Hiển thị lạc quan tin nhắn vừa gửi để tránh chậm trễ listener
-                try {
-                    displayMessage({
-                        userId: currentUser.uid,
-                        userName: player.name,
-                        userLevel: player.lvl || 1,
-                        message: filteredMessage,
-                        timestamp: nowTs
-                    });
-                } catch (_) {}
+                // Không render lạc quan để tránh trùng (sẽ hiển thị qua child_added)
                 // Cập nhật lastChatTime để phù hợp security rules
                 try {
                     if (currentUser?.uid) {
