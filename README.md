@@ -62,15 +62,6 @@ Cạnh tranh với người chơi khác trong 3 hạng mục:
 
 ---
 
-## 🔒 Bảo Mật
-
-- Dữ liệu được bảo vệ bởi **Firebase Security Rules**
-- Mỗi người chơi chỉ có thể sửa dữ liệu của mình
-- Tên người chơi là duy nhất, không thể trùng lặp
-- Xác thực bằng Email/Password qua Firebase Auth
-
----
-
 ## 🎵 Góp Công & Tín Dụng
 
 - [Aekashics](https://aekashics.itch.io/) – Hình ảnh quái vật  
@@ -84,22 +75,6 @@ Cạnh tranh với người chơi khác trong 3 hạng mục:
 ## 📝 License
 
 MIT License - Xem file LICENSE để biết thêm chi tiết
-
----
-
-## 🌟 Version
-
-**v2.0.0** - Firebase Integration (2025-11-18)
-- Added Firebase Authentication
-- Added Cloud Database
-- Added Leaderboard
-- Added Multi-device sync
-- Removed localStorage (security improvement)
-- Backup!
-
-**v1.0.0** - Initial Release
-- Basic game mechanics
-- localStorage save system
 
 ---
 
