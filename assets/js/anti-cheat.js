@@ -16,6 +16,31 @@ const ANTI_CHEAT_CONFIG = {
 (function() {
     'use strict';
 
+    // ===== ADMIN DEBUG TOGGLE =====
+    // Cho phép DevTools đối với admin (đọc từ Firebase) nhưng vẫn giữ các bảo vệ dữ liệu
+    window.__debugAllowDevtools = false;
+    const isDebugAllowed = () => !!window.__debugAllowDevtools;
+
+    const setupAdminDebugToggle = () => {
+        try {
+            if (typeof firebase !== 'undefined' && firebase && firebase.auth && firebase.database) {
+                firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        firebase.database().ref('admins/' + user.uid + '/allowDevtools').once('value')
+                            .then(snap => {
+                                window.__debugAllowDevtools = !!snap.val();
+                            })
+                            .catch(() => { window.__debugAllowDevtools = false; });
+                    } else {
+                        window.__debugAllowDevtools = false;
+                    }
+                });
+            }
+        } catch (_) {
+            // Ignore
+        }
+    };
+
     // ===== 0. BACKUP CONSOLE GỐC TRƯỚC KHI VÔ HIỆU HÓA =====
     const _originalConsole = {
         log: console.log.bind(console),
@@ -85,6 +110,7 @@ const ANTI_CHEAT_CONFIG = {
     
     const devtoolsChecker = () => {
         if (banned) return;
+        if (isDebugAllowed()) return; // Admin: bỏ qua phát hiện DevTools
         
         // COOLDOWN: Chỉ cho phép detection mỗi 5 giây
         const now = Date.now();
@@ -144,6 +170,7 @@ const ANTI_CHEAT_CONFIG = {
     // Kiểm tra devtools bằng cách đo thời gian debugger
     const detectDevToolsByTiming = () => {
         if (banned || isMobile) return; // Tắt timing check trên mobile
+        if (isDebugAllowed()) return; // Admin: bỏ qua
         
         const start = performance.now();
         debugger;
@@ -157,6 +184,7 @@ const ANTI_CHEAT_CONFIG = {
     // Kiểm tra devtools bằng toString override
     const detectDevToolsByToString = () => {
         if (banned) return;
+        if (isDebugAllowed()) return; // Admin: bỏ qua
         
         const element = new Image();
         Object.defineProperty(element, 'id', {
@@ -555,6 +583,7 @@ const ANTI_CHEAT_CONFIG = {
 
     // ===== 4. DISABLE KEYBOARD SHORTCUTS =====
     document.addEventListener('keydown', e => {
+        if (isDebugAllowed()) return; // Admin: cho phép phím tắt
         // F12
         if (e.keyCode === 123) {
             e.preventDefault();
@@ -822,6 +851,7 @@ const ANTI_CHEAT_CONFIG = {
 
     // ===== INITIALIZATION =====
     const init = () => {
+        setupAdminDebugToggle(); // Kích hoạt kiểm tra admin
         // CHECK BAN ĐẦU TIÊN - NẾU BỊ BAN THÌ DỪNG NGAY
         if (checkBanStatus()) {
             return; // Đã bị ban, không load game nữa
@@ -839,6 +869,11 @@ const ANTI_CHEAT_CONFIG = {
         
         // Apply all protections
         // TẠM TẮT: disableConsole();
+        // Nếu admin, không disable console; người chơi vẫn bị bảo vệ logic dữ liệu
+        if (!isDebugAllowed()) {
+            // Có thể bật disableConsole nếu cần cứng tay
+            // disableConsole();
+        }
         protectGlobalObjects();
         detectExtensions();
         antiDebug();

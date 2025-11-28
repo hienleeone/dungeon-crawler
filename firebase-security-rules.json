@@ -101,5 +101,15 @@
         }
       }
     }
+    ,
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": false,
+        "allowDevtools": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    }
   }
 }
