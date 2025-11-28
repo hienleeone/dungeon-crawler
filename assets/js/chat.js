@@ -48,8 +48,12 @@
                 }).catch(() => {});
             } catch (_) {}
 
-            // Lắng nghe tin nhắn mới (sau lần tải đầu)
-            messagesListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
+            // Lắng nghe tin nhắn mới (sau lần tải đầu) trên query ổn định
+            const liveQuery = firebase.database()
+                .ref('globalChat')
+                .orderByChild('timestamp')
+                .limitToLast(200);
+            messagesListener = liveQuery.on('child_added', (snapshot) => {
                 const message = snapshot.val();
                 const key = snapshot.key;
                 if (message) {
@@ -452,6 +456,34 @@
         setTimeout(initChat, 500);
         // Dọn cục bộ các tin nhắn quá 6 giờ trong UI mỗi 5 phút
         setInterval(pruneOldMessages, 5 * 60 * 1000);
+        // Soft refresh định kỳ khi chat đang mở để đảm bảo đồng bộ trong trường hợp kết nối realtime bị treo
+        setInterval(() => {
+            if (isChatOpen) {
+                try {
+                    // Tải lại nhanh không xóa key đã render để tránh nháy
+                    firebase.database().ref('globalChat')
+                        .orderByChild('timestamp')
+                        .limitToLast(50)
+                        .once('value')
+                        .then(snap => {
+                            const items = [];
+                            snap.forEach(child => items.push({ key: child.key, val: child.val() }));
+                            items.sort((a,b)=> (a.val?.timestamp||0) - (b.val?.timestamp||0));
+                            items.forEach(it => {
+                                const msg = it.val;
+                                if (!msg) return;
+                                if (typeof msg.timestamp === 'number' && msg.timestamp < Date.now() - CHAT_RETAIN_MS) return;
+                                // Render nếu chưa có trong UI
+                                if (it.key && !renderedMessageIds.has(it.key)) {
+                                    try { displayMessage(msg); } catch (_) {}
+                                    renderedMessageIds.add(it.key);
+                                }
+                            });
+                        })
+                        .catch(() => {});
+                } catch (_) {}
+            }
+        }, 30000);
     };
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', onReady);
