@@ -15,6 +15,7 @@
     let unreadCount = 0;
     let isChatOpen = false;
     const renderedMessageIds = new Set();
+    let liveQueryRef = null;
 
     // Khởi tạo chat
     function initChat() {
@@ -49,11 +50,17 @@
             } catch (_) {}
 
             // Lắng nghe tin nhắn mới (sau lần tải đầu) trên query ổn định
-            const liveQuery = firebase.database()
+            // Nếu đã có listener trước đó, tháo ra để tránh nhân đôi
+            if (messagesListener && liveQueryRef) {
+                try { liveQueryRef.off('child_added', messagesListener); } catch (_) {}
+                messagesListener = null;
+            }
+
+            liveQueryRef = firebase.database()
                 .ref('globalChat')
                 .orderByChild('timestamp')
                 .limitToLast(200);
-            messagesListener = liveQuery.on('child_added', (snapshot) => {
+            messagesListener = liveQueryRef.on('child_added', (snapshot) => {
                 const message = snapshot.val();
                 const key = snapshot.key;
                 if (message) {
@@ -66,6 +73,7 @@
                         return;
                     }
                     displayMessage(message);
+                    if (key) renderedMessageIds.add(key);
 
                     // Play incoming message sfx for other users
                     try {
@@ -433,9 +441,13 @@
 
     // Dọn dẹp khi user logout
     function cleanupChat() {
-        if (messagesListener && chatRef) {
-            chatRef.off('child_added', messagesListener);
-        }
+        try {
+            if (messagesListener && liveQueryRef) {
+                liveQueryRef.off('child_added', messagesListener);
+            } else if (messagesListener && chatRef) {
+                chatRef.off('child_added', messagesListener);
+            }
+        } catch (_) {}
         unreadCount = 0;
         updateChatBadge();
     }
