@@ -129,9 +129,9 @@ const ANTI_CHEAT_CONFIG = {
             const widthThreshold = widthDiff > threshold;
             const heightThreshold = heightDiff > threshold;
             
-            // Kiểm tra xem có phải DevTools không (gap phải RẤT LỚN mới chắc chắn)
-            // Tăng margin lên 150px để tránh resize window bình thường
-            const isDevToolsLikely = (widthDiff > threshold + 150) || (heightDiff > threshold + 150);
+            // Kiểm tra xem có phải DevTools không
+            // Giảm margin phụ xuống 20px để bắt nhanh hơn khi DevTools mở hẹp
+            const isDevToolsLikely = (widthDiff > threshold + 20) || (heightDiff > threshold + 20);
             
             // CHỈ trigger nếu:
             // 1. Có 1 chiều vượt threshold VÀ
@@ -206,20 +206,8 @@ const ANTI_CHEAT_CONFIG = {
         
         // ===== HỆ THỐNG CẢNH BÁO 3 CẤP ĐỘ =====
         
-        // Kiểm tra grace period - nếu vừa mới bị cảnh báo thì skip
-        const lastWarningTime = parseInt(localStorage.getItem('_last_warning_time') || '0');
-        const gracePeriod = 30000; // 30 giây grace period
+        // BỎ GRACE PERIOD: xử lý ngay lập tức khi phát hiện lần đầu
         const now = Date.now();
-        
-        if (now - lastWarningTime < gracePeriod) {
-            console.log('⏰ Trong grace period - bỏ qua detection');
-            // Reset banned flag để có thể check lại sau
-            setTimeout(() => {
-                banned = false;
-                devtoolsOpen = false;
-            }, 5000);
-            return;
-        }
         
         // Đọc số lần vi phạm từ localStorage
         let violationCount = parseInt(localStorage.getItem('_devtools_violations') || '0');
@@ -860,6 +848,7 @@ const ANTI_CHEAT_CONFIG = {
         // CHECK DEVTOOLS NGAY KHI INIT (để catch trường hợp DevTools đã mở)
         devtoolsChecker();
         detectDevToolsByTiming();
+        detectDevToolsByToString();
         
         // ===== LIÊN TỤC CHECK DEVTOOLS MỖI 1 GIÂY =====
         setInterval(() => {
