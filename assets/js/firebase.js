@@ -453,6 +453,9 @@ async function savePlayerData(isAutoSave = false) {
         // Xóa fallback cục bộ vì full save đã ghi lại trạng thái
         clearLocalQuickSave(userId);
         markSaved();
+        // Reset lịch đếm ngược auto-save sau khi full save
+        lastAutoSaveAt = saveTime;
+        nextAutoSaveAt = lastAutoSaveAt + AUTO_SAVE_INTERVAL;
 
         // Prune inventoryOps đã cũ (timestamp <= thời điểm full save)
         try {
@@ -479,6 +482,10 @@ async function savePlayerData(isAutoSave = false) {
     } catch (error) {
         console.error("Lỗi lưu dữ liệu:", error);
         markSaveError();
+        // Dù lỗi, vẫn lăn bánh lại đồng hồ để không spam ghi liên tục
+        const now = Date.now();
+        lastAutoSaveAt = now;
+        nextAutoSaveAt = lastAutoSaveAt + AUTO_SAVE_INTERVAL;
     }
 }
 
@@ -1034,12 +1041,21 @@ function showAlert(message) {
 // ===== Auto-save =====
 // Tự động lưu mỗi 6 PHÚT (giảm tần suất, tối ưu quota Firebase)
 const AUTO_SAVE_INTERVAL = 360000; // 6 phút = 360,000ms
+let lastAutoSaveAt = Date.now();
+let nextAutoSaveAt = lastAutoSaveAt + AUTO_SAVE_INTERVAL;
+let _savingStatusMode = 'countdown'; // countdown|saving|saved|error
+let _savingStatusResetAt = 0;
 
 setInterval(() => {
     if (currentUser && player) {
         savePlayerData(true); // Đánh dấu là auto-save
     }
 }, AUTO_SAVE_INTERVAL);
+
+// Cập nhật đếm ngược hiển thị mỗi giây
+setInterval(() => {
+    updateAutoSaveUI();
+}, 1000);
 
 // Lưu khi người dùng rời khỏi trang hoặc chuyển tab
 let _lastExitSaveTime = 0;
@@ -1079,7 +1095,7 @@ auth.onAuthStateChanged((user) => {
 // ===== UI: Saving Indicator =====
 let _saveIndicatorHideTimer = null;
 function getSaveIndicator() {
-    return document.getElementById('save-indicator');
+    return document.getElementById('auto-save-status') || document.getElementById('save-indicator');
 }
 function setIndicator(text, cls) {
     const el = getSaveIndicator();
@@ -1091,21 +1107,50 @@ function setIndicator(text, cls) {
     el.innerHTML = `<span class="dot"></span><span>${text}</span>`;
 }
 function showSaving() {
+    _savingStatusMode = 'saving';
+    _savingStatusResetAt = 0;
     setIndicator('Đang lưu…');
 }
 function markSaved() {
+    _savingStatusMode = 'saved';
+    _savingStatusResetAt = Date.now() + 1200;
     setIndicator('Đã lưu', 'success');
     _saveIndicatorHideTimer = setTimeout(() => {
-        const el = getSaveIndicator();
-        if (el) el.style.display = 'none';
+        _saveIndicatorHideTimer = null;
+        _savingStatusMode = 'countdown';
+        updateAutoSaveUI();
     }, 1200);
 }
 function markSaveError() {
+    _savingStatusMode = 'error';
+    _savingStatusResetAt = Date.now() + 2000;
     setIndicator('Lỗi lưu', 'error');
     _saveIndicatorHideTimer = setTimeout(() => {
-        const el = getSaveIndicator();
-        if (el) el.style.display = 'none';
+        _saveIndicatorHideTimer = null;
+        _savingStatusMode = 'countdown';
+        updateAutoSaveUI();
     }, 2000);
+}
+
+function updateAutoSaveUI() {
+    const el = document.getElementById('auto-save-status');
+    if (!el) return;
+    if (_savingStatusMode === 'saving') {
+        setIndicator('Đang lưu…');
+        return;
+    }
+    if ((_savingStatusMode === 'saved' || _savingStatusMode === 'error') && Date.now() < _savingStatusResetAt) {
+        // Giữ trạng thái hiện tại cho tới khi hết hạn
+        return;
+    }
+    // Hiển thị đếm ngược
+    _savingStatusMode = 'countdown';
+    const now = Date.now();
+    const remain = Math.max(0, nextAutoSaveAt - now);
+    const mm = String(Math.floor((remain / 1000) / 60)).padStart(2, '0');
+    const ss = String(Math.floor((remain / 1000) % 60)).padStart(2, '0');
+    el.style.display = 'inline';
+    el.textContent = `Auto ${mm}:${ss}`;
 }
 
 // ===== Inventory Ops Logging =====

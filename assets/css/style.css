@@ -216,6 +216,15 @@ main {
     white-space: nowrap;
 }
 
+/* Auto-save status in dungeon head */
+#auto-save-status {
+    color: #cfd8dc;
+    font-size: 0.9rem;
+    padding-right: 8px;
+    min-width: 88px;
+    text-align: left;
+}
+
 #save-indicator .dot {
     width: 8px;
     height: 8px;
