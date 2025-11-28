@@ -17,46 +17,48 @@
 
     // Khởi tạo chat
     function initChat() {
-        // Luôn gắn UI handler để nút click được ngay cả khi DB chưa sẵn sàng
-        setupChatUI();
-
-        if (!firebase.database) {
-            console.error("Firebase Database chưa được load!");
+        if (!firebase || !firebase.database) {
+            // Vẫn đảm bảo UI được setup để nút mở modal hoạt động
             return;
         }
 
-        // Chỉ lắng nghe các tin nhắn trong 6 giờ gần nhất để tránh lọc nhầm khi reload
-        const since = Date.now() - CHAT_RETAIN_MS;
-        chatRef = firebase.database()
-            .ref('globalChat')
-            .orderByChild('timestamp')
-            .startAt(since)
-            .limitToLast(200);
-        
-        // Lắng nghe tin nhắn mới
-        messagesListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
-            const message = snapshot.val();
-            if (message) {
-                // Bỏ qua tin nhắn quá cũ vượt ngoài cửa sổ 6 giờ (phòng khi clock lệch)
-                if (typeof message.timestamp === 'number' && message.timestamp < Date.now() - CHAT_RETAIN_MS) {
-                    return;
-                }
-                displayMessage(message);
-
-                // Play incoming message sfx for other users
-                try {
-                    if (message.userId !== currentUser?.uid) {
-                        if (typeof sfxItem !== 'undefined' && sfxItem && typeof sfxItem.play === 'function') sfxItem.play();
+        try {
+            // Chỉ lắng nghe các tin nhắn trong 6 giờ gần nhất để tránh lọc nhầm khi reload
+            const since = Date.now() - CHAT_RETAIN_MS;
+            chatRef = firebase.database()
+                .ref('globalChat')
+                .orderByChild('timestamp')
+                .startAt(since)
+                .limitToLast(200);
+            
+            // Lắng nghe tin nhắn mới
+            messagesListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                if (message) {
+                    // Bỏ qua tin nhắn quá cũ vượt ngoài cửa sổ 6 giờ (phòng khi clock lệch)
+                    if (typeof message.timestamp === 'number' && message.timestamp < Date.now() - CHAT_RETAIN_MS) {
+                        return;
                     }
-                } catch (e) {}
+                    displayMessage(message);
 
-                // Tăng badge nếu chat đang đóng và không phải tin nhắn của mình
-                if (!isChatOpen && message.userId !== currentUser?.uid) {
-                    unreadCount++;
-                    updateChatBadge();
+                    // Play incoming message sfx for other users
+                    try {
+                        if (message.userId !== (typeof currentUser !== 'undefined' && currentUser ? currentUser.uid : undefined)) {
+                            if (typeof sfxItem !== 'undefined' && sfxItem && typeof sfxItem.play === 'function') sfxItem.play();
+                        }
+                    } catch (e) {}
+
+                    // Tăng badge nếu chat đang đóng và không phải tin nhắn của mình
+                    const myUid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : undefined;
+                    if (!isChatOpen && message.userId !== myUid) {
+                        unreadCount++;
+                        updateChatBadge();
+                    }
                 }
-            }
-        });
+            });
+        } catch (e) {
+            // Không chặn UI nếu có lỗi init listener
+        }
     }
 
     // Setup giao diện chat
@@ -146,12 +148,6 @@
 
             const message = chatInput.value.trim();
             if (!message) return;
-
-            // Nếu DB chưa sẵn sàng hoặc reference chưa khởi tạo
-            if (!chatRef) {
-                alert('Chat chưa sẵn sàng. Vui lòng chờ giây lát...');
-                return;
-            }
 
             // Rate limiting: 1 tin nhắn mỗi 5 giây với đếm ngược
             const now = Date.now();
@@ -382,15 +378,17 @@
     }
 
     // Khởi tạo khi DOM ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initChat, 500);
-            // Dọn cục bộ các tin nhắn quá 6 giờ trong UI mỗi 5 phút
-            setInterval(pruneOldMessages, 5 * 60 * 1000);
-        });
-    } else {
+    const onReady = () => {
+        // Luôn setup UI trước để nút hoạt động ngay cả khi Firebase chậm
+        try { setupChatUI(); } catch (_) {}
         setTimeout(initChat, 500);
+        // Dọn cục bộ các tin nhắn quá 6 giờ trong UI mỗi 5 phút
         setInterval(pruneOldMessages, 5 * 60 * 1000);
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onReady);
+    } else {
+        onReady();
     }
 
     // Export cleanup function
