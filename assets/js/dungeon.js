@@ -349,6 +349,16 @@ const goldDrop = () => {
     addDungeonLog(`Bạn đã tìm thấy <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(goldValue)}.`);
     player.gold += goldValue;
     playerLoadStats();
+    // Lưu (debounced) sau khi nhặt vàng để giảm số lần ghi
+    try {
+        if (typeof debouncedSave === 'function') {
+            debouncedSave();
+        } else if (typeof savePlayerData === 'function') {
+            savePlayerData(false);
+        } else if (typeof saveData === 'function') {
+            saveData();
+        }
+    } catch (_) {}
 }
 
 // Non choices dungeon event messages

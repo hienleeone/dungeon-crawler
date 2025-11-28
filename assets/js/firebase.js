@@ -62,7 +62,7 @@ async function loginUser(email, password) {
 // Đăng xuất
 async function logoutUser() {
     try {
-        await savePlayerData();
+        await savePlayerData(true); // Lưu full snapshot khi logout
         
         // Cleanup chat system
         if (typeof window.cleanupChat === 'function') {
@@ -192,7 +192,22 @@ function debouncedSave() {
     // Đặt timeout mới
     saveTimeout = setTimeout(() => {
         if (currentUser && player) {
-            savePlayerData(false);
+            // Ghi nhanh các trường quan trọng vào quickSave để giảm payload
+            try {
+                const userId = currentUser.uid;
+                const qs = {
+                    gold: Number(player.gold) || 0,
+                    lvl: Number(player.lvl) || 1,
+                    expCurr: Number(player.exp?.expCurr) || 0,
+                    expCurrLvl: Number(player.exp?.expCurrLvl) || 0,
+                    expMax: Number(player.exp?.expMax) || 100,
+                    expMaxLvl: Number(player.exp?.expMaxLvl) || 100,
+                    lastUpdated: Date.now()
+                };
+                database.ref('users/' + userId + '/quickSave').update(qs);
+            } catch (e) {
+                console.warn('QuickSave error:', e);
+            }
         }
     }, SAVE_DEBOUNCE);
 }
@@ -299,6 +314,22 @@ async function savePlayerData(isAutoSave = false) {
     if (!canSave(isAutoSave)) return; // Rate limiting
 
     try {
+        // Với manual save: chỉ ghi quickSave để giảm Usage
+        if (!isAutoSave) {
+            const userId = currentUser.uid;
+            const qs = {
+                gold: Number(player?.gold) || 0,
+                lvl: Number(player?.lvl) || 1,
+                expCurr: Number(player?.exp?.expCurr) || 0,
+                expCurrLvl: Number(player?.exp?.expCurrLvl) || 0,
+                expMax: Number(player?.exp?.expMax) || 100,
+                expMaxLvl: Number(player?.exp?.expMaxLvl) || 100,
+                lastUpdated: Date.now()
+            };
+            await database.ref('users/' + userId + '/quickSave').update(qs);
+            return;
+        }
+
         // Sanitize dữ liệu trước khi validate (đọc từ getter để có giá trị clamped)
         const sanitizedPlayer = JSON.parse(JSON.stringify(player));
         
@@ -456,6 +487,27 @@ async function loadPlayerData() {
             
             player = loadedPlayer;
             if (player) { player.gold = Number(player.gold) || 0; }
+            
+            // ÁP DỤNG QUICK SAVE nếu mới hơn để không mất tiến độ giữa các auto-save
+            try {
+                const quickSnap = await database.ref('users/' + userId + '/quickSave').once('value');
+                const quick = quickSnap.val();
+                if (quick && typeof quick.lastUpdated === 'number') {
+                    const baseUpdated = Number(data.lastUpdated || 0);
+                    if (quick.lastUpdated > baseUpdated) {
+                        player.gold = Number(quick.gold || player.gold);
+                        player.lvl = Number(quick.lvl || player.lvl);
+                        if (player.exp) {
+                            player.exp.expCurr = Number(quick.expCurr || player.exp.expCurr);
+                            player.exp.expCurrLvl = Number(quick.expCurrLvl || player.exp.expCurrLvl);
+                            player.exp.expMax = Number(quick.expMax || player.exp.expMax);
+                            player.exp.expMaxLvl = Number(quick.expMaxLvl || player.exp.expMaxLvl);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Load quickSave error:', e);
+            }
             
             // ⚠️ QUAN TRỌNG: Verify và claim lại tên khi load game
             if (player && player.name) {

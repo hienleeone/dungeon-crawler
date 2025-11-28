@@ -43,6 +43,17 @@ const playerLvlUp = () => {
     player.bonusStats.atkSpd += 0.15;
     player.bonusStats.critRate += 0.1;
     player.bonusStats.critDmg += 0.25;
+
+    // Lưu (debounced) sau khi lên cấp để giảm số lần ghi
+    try {
+        if (typeof debouncedSave === 'function') {
+            debouncedSave();
+        } else if (typeof savePlayerData === 'function') {
+            savePlayerData(false);
+        } else if (typeof saveData === 'function') {
+            saveData();
+        }
+    } catch (_) {}
 }
 
 // Refresh the player stats

@@ -38,6 +38,16 @@ const hpValidation = () => {
         addCombatLog(`${enemy.name} rơi <i class="fas fa-coins" style="color: #FFD700;"></i>${nFormatter(enemy.rewards.gold)} vàng.`)
         player.gold += enemy.rewards.gold;
         playerLoadStats();
+        // Lưu (debounced) sau khi nhận vàng/exp để giảm số lần ghi
+        try {
+            if (typeof debouncedSave === 'function') {
+                debouncedSave();
+            } else if (typeof savePlayerData === 'function') {
+                savePlayerData(false);
+            } else if (typeof saveData === 'function') {
+                saveData();
+            }
+        } catch (_) {}
         if (enemy.rewards.drop) {
             createEquipmentPrint("combat");
         }

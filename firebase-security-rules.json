@@ -33,6 +33,18 @@
           ".write": "auth != null && auth.uid == $uid",
           ".validate": "newData.isNumber() && newData.val() <= now + 1000"
         }
+        ,
+        "quickSave": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".validate": "newData.hasChildren(['gold','lvl','expCurr','expCurrLvl','expMax','expMaxLvl','lastUpdated'])",
+          "gold": { ".validate": "newData.isNumber()" },
+          "lvl": { ".validate": "newData.isNumber()" },
+          "expCurr": { ".validate": "newData.isNumber()" },
+          "expCurrLvl": { ".validate": "newData.isNumber()" },
+          "expMax": { ".validate": "newData.isNumber()" },
+          "expMaxLvl": { ".validate": "newData.isNumber()" },
+          "lastUpdated": { ".validate": "newData.isNumber() && newData.val() <= now + 1000" }
+        }
       }
     },
     
