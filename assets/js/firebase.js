@@ -489,7 +489,7 @@ async function savePlayerData(isAutoSave = false) {
 
         const saveTime = Date.now();
         showSaving();
-        await database.ref('users/' + userId).set({
+        await database.ref('users/' + userId).update({
             playerData: playerData,
             dungeonData: dungeonData,
             enemyData: enemyData,
