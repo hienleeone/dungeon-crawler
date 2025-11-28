@@ -36,13 +36,13 @@
         ,
         "quickSave": {
           ".write": "auth != null && auth.uid == $uid",
-          ".validate": "newData.hasChildren(['gold','lvl','expCurr','expCurrLvl','expMax','expMaxLvl','lastUpdated'])",
-          "gold": { ".validate": "newData.isNumber()" },
-          "lvl": { ".validate": "newData.isNumber()" },
-          "expCurr": { ".validate": "newData.isNumber()" },
-          "expCurrLvl": { ".validate": "newData.isNumber()" },
-          "expMax": { ".validate": "newData.isNumber()" },
-          "expMaxLvl": { ".validate": "newData.isNumber()" },
+          ".validate": "newData.hasChildren(['gold','lvl','expCurr','expCurrLvl','expMax','expMaxLvl','lastUpdated']) && newData.child('lvl').isNumber() && newData.child('lvl').val() >= 1 && newData.child('expCurr').isNumber() && newData.child('expMax').isNumber() && newData.child('expCurr').val() <= newData.child('expMax').val() && newData.child('expCurrLvl').isNumber() && newData.child('expMaxLvl').isNumber() && newData.child('expCurrLvl').val() <= newData.child('expMaxLvl').val()",
+          "gold": { ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('config').child('limits').child('goldMax').exists() || newData.val() <= root.child('config').child('limits').child('goldMax').val()) && newData.val() <= 1000000000" },
+          "lvl": { ".validate": "newData.isNumber() && newData.val() >= 1 && (!root.child('config').child('limits').child('lvlMax').exists() || newData.val() <= root.child('config').child('limits').child('lvlMax').val()) && newData.val() <= 1000" },
+          "expCurr": { ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('config').child('limits').child('expCurrMax').exists() || newData.val() <= root.child('config').child('limits').child('expCurrMax').val()) && newData.val() <= 1000000000" },
+          "expCurrLvl": { ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('config').child('limits').child('expCurrLvlMax').exists() || newData.val() <= root.child('config').child('limits').child('expCurrLvlMax').val()) && newData.val() <= 1000000000" },
+          "expMax": { ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('config').child('limits').child('expMax').exists() || newData.val() <= root.child('config').child('limits').child('expMax').val()) && newData.val() <= 1000000000" },
+          "expMaxLvl": { ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('config').child('limits').child('expMaxLvl').exists() || newData.val() <= root.child('config').child('limits').child('expMaxLvl').val()) && newData.val() <= 1000000000" },
           "lastUpdated": { ".validate": "newData.isNumber() && newData.val() <= now + 1000" }
         }
       }
@@ -68,15 +68,15 @@
         },
         
         "gold": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('config').child('limits').child('leaderboardGoldMax').exists() || newData.val() <= root.child('config').child('limits').child('leaderboardGoldMax').val()) && newData.val() <= 1000000000"
         },
         
         "level": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() >= 1 && (!root.child('config').child('limits').child('leaderboardLevelMax').exists() || newData.val() <= root.child('config').child('limits').child('leaderboardLevelMax').val()) && newData.val() <= 1000"
         },
         
         "floor": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('config').child('limits').child('leaderboardFloorMax').exists() || newData.val() <= root.child('config').child('limits').child('leaderboardFloorMax').val()) && newData.val() <= 100000"
         },
         
         "lastUpdated": {
