@@ -255,6 +255,35 @@ function flushSaveImmediately() {
     } catch (_) {}
 }
 
+// Ghi quickSave ngay lập tức (không debounce) — dùng khi tab ẩn
+function quickSaveImmediate() {
+    try {
+        if (!currentUser || !player) return;
+        const userId = currentUser.uid;
+        const qsLocal = {
+            gold: Number(player?.gold) || 0,
+            lvl: Number(player?.lvl) || 1,
+            expCurr: Number(player?.exp?.expCurr) || 0,
+            expCurrLvl: Number(player?.exp?.expCurrLvl) || 0,
+            expMax: Number(player?.exp?.expMax) || 100,
+            expMaxLvl: Number(player?.exp?.expMaxLvl) || 100,
+            lastUpdated: Date.now()
+        };
+        writeLocalQuickSave(userId, qsLocal);
+        const qsDb = {
+            gold: qsLocal.gold,
+            lvl: qsLocal.lvl,
+            expCurr: qsLocal.expCurr,
+            expCurrLvl: qsLocal.expCurrLvl,
+            expMax: qsLocal.expMax,
+            expMaxLvl: qsLocal.expMaxLvl,
+            lastUpdated: firebase.database.ServerValue.TIMESTAMP
+        };
+        // Không cần showSaving khi tab ẩn; chỉ ghi yên lặng
+        database.ref('users/' + userId + '/quickSave').update(qsDb).catch(() => {});
+    } catch (_) {}
+}
+
 // ===== Local fallback (localStorage) cho quickSave =====
 const LOCAL_QS_PREFIX = 'dc:quickSave:';
 function getLocalQuickSaveKey(uid) {
@@ -1075,28 +1104,28 @@ setInterval(() => {
     updateAutoSaveUI();
 }, 1000);
 
-// Lưu khi người dùng rời khỏi trang hoặc chuyển tab
-let _lastExitSaveTime = 0;
-const triggerExitSave = () => {
+// Lưu khi người dùng rời khỏi trang hoặc chuyển tab — đảm bảo chỉ ghi 1 lần
+let _exitSaveLastTs = 0;
+function exitSaveOnce(kind) {
+    const now = Date.now();
+    if (now - _exitSaveLastTs < 2500) return;
+    _exitSaveLastTs = now;
     try {
-        if (currentUser && player) {
-            const now = Date.now();
-            // Chặn gọi liên tiếp trong 2 giây để phù hợp security rules
-            if (now - _lastExitSaveTime < 2000) return;
-            _lastExitSaveTime = now;
-            // Không await trong các sự kiện unload/visibility
-            savePlayerData(true);
+        if (kind === 'visibility') {
+            // Khi tab bị ẩn, ghi quickSave nhẹ nhàng để tránh xung đột
+            quickSaveImmediate();
+        } else {
+            // beforeunload/pagehide: thực hiện full save
+            flushSaveImmediately();
         }
     } catch (_) {}
-};
+}
 
-// Tránh gọi double (flush + trigger) dẫn tới 2 lần ghi <1s gây permission_denied
-window.addEventListener('beforeunload', () => { flushSaveImmediately(); });
-window.addEventListener('pagehide', () => { flushSaveImmediately(); });
+window.addEventListener('beforeunload', () => exitSaveOnce('beforeunload'));
+window.addEventListener('pagehide', () => exitSaveOnce('pagehide'));
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
-        // Với visibility: chỉ flush một lần
-        flushSaveImmediately();
+        exitSaveOnce('visibility');
     }
 });
 

@@ -3,7 +3,7 @@
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && auth.uid == $uid && (!newData.exists() || (newData.exists() && newData.child('playerData').exists() && newData.child('checksum').exists() && newData.child('lastUpdated').exists() && (!data.exists() || !data.child('lastUpdated').exists() || now - data.child('lastUpdated').val() > 1000 || newData.child('lastUpdated').val() >= data.child('lastUpdated').val())))",
+        ".write": "auth != null && auth.uid == $uid",
         
         "playerData": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 100000"
