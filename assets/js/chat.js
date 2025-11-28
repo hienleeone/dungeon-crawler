@@ -17,6 +17,9 @@
 
     // Khởi tạo chat
     function initChat() {
+        // Luôn gắn UI handler để nút click được ngay cả khi DB chưa sẵn sàng
+        setupChatUI();
+
         if (!firebase.database) {
             console.error("Firebase Database chưa được load!");
             return;
@@ -54,8 +57,6 @@
                 }
             }
         });
-
-        setupChatUI();
     }
 
     // Setup giao diện chat
@@ -145,6 +146,12 @@
 
             const message = chatInput.value.trim();
             if (!message) return;
+
+            // Nếu DB chưa sẵn sàng hoặc reference chưa khởi tạo
+            if (!chatRef) {
+                alert('Chat chưa sẵn sàng. Vui lòng chờ giây lát...');
+                return;
+            }
 
             // Rate limiting: 1 tin nhắn mỗi 5 giây với đếm ngược
             const now = Date.now();

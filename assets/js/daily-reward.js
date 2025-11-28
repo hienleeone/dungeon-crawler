@@ -5,46 +5,44 @@ function initDailyRewardData() {
     if (!player.dailyReward) {
         player.dailyReward = {
             lastClaimDate: null,
+            // Lưu mốc ngày theo UTC để tránh lệch múi giờ (số ngày từ epoch)
+            lastClaimDay: null,
             streak: 0,
             totalDays: 0
         };
+    }
+    // Nâng cấp dữ liệu cũ: nếu chưa có lastClaimDay nhưng có lastClaimDate
+    if (player.dailyReward && player.dailyReward.lastClaimDay == null && player.dailyReward.lastClaimDate) {
+        const ts = Date.parse(player.dailyReward.lastClaimDate);
+        if (!isNaN(ts)) {
+            player.dailyReward.lastClaimDay = Math.floor(ts / 86400000);
+        }
     }
 }
 
 // Hàm kiểm tra xem có thể nhận thưởng hôm nay không
 function canClaimDailyReward() {
     initDailyRewardData();
-    if (!player.dailyReward.lastClaimDate) return true;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const lastClaim = new Date(player.dailyReward.lastClaimDate);
-    lastClaim.setHours(0, 0, 0, 0);
-    
-    return today.getTime() !== lastClaim.getTime();
+    const todayDay = Math.floor(Date.now() / 86400000);
+    const lastDay = (player.dailyReward.lastClaimDay != null)
+        ? player.dailyReward.lastClaimDay
+        : (player.dailyReward.lastClaimDate ? Math.floor(Date.parse(player.dailyReward.lastClaimDate) / 86400000) : null);
+    if (lastDay == null) return true;
+    return todayDay !== lastDay;
 }
 
 // Hàm tính streak (chuỗi đăng nhập liên tiếp)
 function calculateStreak() {
     initDailyRewardData();
-    if (!player.dailyReward.lastClaimDate) return 1;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const lastClaim = new Date(player.dailyReward.lastClaimDate);
-    lastClaim.setHours(0, 0, 0, 0);
-    
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    // Nếu claim hôm qua thì tăng streak
-    if (lastClaim.getTime() === yesterday.getTime()) {
+    const todayDay = Math.floor(Date.now() / 86400000);
+    const lastDay = (player.dailyReward.lastClaimDay != null)
+        ? player.dailyReward.lastClaimDay
+        : (player.dailyReward.lastClaimDate ? Math.floor(Date.parse(player.dailyReward.lastClaimDate) / 86400000) : null);
+    if (lastDay == null) return 1;
+    // Nếu nhận hôm qua thì +1, còn lại reset về 1
+    if (lastDay === todayDay - 1) {
         return (player.dailyReward.streak % 7) + 1;
     }
-    
-    // Nếu bỏ lỡ thì reset về 1
     return 1;
 }
 
@@ -252,14 +250,18 @@ async function claimDailyReward() {
             });
         }
         
-        // Cập nhật daily reward data
+        // Cập nhật daily reward data (UTC day)
+        const nowDay = Math.floor(Date.now() / 86400000);
         player.dailyReward.lastClaimDate = new Date().toISOString();
+        player.dailyReward.lastClaimDay = nowDay;
         player.dailyReward.streak = currentStreak;
         player.dailyReward.totalDays += 1;
         
-        // Lưu dữ liệu
-        if (typeof saveData === 'function') {
-            await saveData();
+        // Lưu đầy đủ ngay (full snapshot) để đảm bảo dailyReward được persist
+        if (typeof savePlayerData === 'function') {
+            await savePlayerData(true);
+        } else if (typeof debouncedSave === 'function') {
+            debouncedSave();
         }
         
         // Hiển thị thông báo
