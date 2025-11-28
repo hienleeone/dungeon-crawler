@@ -197,6 +197,20 @@ function debouncedSave() {
     }, SAVE_DEBOUNCE);
 }
 
+// Flush ngay các save đang chờ trước khi thoát/reload
+function flushSaveImmediately() {
+    try {
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+            saveTimeout = null;
+        }
+        if (currentUser && player) {
+            // Đánh dấu là auto-save để bỏ cooldown manual
+            savePlayerData(true);
+        }
+    } catch (_) {}
+}
+
 // Bảo vệ object player khỏi chỉnh sửa trực tiếp - PHIÊN BẢN ĐƠN GIẢN NHƯNG HIỆU QUẢ
 function protectPlayerObject() {
     if (typeof player !== 'undefined' && player !== null && !player._isProtected) {
@@ -865,10 +879,11 @@ const triggerExitSave = () => {
     } catch (_) {}
 };
 
-window.addEventListener('beforeunload', triggerExitSave);
-window.addEventListener('pagehide', triggerExitSave);
+window.addEventListener('beforeunload', () => { flushSaveImmediately(); triggerExitSave(); });
+window.addEventListener('pagehide', () => { flushSaveImmediately(); triggerExitSave(); });
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
+        flushSaveImmediately();
         triggerExitSave();
     }
 });
