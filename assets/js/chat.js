@@ -24,12 +24,11 @@
         }
 
         try {
-            // Chỉ lắng nghe các tin nhắn trong 6 giờ gần nhất để tránh lọc nhầm khi reload
-            const since = Date.now() - CHAT_RETAIN_MS;
+            // Lắng nghe 200 tin nhắn mới nhất; UI tự prune ngoài cửa sổ 6 giờ
+            // Tránh lệch đồng hồ giữa client ảnh hưởng đến startAt()
             chatRef = firebase.database()
                 .ref('globalChat')
                 .orderByChild('timestamp')
-                .startAt(since)
                 .limitToLast(200);
             
             // Tải lần đầu các tin nhắn gần đây để đảm bảo hiển thị ngay
