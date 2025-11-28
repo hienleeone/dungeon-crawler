@@ -93,6 +93,39 @@
 
         if (!chatBtn || !chatModal) return;
 
+        // Helper: tải lại các tin nhắn gần nhất khi mở modal
+        const reloadRecentMessages = () => {
+            try {
+                const messagesDiv = document.getElementById('chat-messages');
+                if (!messagesDiv) return;
+                // Xóa nội dung cũ để tránh trùng lặp
+                messagesDiv.innerHTML = '<p style="text-align:center; color:#999;">Chào mừng đến với Live Chat!</p>';
+                // Tải 100 tin gần nhất, UI sẽ tự prune ngoài 6 giờ
+                firebase.database().ref('globalChat')
+                    .orderByChild('timestamp')
+                    .limitToLast(100)
+                    .once('value')
+                    .then(snap => {
+                        const items = [];
+                        snap.forEach(child => {
+                            items.push({ key: child.key, val: child.val() });
+                        });
+                        // Render theo thứ tự thời gian tăng dần
+                        items.sort((a,b)=> (a.val?.timestamp||0) - (b.val?.timestamp||0));
+                        items.forEach(it => {
+                            const msg = it.val;
+                            if (!msg) return;
+                            if (typeof msg.timestamp === 'number' && msg.timestamp < Date.now() - CHAT_RETAIN_MS) return;
+                            try { displayMessage(msg); } catch (_) {}
+                            if (it.key) renderedMessageIds.add(it.key);
+                        });
+                        // Scroll xuống cuối cùng
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    })
+                    .catch(() => {});
+            } catch (_) {}
+        };
+
         // Mở chat
         chatBtn.onclick = () => {
             try { if (typeof sfxOpen !== 'undefined' && sfxOpen && typeof sfxOpen.play === 'function') sfxOpen.play(); } catch (e) {}
@@ -105,6 +138,8 @@
             isChatOpen = true;
             unreadCount = 0;
             updateChatBadge();
+            // Tải lại tin nhắn gần nhất để đảm bảo hiển thị đồng bộ
+            reloadRecentMessages();
             // Move notification down
             if (typeof moveNotificationForLiveChat === 'function') moveNotificationForLiveChat(true);
             // Scroll to bottom
