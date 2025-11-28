@@ -1104,7 +1104,7 @@ function setIndicator(text, cls) {
     el.classList.remove('success', 'error');
     if (cls) el.classList.add(cls);
     el.style.display = 'inline-flex';
-    el.innerHTML = `<span class="dot"></span><span>${text}</span>`;
+    el.innerHTML = `<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span class="label">${text}</span>`;
 }
 function showSaving() {
     _savingStatusMode = 'saving';
@@ -1149,8 +1149,7 @@ function updateAutoSaveUI() {
     const remain = Math.max(0, nextAutoSaveAt - now);
     const mm = String(Math.floor((remain / 1000) / 60)).padStart(2, '0');
     const ss = String(Math.floor((remain / 1000) % 60)).padStart(2, '0');
-    el.style.display = 'inline';
-    el.textContent = `Auto ${mm}:${ss}`;
+    setIndicator(`Auto ${mm}:${ss}`);
 }
 
 // ===== Inventory Ops Logging =====
