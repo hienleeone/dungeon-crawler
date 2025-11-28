@@ -11,7 +11,7 @@
     let lastMessageTime = 0;
     let chatCooldownTimer = null;
     let chatCooldownRemaining = 0;
-    let lastPurgeTime = Date.now();
+    const CHAT_RETAIN_MS = 6 * 60 * 60 * 1000; // Giữ lại tin nhắn trong 6 giờ gần nhất (UI)
     let unreadCount = 0;
     let isChatOpen = false;
 
@@ -22,14 +22,20 @@
             return;
         }
 
-        chatRef = firebase.database().ref('globalChat');
+        // Chỉ lắng nghe các tin nhắn trong 6 giờ gần nhất để tránh lọc nhầm khi reload
+        const since = Date.now() - CHAT_RETAIN_MS;
+        chatRef = firebase.database()
+            .ref('globalChat')
+            .orderByChild('timestamp')
+            .startAt(since)
+            .limitToLast(200);
         
         // Lắng nghe tin nhắn mới
         messagesListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
             const message = snapshot.val();
             if (message) {
-                // Bỏ qua tin nhắn cũ trước mốc purge để tránh hiển thị lịch sử
-                if (typeof message.timestamp === 'number' && message.timestamp < lastPurgeTime) {
+                // Bỏ qua tin nhắn quá cũ vượt ngoài cửa sổ 6 giờ (phòng khi clock lệch)
+                if (typeof message.timestamp === 'number' && message.timestamp < Date.now() - CHAT_RETAIN_MS) {
                     return;
                 }
                 displayMessage(message);
@@ -220,6 +226,9 @@
         const isMyMessage = currentUser && message.userId === currentUser.uid;
         
         const messageEl = document.createElement('div');
+        if (typeof message.timestamp === 'number') {
+            messageEl.dataset.ts = String(message.timestamp);
+        }
         messageEl.style.cssText = `
             display: flex;
             flex-direction: column;
@@ -302,6 +311,26 @@
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
+    // Dọn các tin nhắn quá 6 giờ khỏi giao diện (không xóa DB)
+    function pruneOldMessages() {
+        const messagesDiv = document.getElementById('chat-messages');
+        if (!messagesDiv) return;
+        const cutoff = Date.now() - CHAT_RETAIN_MS;
+        const items = Array.from(messagesDiv.children);
+        let removed = 0;
+        items.forEach(el => {
+            const ts = Number(el.dataset?.ts || 0);
+            if (ts && ts < cutoff) {
+                messagesDiv.removeChild(el);
+                removed++;
+            }
+        });
+        if (removed > 0 && typeof updateChatBadge === 'function') {
+            // đảm bảo badge không lệch nếu xóa
+            // unreadCount quản lý ở phạm vi ngoài; giữ nguyên
+        }
+    }
+
     // Cập nhật badge số tin nhắn chưa đọc
     function updateChatBadge() {
         const badge = document.getElementById('header-chat-badge');
@@ -349,28 +378,12 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(initChat, 500);
-            // Tự động xóa lịch sử chat hiển thị mỗi 6 giờ (client-side)
-            setInterval(() => {
-                lastPurgeTime = Date.now();
-                const messagesDiv = document.getElementById('chat-messages');
-                if (messagesDiv) {
-                    messagesDiv.innerHTML = '<p style="text-align:center; color:#999;">Lịch sử chat đã được làm sạch.</p>';
-                }
-                unreadCount = 0;
-                updateChatBadge();
-            }, 21600000);
+            // Dọn cục bộ các tin nhắn quá 6 giờ trong UI mỗi 5 phút
+            setInterval(pruneOldMessages, 5 * 60 * 1000);
         });
     } else {
         setTimeout(initChat, 500);
-        setInterval(() => {
-            lastPurgeTime = Date.now();
-            const messagesDiv = document.getElementById('chat-messages');
-            if (messagesDiv) {
-                messagesDiv.innerHTML = '<p style="text-align:center; color:#999;">Lịch sử chat đã được làm sạch.</p>';
-            }
-            unreadCount = 0;
-            updateChatBadge();
-        }, 21600000);
+        setInterval(pruneOldMessages, 5 * 60 * 1000);
     }
 
     // Export cleanup function
