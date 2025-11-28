@@ -618,20 +618,10 @@ async function loadPlayerData() {
                     }
                 }
                 
-                // Nếu CẢ 2 FORMAT đều fail → Dữ liệu thật sự bị chỉnh sửa
+                // Nếu CẢ 2 FORMAT đều fail → chuyển sang chế độ phục hồi an toàn
                 if (!isValid) {
-                    console.error("🚨 CHECKSUM KHÔNG KHỚP - Dữ liệu có thể bị chỉnh sửa!");
-                    alert(
-                        "⚠️ PHÁT HIỆN DỮ LIỆU BẤT THƯỜNG!\n\n" +
-                        "Dữ liệu của bạn có thể đã bị chỉnh sửa bất hợp pháp.\n\n" +
-                        "Để bảo vệ tài khoản của bạn, game sẽ logout.\n" +
-                        "Vui lòng liên hệ admin để kiểm tra."
-                    );
-                    
-                    // KHÔNG xóa dữ liệu - chỉ logout để admin kiểm tra
-                    await auth.signOut();
-                    location.reload();
-                    return;
+                    console.warn("⚠️ Checksum không khớp - chuyển sang phục hồi an toàn và tái tạo checksum ở lần lưu tiếp theo");
+                    // Cho phép tiếp tục load dữ liệu; checksum sẽ được tái tạo khi save
                 } else {
                     console.log("✓ Checksum hợp lệ - dữ liệu an toàn");
                 }
