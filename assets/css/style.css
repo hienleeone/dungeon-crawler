@@ -199,6 +199,45 @@ main {
     height: 100%;
 }
 
+/* Save indicator */
+#save-indicator {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 12px;
+    padding: 4px 10px;
+    margin-left: 8px;
+    font-size: 0.85rem;
+    line-height: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    white-space: nowrap;
+}
+
+#save-indicator .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffcc00;
+    box-shadow: 0 0 6px rgba(255, 204, 0, 0.8);
+}
+
+#save-indicator.success .dot {
+    background: #4ade80;
+    box-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
+}
+
+#save-indicator.error {
+    border-color: rgba(255, 99, 71, 0.8);
+}
+
+#save-indicator.error .dot {
+    background: #ff6347;
+    box-shadow: 0 0 6px rgba(255, 99, 71, 0.8);
+}
+
 #playerEquipment {
     /* Use a 3-column grid so equipment slots render 3 per row */
     display: grid;

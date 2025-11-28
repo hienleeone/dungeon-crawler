@@ -206,9 +206,13 @@ function debouncedSave() {
                 };
                 // Lưu fallback cục bộ để chống mất dữ liệu khi reload
                 writeLocalQuickSave(userId, qs);
-                database.ref('users/' + userId + '/quickSave').update(qs);
+                showSaving();
+                database.ref('users/' + userId + '/quickSave').update(qs)
+                    .then(() => markSaved())
+                    .catch(() => markSaveError());
             } catch (e) {
                 console.warn('QuickSave error:', e);
+                markSaveError();
             }
         }
     }, SAVE_DEBOUNCE);
@@ -373,7 +377,8 @@ async function savePlayerData(isAutoSave = false) {
             };
             // Ghi fallback cục bộ để phòng reload hủy request
             writeLocalQuickSave(userId, qs);
-            await database.ref('users/' + userId + '/quickSave').update(qs);
+            showSaving();
+            await database.ref('users/' + userId + '/quickSave').update(qs).then(()=>markSaved()).catch(()=>markSaveError());
             return;
         }
 
@@ -436,6 +441,7 @@ async function savePlayerData(isAutoSave = false) {
         const checksum = await generateChecksum(criticalData);
 
         const saveTime = Date.now();
+        showSaving();
         await database.ref('users/' + userId).set({
             playerData: playerData,
             dungeonData: dungeonData,
@@ -446,6 +452,7 @@ async function savePlayerData(isAutoSave = false) {
         });
         // Xóa fallback cục bộ vì full save đã ghi lại trạng thái
         clearLocalQuickSave(userId);
+        markSaved();
 
         // Prune inventoryOps đã cũ (timestamp <= thời điểm full save)
         try {
@@ -471,6 +478,7 @@ async function savePlayerData(isAutoSave = false) {
         }
     } catch (error) {
         console.error("Lỗi lưu dữ liệu:", error);
+        markSaveError();
     }
 }
 
@@ -1067,6 +1075,38 @@ auth.onAuthStateChanged((user) => {
         showLoginScreen();
     }
 });
+
+// ===== UI: Saving Indicator =====
+let _saveIndicatorHideTimer = null;
+function getSaveIndicator() {
+    return document.getElementById('save-indicator');
+}
+function setIndicator(text, cls) {
+    const el = getSaveIndicator();
+    if (!el) return;
+    if (_saveIndicatorHideTimer) { clearTimeout(_saveIndicatorHideTimer); _saveIndicatorHideTimer = null; }
+    el.classList.remove('success', 'error');
+    if (cls) el.classList.add(cls);
+    el.style.display = 'inline-flex';
+    el.innerHTML = `<span class="dot"></span><span>${text}</span>`;
+}
+function showSaving() {
+    setIndicator('Đang lưu…');
+}
+function markSaved() {
+    setIndicator('Đã lưu', 'success');
+    _saveIndicatorHideTimer = setTimeout(() => {
+        const el = getSaveIndicator();
+        if (el) el.style.display = 'none';
+    }, 1200);
+}
+function markSaveError() {
+    setIndicator('Lỗi lưu', 'error');
+    _saveIndicatorHideTimer = setTimeout(() => {
+        const el = getSaveIndicator();
+        if (el) el.style.display = 'none';
+    }, 2000);
+}
 
 // ===== Inventory Ops Logging =====
 function recordInventoryOp(op, loc, itemObjOrJson) {
