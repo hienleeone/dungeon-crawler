@@ -582,6 +582,31 @@ async function loadPlayerData() {
             } catch (e) {
                 // Bỏ qua lỗi parse/localStorage
             }
+            // ÁP DỤNG INVENTORY OPS từ server kể từ lần full save cuối
+            try {
+                const baseUpdated = Number(data.lastUpdated || 0);
+                const opsSnap = await database.ref('users/' + userId + '/inventoryOps')
+                    .orderByChild('timestamp')
+                    .startAt(baseUpdated + 1)
+                    .once('value');
+                const ops = opsSnap.val() || {};
+                Object.keys(ops).forEach((key) => applySellOp(ops[key]));
+            } catch (e) {
+                console.warn('Load inventoryOps error:', e);
+            }
+
+            // ÁP DỤNG INVENTORY OPS từ localStorage nếu mới hơn cả server
+            try {
+                const localOps = readLocalInvOps(userId);
+                if (Array.isArray(localOps) && localOps.length) {
+                    const serverFull = Number(data.lastUpdated || 0);
+                    const lastLocalTs = Math.max.apply(null, localOps.map(op => Number(op.timestamp || 0)));
+                    if (lastLocalTs > serverFull) {
+                        localOps.forEach((op) => applySellOp(op));
+                        console.log('✓ Đã áp dụng inventory ops từ local fallback');
+                    }
+                }
+            } catch (_) {}
             
             // ⚠️ QUAN TRỌNG: Verify và claim lại tên khi load game
             if (player && player.name) {
@@ -1024,3 +1049,65 @@ auth.onAuthStateChanged((user) => {
         showLoginScreen();
     }
 });
+
+// ===== Inventory Ops Logging =====
+function recordInventoryOp(op, loc, itemObjOrJson) {
+    try {
+        if (!currentUser) return;
+        const userId = currentUser.uid;
+        const itemJson = typeof itemObjOrJson === 'string' ? itemObjOrJson : JSON.stringify(itemObjOrJson || {});
+        const payload = {
+            op: String(op || 'sell'),
+            loc: String(loc || 'inventory'),
+            itemJson,
+            timestamp: Date.now()
+        };
+        writeLocalInvOp(userId, payload);
+        database.ref('users/' + userId + '/inventoryOps').push(payload);
+    } catch (_) {}
+}
+
+const LOCAL_OPS_PREFIX = 'dc:invOps:';
+function getLocalInvOpsKey(uid) { return LOCAL_OPS_PREFIX + String(uid || 'unknown'); }
+function writeLocalInvOp(uid, op) {
+    try {
+        const key = getLocalInvOpsKey(uid);
+        const raw = localStorage.getItem(key);
+        const list = raw ? JSON.parse(raw) : [];
+        list.push(op);
+        localStorage.setItem(key, JSON.stringify(list));
+    } catch (_) {}
+}
+function readLocalInvOps(uid) {
+    try {
+        const key = getLocalInvOpsKey(uid);
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : [];
+    } catch (_) { return []; }
+}
+function clearLocalInvOps(uid) {
+    try { localStorage.removeItem(getLocalInvOpsKey(uid)); } catch (_) {}
+}
+
+function applySellOp(op) {
+    try {
+        if (!player || !op || op.op !== 'sell') return;
+        const itemJson = String(op.itemJson || '');
+        if (op.loc === 'inventory' && Array.isArray(player.inventory?.equipment)) {
+            const idx = player.inventory.equipment.indexOf(itemJson);
+            if (idx !== -1) {
+                player.inventory.equipment.splice(idx, 1);
+            }
+        } else if (op.loc === 'equipped' && Array.isArray(player.equipped)) {
+            for (let i = 0; i < player.equipped.length; i++) {
+                try {
+                    const eqJson = JSON.stringify(player.equipped[i]);
+                    if (eqJson === itemJson) {
+                        player.equipped.splice(i, 1);
+                        break;
+                    }
+                } catch (_) {}
+            }
+        }
+    } catch (_) {}
+}

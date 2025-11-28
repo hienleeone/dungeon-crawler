@@ -45,6 +45,17 @@
           "expMaxLvl": { ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('config').child('limits').child('expMaxLvl').exists() || newData.val() <= root.child('config').child('limits').child('expMaxLvl').val()) && newData.val() <= 1000000000" },
           "lastUpdated": { ".validate": "newData.isNumber() && newData.val() <= now + 1000" }
         }
+        ,
+        "inventoryOps": {
+          ".write": "auth != null && auth.uid == $uid",
+          "$opId": {
+            ".validate": "newData.hasChildren(['op','loc','itemJson','timestamp'])",
+            "op": { ".validate": "newData.isString() && (newData.val() == 'sell')" },
+            "loc": { ".validate": "newData.isString() && (newData.val() == 'inventory' || newData.val() == 'equipped')" },
+            "itemJson": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 5000" },
+            "timestamp": { ".validate": "newData.isNumber() && newData.val() <= now + 1000" }
+          }
+        }
       }
     },
     

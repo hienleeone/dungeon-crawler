@@ -356,16 +356,26 @@ const showItemInfo = (item, icon, type, i) => {
             if (type == "Sử Dụng") {
                 player.gold += item.value;
                 player.inventory.equipment.splice(i, 1);
+                if (typeof recordInventoryOp === 'function') {
+                    try { recordInventoryOp('sell', 'inventory', JSON.stringify(item)); } catch (_) {}
+                }
             } else if (type == "Tháo Ra") {
                 player.gold += item.value;
                 player.equipped.splice(i, 1);
+                if (typeof recordInventoryOp === 'function') {
+                    try { recordInventoryOp('sell', 'equipped', item); } catch (_) {}
+                }
             }
 
             defaultModalElement.style.display = "none";
             defaultModalElement.innerHTML = "";
             dimContainer.style.filter = "brightness(100%)";
             playerLoadStats();
-            saveData();
+            if (typeof savePlayerData === 'function') {
+                savePlayerData(false);
+            } else if (typeof debouncedSave === 'function') {
+                debouncedSave();
+            }
             continueExploring();
         }
         cancel.onclick = function () {
@@ -631,13 +641,20 @@ const sellAll = (rarity) => {
         if (equipment && equipment.rarity === rarity) {
             const val = Number(equipment.value) || 0;
             totalGold += val;
+            if (typeof recordInventoryOp === 'function') {
+                try { recordInventoryOp('sell', 'inventory', JSON.stringify(equipment)); } catch (_) {}
+            }
             player.inventory.equipment.splice(i, 1);
         }
     }
     player.gold += totalGold;
     playerLoadStats();
     showInventory();
-    saveData();
+    if (typeof savePlayerData === 'function') {
+        savePlayerData(false);
+    } else if (typeof debouncedSave === 'function') {
+        debouncedSave();
+    }
 };
 
 const createEquipmentPrint = (condition) => {
