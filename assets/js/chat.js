@@ -177,7 +177,15 @@
                 // Cập nhật lastChatTime để phù hợp security rules
                 try {
                     if (currentUser?.uid) {
-                        firebase.database().ref(`users/${currentUser.uid}/lastChatTime`).set(firebase.database.ServerValue.TIMESTAMP);
+                        const uid = currentUser.uid;
+                        const lastUpdatedRef = firebase.database().ref(`users/${uid}/lastUpdated`);
+                        lastUpdatedRef.once('value').then(snap => {
+                            if (snap.exists()) {
+                                firebase.database().ref(`users/${uid}/lastChatTime`).set(firebase.database.ServerValue.TIMESTAMP);
+                            } else {
+                                // Nếu user node chưa tồn tại, bỏ qua để tránh vi phạm rules
+                            }
+                        }).catch(() => {});
                     }
                 } catch (e) {}
             }).catch((error) => {

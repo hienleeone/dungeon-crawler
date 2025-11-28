@@ -302,10 +302,27 @@ async function savePlayerData(isAutoSave = false) {
         const userId = currentUser.uid;
         
         // Lưu sanitizedPlayer thay vì player gốc
-        const playerData = JSON.stringify(sanitizedPlayer);
-        const dungeonData = JSON.stringify(dungeon);
-        const enemyData = JSON.stringify(enemy);
-        const volumeData = JSON.stringify(volume);
+        let playerData = JSON.stringify(sanitizedPlayer);
+        let dungeonData = JSON.stringify(dungeon ?? {});
+        let enemyData = JSON.stringify(enemy ?? {});
+        let volumeData = JSON.stringify(volume ?? {});
+
+        // Kiểm tra kích thước dữ liệu theo rule
+        if (playerData.length >= 100000) {
+            console.warn("⚠️ playerData quá lớn (>=100000). Đang rút gọn để phù hợp rules.");
+            // Rút gọn một số trường ít quan trọng để đảm bảo save thành công
+            const minimalPlayer = {
+                name: sanitizedPlayer.name,
+                gold: sanitizedPlayer.gold,
+                lvl: sanitizedPlayer.lvl,
+                stats: sanitizedPlayer.stats,
+                exp: sanitizedPlayer.exp,
+                bonusStats: sanitizedPlayer.bonusStats,
+                equipped: sanitizedPlayer.equipped,
+            };
+            // Không lưu inventory đầy đủ nếu quá lớn
+            playerData = JSON.stringify(minimalPlayer);
+        }
         
         // Tạo checksum cho dữ liệu quan trọng - MỞ RỘNG BẢO VỆ
         const criticalData = {
@@ -834,9 +851,14 @@ setInterval(() => {
 }, AUTO_SAVE_INTERVAL);
 
 // Lưu khi người dùng rời khỏi trang hoặc chuyển tab
+let _lastExitSaveTime = 0;
 const triggerExitSave = () => {
     try {
         if (currentUser && player) {
+            const now = Date.now();
+            // Chặn gọi liên tiếp trong 2 giây để phù hợp security rules
+            if (now - _lastExitSaveTime < 2000) return;
+            _lastExitSaveTime = now;
             // Không await trong các sự kiện unload/visibility
             savePlayerData(true);
         }

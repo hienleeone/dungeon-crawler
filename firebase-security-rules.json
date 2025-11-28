@@ -28,6 +28,11 @@
         "checksum": {
           ".validate": "newData.isString() && newData.val().length == 64"
         }
+        ,
+        "lastChatTime": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".validate": "newData.isNumber() && newData.val() <= now + 1000"
+        }
       }
     },
     
