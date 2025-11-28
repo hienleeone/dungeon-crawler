@@ -195,7 +195,7 @@ function debouncedSave() {
             // Ghi nhanh các trường quan trọng vào quickSave để giảm payload
             try {
                 const userId = currentUser.uid;
-                const qs = {
+                const qsLocal = {
                     gold: Number(player.gold) || 0,
                     lvl: Number(player.lvl) || 1,
                     expCurr: Number(player.exp?.expCurr) || 0,
@@ -205,9 +205,18 @@ function debouncedSave() {
                     lastUpdated: Date.now()
                 };
                 // Lưu fallback cục bộ để chống mất dữ liệu khi reload
-                writeLocalQuickSave(userId, qs);
+                writeLocalQuickSave(userId, qsLocal);
+                const qsDb = {
+                    gold: qsLocal.gold,
+                    lvl: qsLocal.lvl,
+                    expCurr: qsLocal.expCurr,
+                    expCurrLvl: qsLocal.expCurrLvl,
+                    expMax: qsLocal.expMax,
+                    expMaxLvl: qsLocal.expMaxLvl,
+                    lastUpdated: firebase.database.ServerValue.TIMESTAMP
+                };
                 showSaving();
-                database.ref('users/' + userId + '/quickSave').update(qs)
+                database.ref('users/' + userId + '/quickSave').update(qsDb)
                     .then(() => markSaved())
                     .catch(() => markSaveError());
             } catch (e) {
@@ -366,7 +375,7 @@ async function savePlayerData(isAutoSave = false) {
         // Với manual save: chỉ ghi quickSave để giảm Usage
         if (!isAutoSave) {
             const userId = currentUser.uid;
-            const qs = {
+            const qsLocal = {
                 gold: Number(player?.gold) || 0,
                 lvl: Number(player?.lvl) || 1,
                 expCurr: Number(player?.exp?.expCurr) || 0,
@@ -376,9 +385,18 @@ async function savePlayerData(isAutoSave = false) {
                 lastUpdated: Date.now()
             };
             // Ghi fallback cục bộ để phòng reload hủy request
-            writeLocalQuickSave(userId, qs);
+            writeLocalQuickSave(userId, qsLocal);
+            const qsDb = {
+                gold: qsLocal.gold,
+                lvl: qsLocal.lvl,
+                expCurr: qsLocal.expCurr,
+                expCurrLvl: qsLocal.expCurrLvl,
+                expMax: qsLocal.expMax,
+                expMaxLvl: qsLocal.expMaxLvl,
+                lastUpdated: firebase.database.ServerValue.TIMESTAMP
+            };
             showSaving();
-            await database.ref('users/' + userId + '/quickSave').update(qs).then(()=>markSaved()).catch(()=>markSaveError());
+            await database.ref('users/' + userId + '/quickSave').update(qsDb).then(()=>markSaved()).catch(()=>markSaveError());
             return;
         }
 
@@ -448,7 +466,7 @@ async function savePlayerData(isAutoSave = false) {
             enemyData: enemyData,
             volumeData: volumeData,
             checksum: checksum,
-            lastUpdated: saveTime
+            lastUpdated: firebase.database.ServerValue.TIMESTAMP
         });
         // Xóa fallback cục bộ vì full save đã ghi lại trạng thái
         clearLocalQuickSave(userId);
@@ -1158,18 +1176,24 @@ function recordInventoryOp(op, loc, itemObjOrJson) {
         if (!currentUser) return;
         const userId = currentUser.uid;
         const itemJson = typeof itemObjOrJson === 'string' ? itemObjOrJson : JSON.stringify(itemObjOrJson || {});
-        const payload = {
+        const localTs = Date.now();
+        const payloadLocal = {
             op: String(op || 'sell'),
             loc: String(loc || 'inventory'),
             itemJson,
-            timestamp: Date.now()
+            timestamp: localTs
         };
-        writeLocalInvOp(userId, payload);
+        writeLocalInvOp(userId, payloadLocal);
         const opsRef = database.ref('users/' + userId + '/inventoryOps');
         const newKey = opsRef.push().key;
         const updates = {};
-        updates['users/' + userId + '/inventoryOps/' + newKey] = payload;
-        updates['users/' + userId + '/lastInvOpTime'] = payload.timestamp;
+        updates['users/' + userId + '/inventoryOps/' + newKey] = {
+            op: payloadLocal.op,
+            loc: payloadLocal.loc,
+            itemJson: payloadLocal.itemJson,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+        updates['users/' + userId + '/lastInvOpTime'] = firebase.database.ServerValue.TIMESTAMP;
         database.ref().update(updates);
     } catch (_) {}
 }
