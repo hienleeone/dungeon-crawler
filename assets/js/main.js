@@ -48,13 +48,40 @@ window.addEventListener("load", function () {
         document.querySelector("#register-alert").innerHTML = "";
     });
 
-    // Xử lý đăng nhập
+    // Xử lý đăng nhập với đếm ngược 5 giây
     loginForm.addEventListener("submit", async function(e) {
         e.preventDefault();
         const email = document.querySelector("#login-email").value;
         const password = document.querySelector("#login-password").value;
 
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+        const alertEl = document.querySelector("#auth-alert");
+
+        let countdown = 5;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+        }
+        if (alertEl) {
+            alertEl.textContent = `Đang chuẩn bị đăng nhập... ${countdown}s`;
+        }
+
+        await new Promise((resolve) => {
+            const timer = setInterval(() => {
+                countdown -= 1;
+                if (alertEl) {
+                    alertEl.textContent = `Đang chuẩn bị đăng nhập... ${countdown}s`;
+                }
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, 1000);
+        });
+
         const success = await loginUser(email, password);
+        if (submitBtn) {
+            submitBtn.disabled = false;
+        }
         if (success) {
             document.querySelector("#login-screen").style.display = "none";
             if (isNewUser || player === null) {
@@ -63,6 +90,7 @@ window.addEventListener("load", function () {
                 let target = document.querySelector("#title-screen");
                 target.style.display = "flex";
             }
+            if (alertEl) alertEl.textContent = "";
         }
     });
 

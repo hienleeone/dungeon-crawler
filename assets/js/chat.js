@@ -9,6 +9,9 @@
     let chatRef = null;
     let messagesListener = null;
     let lastMessageTime = 0;
+    let chatCooldownTimer = null;
+    let chatCooldownRemaining = 0;
+    let lastPurgeTime = Date.now();
     let unreadCount = 0;
     let isChatOpen = false;
 
@@ -25,6 +28,10 @@
         messagesListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
             const message = snapshot.val();
             if (message) {
+                // Bỏ qua tin nhắn cũ trước mốc purge để tránh hiển thị lịch sử
+                if (typeof message.timestamp === 'number' && message.timestamp < lastPurgeTime) {
+                    return;
+                }
                 displayMessage(message);
 
                 // Play incoming message sfx for other users
@@ -98,6 +105,34 @@
             }
         };
 
+        // Cập nhật UI countdown cho nút gửi
+        const updateSendButtonCountdown = () => {
+            const chatSendBtn = document.getElementById('chat-send');
+            if (!chatSendBtn) return;
+            if (chatCooldownRemaining > 0) {
+                chatSendBtn.disabled = true;
+                chatSendBtn.innerText = `${chatCooldownRemaining}s`;
+            } else {
+                chatSendBtn.disabled = false;
+                chatSendBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:1.25rem;"></i>';
+            }
+        };
+
+        const startChatCooldown = (seconds) => {
+            chatCooldownRemaining = seconds;
+            updateSendButtonCountdown();
+            if (chatCooldownTimer) clearInterval(chatCooldownTimer);
+            chatCooldownTimer = setInterval(() => {
+                chatCooldownRemaining -= 1;
+                if (chatCooldownRemaining <= 0) {
+                    clearInterval(chatCooldownTimer);
+                    chatCooldownTimer = null;
+                    chatCooldownRemaining = 0;
+                }
+                updateSendButtonCountdown();
+            }, 1000);
+        };
+
         // Gửi tin nhắn
         const sendMessage = () => {
             if (!chatInput || !currentUser || !player) return;
@@ -105,10 +140,14 @@
             const message = chatInput.value.trim();
             if (!message) return;
 
-            // Rate limiting: 1 tin nhắn mỗi 2 giây
+            // Rate limiting: 1 tin nhắn mỗi 5 giây với đếm ngược
             const now = Date.now();
-            if (now - lastMessageTime < 2000) {
-                alert('Vui lòng đợi 2 giây trước khi gửi tin nhắn tiếp theo!');
+            if (now - lastMessageTime < 5000 || chatCooldownRemaining > 0) {
+                // Nếu đang cooldown, chỉ cập nhật UI, không hiện alert
+                if (chatCooldownRemaining <= 0) {
+                    const remaining = Math.ceil((5000 - (now - lastMessageTime)) / 1000);
+                    startChatCooldown(Math.max(remaining, 1));
+                }
                 return;
             }
 
@@ -133,6 +172,14 @@
                 try { if (typeof sfxConfirm !== 'undefined' && sfxConfirm && typeof sfxConfirm.play === 'function') sfxConfirm.play(); } catch (e) {}
                 chatInput.value = '';
                 lastMessageTime = now;
+                // Bắt đầu cooldown 5s sau khi gửi
+                startChatCooldown(5);
+                // Cập nhật lastChatTime để phù hợp security rules
+                try {
+                    if (currentUser?.uid) {
+                        firebase.database().ref(`users/${currentUser.uid}/lastChatTime`).set(firebase.database.ServerValue.TIMESTAMP);
+                    }
+                } catch (e) {}
             }).catch((error) => {
                 try { if (typeof sfxDeny !== 'undefined' && sfxDeny && typeof sfxDeny.play === 'function') sfxDeny.play(); } catch (e) {}
                 console.error('Lỗi gửi tin nhắn:', error);
@@ -141,6 +188,8 @@
         };
 
         if (chatSend) {
+            // Khởi tạo nút gửi ở trạng thái sẵn sàng
+            chatSend.disabled = false;
             chatSend.onclick = sendMessage;
         }
 
@@ -148,7 +197,8 @@
             chatInput.onkeypress = (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    sendMessage();
+                    // Chỉ gửi khi không đang cooldown
+                    if (chatCooldownRemaining === 0) sendMessage();
                 }
             };
         }
@@ -291,9 +341,28 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(initChat, 500);
+            // Tự động xóa lịch sử chat hiển thị mỗi 1 phút (client-side)
+            setInterval(() => {
+                lastPurgeTime = Date.now();
+                const messagesDiv = document.getElementById('chat-messages');
+                if (messagesDiv) {
+                    messagesDiv.innerHTML = '<p style="text-align:center; color:#999;">Lịch sử chat đã được làm sạch.</p>';
+                }
+                unreadCount = 0;
+                updateChatBadge();
+            }, 60000);
         });
     } else {
         setTimeout(initChat, 500);
+        setInterval(() => {
+            lastPurgeTime = Date.now();
+            const messagesDiv = document.getElementById('chat-messages');
+            if (messagesDiv) {
+                messagesDiv.innerHTML = '<p style="text-align:center; color:#999;">Lịch sử chat đã được làm sạch.</p>';
+            }
+            unreadCount = 0;
+            updateChatBadge();
+        }, 60000);
     }
 
     // Export cleanup function

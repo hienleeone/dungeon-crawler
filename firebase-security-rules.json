@@ -72,7 +72,7 @@
       ".read": "auth != null",
       ".indexOn": "timestamp",
       "$messageId": {
-        ".write": "auth != null && !data.exists() && newData.child('userId').val() == auth.uid && newData.child('timestamp').val() <= now + 1000 && (!root.child('users').child(auth.uid).child('lastChatTime').exists() || now - root.child('users').child(auth.uid).child('lastChatTime').val() >= 2000)",
+        ".write": "auth != null && !data.exists() && newData.child('userId').val() == auth.uid && newData.child('timestamp').val() <= now + 1000 && (!root.child('users').child(auth.uid).child('lastChatTime').exists() || now - root.child('users').child(auth.uid).child('lastChatTime').val() >= 5000)",
         ".validate": "newData.hasChildren(['userId', 'userName', 'userLevel', 'message', 'timestamp'])",
         
         "userId": {

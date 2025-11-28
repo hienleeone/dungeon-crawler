@@ -824,8 +824,8 @@ function showAlert(message) {
 }
 
 // ===== Auto-save =====
-// Tự động lưu mỗi 2 PHÚT (tối ưu quota Firebase)
-const AUTO_SAVE_INTERVAL = 120000; // 2 phút = 120,000ms (thay vì 30s)
+// Tự động lưu mỗi 6 PHÚT (giảm tần suất, tối ưu quota Firebase)
+const AUTO_SAVE_INTERVAL = 360000; // 6 phút = 360,000ms
 
 setInterval(() => {
     if (currentUser && player) {
@@ -833,10 +833,21 @@ setInterval(() => {
     }
 }, AUTO_SAVE_INTERVAL);
 
-// Lưu khi người dùng rời khỏi trang
-window.addEventListener('beforeunload', () => {
-    if (currentUser && player) {
-        savePlayerData(true); // Đánh dấu là auto-save
+// Lưu khi người dùng rời khỏi trang hoặc chuyển tab
+const triggerExitSave = () => {
+    try {
+        if (currentUser && player) {
+            // Không await trong các sự kiện unload/visibility
+            savePlayerData(true);
+        }
+    } catch (_) {}
+};
+
+window.addEventListener('beforeunload', triggerExitSave);
+window.addEventListener('pagehide', triggerExitSave);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        triggerExitSave();
     }
 });
 
