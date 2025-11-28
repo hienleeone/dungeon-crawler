@@ -931,12 +931,13 @@ const triggerExitSave = () => {
     } catch (_) {}
 };
 
-window.addEventListener('beforeunload', () => { flushSaveImmediately(); triggerExitSave(); });
-window.addEventListener('pagehide', () => { flushSaveImmediately(); triggerExitSave(); });
+// Tránh gọi double (flush + trigger) dẫn tới 2 lần ghi <1s gây permission_denied
+window.addEventListener('beforeunload', () => { flushSaveImmediately(); });
+window.addEventListener('pagehide', () => { flushSaveImmediately(); });
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
+        // Với visibility: chỉ flush một lần
         flushSaveImmediately();
-        triggerExitSave();
     }
 });
 
