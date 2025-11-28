@@ -14,6 +14,7 @@
     const CHAT_RETAIN_MS = 6 * 60 * 60 * 1000; // Giữ lại tin nhắn trong 6 giờ gần nhất (UI)
     let unreadCount = 0;
     let isChatOpen = false;
+    const renderedMessageIds = new Set();
 
     // Khởi tạo chat
     function initChat() {
@@ -31,10 +32,32 @@
                 .startAt(since)
                 .limitToLast(200);
             
-            // Lắng nghe tin nhắn mới
+            // Tải lần đầu các tin nhắn gần đây để đảm bảo hiển thị ngay
+            try {
+                chatRef.limitToLast(50).once('value').then((snap) => {
+                    snap.forEach((child) => {
+                        const msg = child.val();
+                        const key = child.key;
+                        if (key) renderedMessageIds.add(key);
+                        if (msg) {
+                            if (typeof msg.timestamp === 'number' && msg.timestamp < Date.now() - CHAT_RETAIN_MS) {
+                                return;
+                            }
+                            displayMessage(msg);
+                        }
+                    });
+                }).catch(() => {});
+            } catch (_) {}
+
+            // Lắng nghe tin nhắn mới (sau lần tải đầu)
             messagesListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
                 const message = snapshot.val();
+                const key = snapshot.key;
                 if (message) {
+                    // Bỏ qua nếu đã render trong lần tải đầu
+                    if (key && renderedMessageIds.has(key)) {
+                        return;
+                    }
                     // Bỏ qua tin nhắn quá cũ vượt ngoài cửa sổ 6 giờ (phòng khi clock lệch)
                     if (typeof message.timestamp === 'number' && message.timestamp < Date.now() - CHAT_RETAIN_MS) {
                         return;
