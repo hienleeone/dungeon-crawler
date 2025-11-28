@@ -454,11 +454,12 @@ async function savePlayerData(isAutoSave = false) {
                 .endAt(saveTime)
                 .once('value');
             const ops = opsSnap.val() || {};
-            const del = {};
-            Object.keys(ops).forEach((key) => {
-                del['users/' + userId + '/inventoryOps/' + key] = null;
-            });
-            if (Object.keys(del).length) {
+            const entries = Object.entries(ops).sort((a,b)=> (a[1]?.timestamp||0) - (b[1]?.timestamp||0));
+            // Giữ lại 200 log gần nhất như vùng đệm an toàn
+            const toDelete = entries.slice(0, Math.max(0, entries.length - 200));
+            if (toDelete.length) {
+                const del = {};
+                toDelete.forEach(([key]) => { del['users/' + userId + '/inventoryOps/' + key] = null; });
                 await database.ref().update(del);
             }
         } catch (_) {}

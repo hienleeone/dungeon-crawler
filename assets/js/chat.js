@@ -349,7 +349,7 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(initChat, 500);
-            // Tự động xóa lịch sử chat hiển thị mỗi 1 phút (client-side)
+            // Tự động xóa lịch sử chat hiển thị mỗi 1 giờ (client-side)
             setInterval(() => {
                 lastPurgeTime = Date.now();
                 const messagesDiv = document.getElementById('chat-messages');
@@ -358,7 +358,7 @@
                 }
                 unreadCount = 0;
                 updateChatBadge();
-            }, 60000);
+            }, 3600000);
         });
     } else {
         setTimeout(initChat, 500);
@@ -370,7 +370,7 @@
             }
             unreadCount = 0;
             updateChatBadge();
-        }, 60000);
+        }, 3600000);
     }
 
     // Export cleanup function

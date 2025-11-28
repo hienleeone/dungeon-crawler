@@ -48,6 +48,7 @@
         ,
         "inventoryOps": {
           ".write": "auth != null && auth.uid == $uid",
+          ".indexOn": ["timestamp"],
           "$opId": {
             ".write": "auth != null && auth.uid == $uid && (!root.child('users').child($uid).child('lastInvOpTime').exists() || now - root.child('users').child($uid).child('lastInvOpTime').val() >= 500)",
             ".validate": "newData.hasChildren(['op','loc','itemJson','timestamp'])",
