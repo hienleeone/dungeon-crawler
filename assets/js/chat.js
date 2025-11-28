@@ -200,12 +200,23 @@
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             };
             // Gửi vào ref gốc vì chatRef là Query (không có push)
+            const nowTs = now; // dùng để hiển thị lạc quan
             firebase.database().ref('globalChat').push(messageData).then(() => {
                 try { if (typeof sfxConfirm !== 'undefined' && sfxConfirm && typeof sfxConfirm.play === 'function') sfxConfirm.play(); } catch (e) {}
                 chatInput.value = '';
                 lastMessageTime = now;
                 // Bắt đầu cooldown 5s sau khi gửi
                 startChatCooldown(5);
+                // Hiển thị lạc quan tin nhắn vừa gửi để tránh chậm trễ listener
+                try {
+                    displayMessage({
+                        userId: currentUser.uid,
+                        userName: player.name,
+                        userLevel: player.lvl || 1,
+                        message: filteredMessage,
+                        timestamp: nowTs
+                    });
+                } catch (_) {}
                 // Cập nhật lastChatTime để phù hợp security rules
                 try {
                     if (currentUser?.uid) {
